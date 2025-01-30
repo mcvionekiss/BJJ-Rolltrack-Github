@@ -6,33 +6,46 @@
 
 	import axios from 'axios';
 
+	import api from "$lib/api"; // Import API helper
+
 	const toast = useToast();
 
 	let fields = { email: '', password: '' };
 
 	let loading = false;
 
-	const onSubmit = () => {
-		if (loading) return;
-		axios
-			.post('/login', fields)
-			.then(() => {
-				toast.trigger({
-					message: $_('loginsuc'),
-					background: 'variant-filled-success'
-				});
-				setTimeout(() => (window.location.href = '/'), 1000);
-			})
-			.catch((error) => {
-				toast.trigger({
-					message: $_('loginfail'),
-					background: 'variant-filled-error'
-				});
-			})
-			.finally(() => {
-				loading = false;
-			});
-	};
+    const onSubmit = async () => {
+        if (loading) return;
+        loading = true;
+
+        console.log("🟡 Sending login request with:", fields);
+
+        try {
+            const response = await fetch('http://localhost:8000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // Ensures cookies are sent
+                body: JSON.stringify(fields)
+            });
+            console.log("🟢 Fetch request sent. Awaiting response...");
+            const data = await response.json();
+            console.log("🟢 API Response:", data);
+
+            if (data.success) {
+                console.log("✅ Token stored in localStorage:", data.access_token);
+                localStorage.setItem("token", data.access_token);
+
+                // Redirect to ADMIN dashboard
+                window.location.href = "/";
+            } else {
+                console.error("🔴 Login failed:", data);
+            }
+        } catch (error) {
+            console.error("🔴 Fetch error:", error);
+        } finally {
+            loading = false;
+        }
+    };
 
 </script>
 

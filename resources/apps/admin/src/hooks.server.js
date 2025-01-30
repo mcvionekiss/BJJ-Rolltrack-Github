@@ -12,13 +12,15 @@ const isPublicPage = (pathname) => {
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
-	const pathname = event.url.pathname;
+    console.log("🔵 All Cookies in hooks.server.js:", event.cookies.getAll());
+    const token = event.cookies.get('token');
 
-	if (isPublicPage(pathname)) return await resolve(event);
+    console.log("🔵 Checking auth token in hooks.server.js:", token);
 
-	const token = event.cookies.get('token');
+    if (!token && event.url.pathname !== '/login') {
+        console.log("🔴 No token found, redirecting to login.");
+        throw redirect(302, '/login');
+    }
 
-	if (!token) throw redirect(302, '/login');
-
-	return await resolve(event);
+    return await resolve(event);
 }

@@ -33,7 +33,7 @@ class UserAuthService
 
         $user = User::where('email', $email)->firstOrFail();
 
-        return $user->getPersonalAccessToken();
+        return $user->createToken('authToken')->plainTextToken;
     }
 
     public function logout(User $user)

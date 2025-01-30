@@ -35,18 +35,23 @@ class AuthController extends Controller
     {
         try {
             $token = $this->userAuthService->login($request->email, $request->password);
-
             $user = User::where('email', $request->email)->firstOrFail();
 
-            return response()->json([
+            $response = response()->json([
                 'success' => true,
                 'token_type' => 'Bearer',
                 'access_token' => $token,
                 'user' => $user
             ]);
+
+            // Attach token to an HTTP-only cookie
+            return $response->withCookie(cookie(
+                'token', $token, 60 * 24 * 7, '/', null, false, true, false
+            ));
+
         } catch (AuthenticationException $ex) {
             return response()->json([
-                'message' => $ex->getMessage(),
+                'message' => 'Invalid login credentials',
                 'success' => false
             ], 401);
         }

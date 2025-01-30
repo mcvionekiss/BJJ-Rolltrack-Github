@@ -1,32 +1,34 @@
-// @ts-nocheck
 import { json } from '@sveltejs/kit';
-
-import { useApi } from '$lib/api.js';
-
-const api = useApi();
+import api from '$lib/api.js';
 
 export const POST = async ({ request, cookies }) => {
-	try {
-		const body = await request.json();
+    try {
+        const body = await request.json();
+        console.log("🟡 Sending login request with:", body);
 
-		const response = await api
-			.post('/auth/login', body)
-			.then((response) => response.data)
-			.catch((error) => error.response.data);
+        const response = await api.post('/auth/login', body);
+        const data = response.data;
 
-		if (response.errors) return json({ success: false, ...response }, 401);
+        console.log("🟢 Laravel API Response:", data);
 
-		if (!response.user.is_admin) {
-			return json(
-				{ success: false, message: 'you are not allowed to access this page' },
-				401
-			);
-		}
+        if (!data.success) {
+            console.log("🔴 Login failed:", data);
+            return json({ success: false, message: "Invalid login credentials" }, 401);
+        }
 
-		cookies.set('token', response.access_token, { path: '/' });
+        cookies.set('token', data.access_token, {
+            path: '/',
+            httpOnly: true,
+            secure: false, // 🔴 Set to false for local development!
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7 // 7 days
+        });
 
-		return json({ success: true, ...response });
-	} catch (error) {
-		return json({ message: error.message }, 500);
-	}
+        console.log("✅ Token stored in cookies:", data.access_token); // Debugging log
+
+        return json({ success: true, user: data.user });
+    } catch (error) {
+        console.log("🔴 Server Error in +server.js:", error);
+        return json({ success: false, message: "Server error" }, 500);
+    }
 };

@@ -1,43 +1,43 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ Import for redirection
+import axios from "axios";
 
-const Login = () => {
-    const navigate = useNavigate(); // React Router for navigation
-    const [fields, setFields] = useState({ email: "", password: "" });
+function Login() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate(); // ✅ React Router hook for redirection
 
-    const onSubmit = async (event) => {
-        event.preventDefault(); // Prevent form reload
+    // ✅ Fetch CSRF token when the component mounts
+    useEffect(() => {
+        axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true })
+            .then(response => {
+                setCsrfToken(response.data.csrfToken);
+            })
+            .catch(error => console.error("Failed to fetch CSRF token", error));
+    }, []);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         if (loading) return;
         setLoading(true);
 
-        console.log("🟡 Sending login request with:", fields);
-
         try {
-            const response = await fetch("http://localhost:8000/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include", // Ensures cookies are sent
-                body: JSON.stringify(fields),
-            });
+            const response = await axios.post(
+                "http://localhost:8000/auth/login/",
+                { username: email, password },
+                {
+                    withCredentials: true,  // ✅ Required for session authentication
+                    headers: { "X-CSRFToken": csrfToken },  // ✅ Send CSRF token
+                }
+            );
 
-            console.log("🟢 Fetch request sent. Awaiting response...");
-            const data = await response.json();
-            console.log("🟢 API Response:", data);
-
-            if (data.success) {
-                console.log("✅ Token stored in localStorage:", data.access_token);
-                localStorage.setItem("token", data.access_token);
-
-                // Redirect to dashboard
-                navigate("/dashboard");
-            } else {
-                console.error("🔴 Login failed:", data);
-                alert("Login failed: " + (data.message || "Invalid credentials"));
-            }
+            console.log("🟢 Login successful", response.data);
+            // ✅ Redirect to dashboard after successful login
+            navigate("/dashboard");
         } catch (error) {
-            console.error("🔴 Fetch error:", error);
-            alert("An error occurred. Please try again.");
+            console.error("🔴 Login failed", error.response?.data || error);
         } finally {
             setLoading(false);
         }
@@ -48,7 +48,7 @@ const Login = () => {
             <h3 className="h3">Account Login</h3>
             <p>Login to access your account.</p>
 
-            <form onSubmit={onSubmit}>
+            <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                     <label className="label">
                         <span>Email</span>
@@ -56,8 +56,8 @@ const Login = () => {
                             className="input"
                             type="email"
                             name="email"
-                            value={fields.email}
-                            onChange={(e) => setFields({ ...fields, email: e.target.value })}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
                             placeholder="john@doe.com"
                             required
@@ -72,8 +72,8 @@ const Login = () => {
                             className="input"
                             type="password"
                             name="password"
-                            value={fields.password}
-                            onChange={(e) => setFields({ ...fields, password: e.target.value })}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             disabled={loading}
                             required
                         />
@@ -93,6 +93,6 @@ const Login = () => {
             </form>
         </div>
     );
-};
+}
 
 export default Login;

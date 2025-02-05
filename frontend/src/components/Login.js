@@ -54,6 +54,10 @@ function Login() {
         }
     };
 
+    const handleSignUp = () => {
+        navigate("/register"); // ✅ Redirects to the Register page
+    };
+
     return (
         <div className="mb-6">
             <h3 className="h3">Account Login</h3>
@@ -102,6 +106,14 @@ function Login() {
                     Forgot Password?
                 </a>
             </form>
+
+            <button
+                type="button"
+                onClick={handleSignUp}
+                disabled={loading}
+                className="btn variant-filled-primary w-full font-bold text-white">
+                Sign Up
+            </button>
         </div>
     );
 }

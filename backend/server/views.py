@@ -1,8 +1,8 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
 from django.views import View
 import json
@@ -30,6 +30,38 @@ class LoginView(View):
                 return JsonResponse({"success": True, "message": "Login successful"})
 
             return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=400)
+
+@method_decorator(csrf_protect, name="dispatch")  # ✅ Protects against CSRF attacks but allows valid tokens
+class LogoutView(View):
+    def post(self, request):
+        response = JsonResponse({"success": True, "message": "Logged out successfully"})
+        response["Access-Control-Allow-Credentials"] = "true"  # ✅ Ensure session cookies are sent
+        return response
+
+class RegisterView(View):
+    """Handles user registration"""
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            username = data.get("username")  # Username field
+            email = data.get("email")  # Email field
+            password = data.get("password")  # Password field
+
+            # ✅ Check if the email is already registered
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({"success": False, "message": "Email already registered"}, status=400)
+
+            # ✅ Create the user (Django automatically hashes the password)
+            user = User.objects.create_user(username=username, email=email, password=password)
+
+            # ✅ Automatically log in the user after registration
+            login(request, user)
+
+            return JsonResponse({"success": True, "message": "User registered successfully"})
 
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=400)

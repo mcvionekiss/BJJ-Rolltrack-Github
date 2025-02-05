@@ -1,22 +1,42 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Import for redirection
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+const fetchCsrfToken = async (setCsrfToken) => {
+    try {
+        const response = await axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true });
+        setCsrfToken(response.data.csrfToken);
+    } catch (error) {
+        console.error("Failed to fetch CSRF token", error);
+    }
+};
+
+const loginUser = async (credentials, csrfToken) => {
+    return axios.post(
+        "http://localhost:8000/auth/login/",
+        credentials,
+        {
+            withCredentials: true, // Required for session authentication
+            headers: { "X-CSRFToken": csrfToken }, // Send CSRF token
+        }
+    );
+};
+
 function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [formData, setFormData] = useState({ email: "", password: "" }); // ✅ One state for form
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate(); // ✅ React Router hook for redirection
+    const [error, setError] = useState(""); // ✅ Error state
+    const navigate = useNavigate();
 
-    // ✅ Fetch CSRF token when the component mounts
+    // Fetch CSRF token when the component mounts
     useEffect(() => {
-        axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true })
-            .then(response => {
-                setCsrfToken(response.data.csrfToken);
-            })
-            .catch(error => console.error("Failed to fetch CSRF token", error));
+        fetchCsrfToken(setCsrfToken);
     }, []);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -24,18 +44,9 @@ function Login() {
         setLoading(true);
 
         try {
-            const response = await axios.post(
-                "http://localhost:8000/auth/login/",
-                { username: email, password },
-                {
-                    withCredentials: true,  // ✅ Required for session authentication
-                    headers: { "X-CSRFToken": csrfToken },  // ✅ Send CSRF token
-                }
-            );
-
+            const response = await loginUser({ username: formData.email, password: formData.password }, csrfToken);
             console.log("🟢 Login successful", response.data);
-            // ✅ Redirect to dashboard after successful login
-            navigate("/dashboard");
+            navigate("/dashboard"); // ✅ Redirect to dashboard
         } catch (error) {
             console.error("🔴 Login failed", error.response?.data || error);
         } finally {
@@ -56,8 +67,8 @@ function Login() {
                             className="input"
                             type="email"
                             name="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            value={formData.email}
+                            onChange={handleChange}
                             disabled={loading}
                             placeholder="john@doe.com"
                             required
@@ -72,8 +83,8 @@ function Login() {
                             className="input"
                             type="password"
                             name="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            value={formData.password}
+                            onChange={handleChange}
                             disabled={loading}
                             required
                         />

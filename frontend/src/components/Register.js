@@ -1,117 +1,229 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import {
+    TextField,
+    Button,
+    Typography,
+    Container,
+    Paper,
+    Box,
+    Link,
+    CircularProgress,
+    AppBar,
+    Toolbar,
+} from "@mui/material";
 
-function Register() {
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+// Import the logo image
+import logo from "../assets/bjjrolltracklogo.jpeg"; // Adjust the path if needed
+
+const fetchCsrfToken = async (setCsrfToken) => {
+    try {
+        const response = await axios.get("http://localhost:8000/auth/csrf/", {
+            withCredentials: true,
+        });
+        setCsrfToken(response.data.csrfToken);
+    } catch (error) {
+        console.error("Failed to fetch CSRF token", error);
+    }
+};
+
+const registerUser = async (userData, csrfToken) => {
+    return axios.post("http://localhost:8000/auth/register/", userData, {
+        withCredentials: true,
+        headers: { "X-CSRFToken": csrfToken },
+    });
+};
+
+export default function Register() {
+    const [formData, setFormData] = useState({
+        username: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+    });
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    // ✅ Fetch CSRF token when the component mounts
     useEffect(() => {
-        axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true })
-            .then(response => setCsrfToken(response.data.csrfToken))
-            .catch(error => console.error("Failed to fetch CSRF token", error));
+        fetchCsrfToken(setCsrfToken);
     }, []);
 
-    const handleRegister = async (e) => {
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (loading) return;
         setLoading(true);
-        setError(null);  // Reset error state before new request
+        setError("");
 
         try {
-            const response = await axios.post(
-                "http://localhost:8000/auth/register/",
-                { username, email, password },
-                {
-                    withCredentials: true,  // ✅ Required for session authentication
-                    headers: { "X-CSRFToken": csrfToken },  // ✅ Send CSRF token
-                }
-            );
-
+            const response = await registerUser(formData, csrfToken);
             console.log("🟢 Registration successful", response.data);
-
-            // ✅ Redirect to the dashboard after successful registration
             navigate("/dashboard");
-
         } catch (error) {
-            setError(error.response?.data?.message || "Registration failed");
-            console.error("🔴 Registration failed", error);
+            console.error("🔴 Registration failed", error.response?.data || error);
+            setError(error.response?.data?.message || "Registration failed. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
+    const handleLogin = () => {
+        navigate("/login");
+    };
+
     return (
-        <div className="mb-6">
-            <h3 className="h3">Create an Account</h3>
-            <p>Register to start using the platform.</p>
-
-            {error && <p className="text-red-500">{error}</p>} {/* ✅ Show error message if registration fails */}
-
-            <form onSubmit={handleRegister}>
-                <div className="mb-4">
-                    <label className="label">
-                        <span>Username</span>
-                        <input
-                            className="input"
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            disabled={loading}
-                            placeholder="Choose a username"
-                            required
-                        />
-                    </label>
-                </div>
-
-                <div className="mb-4">
-                    <label className="label">
-                        <span>Email</span>
-                        <input
-                            className="input"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                            placeholder="you@example.com"
-                            required
-                        />
-                    </label>
-                </div>
-
-                <div className="mb-6">
-                    <label className="label">
-                        <span>Password</span>
-                        <input
-                            className="input"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            required
-                        />
-                    </label>
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn variant-filled-primary w-full font-bold text-white"
+        <>
+            {/* Top Navigation Bar with Logo */}
+            <AppBar
+                position="static"
+                elevation={0}
+                sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 0" }}
+            >
+                <Toolbar
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        maxWidth: "1200px",
+                        margin: "0 auto",
+                        width: "100%",
+                    }}
                 >
-                    {loading ? "Registering..." : "Register"}
-                </button>
-                <p className="text-center mt-2">
-                    Already have an account? <a href="/login" className="text-blue-500">Login here</a>.
-                </p>
-            </form>
-        </div>
+                    {/* Left: Logo Image */}
+                    <img
+                        src={logo}
+                        alt="RollTrack Logo"
+                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
+                        onClick={() => navigate("/")}
+                    />
+
+                    {/* Right: Log in & Sign Up Buttons */}
+                    <Box>
+                        <Button color="inherit" onClick={handleLogin} sx={{ textTransform: "none" }}>
+                            Log in
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={() => navigate("/register")}
+                            sx={{ ml: 2, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}
+                        >
+                            Sign up
+                        </Button>
+                    </Box>
+                </Toolbar>
+            </AppBar>
+
+            {/* Centered Registration Form */}
+            <Container maxWidth="sm">
+                <Paper elevation={3} sx={{ p: 4, textAlign: "center", mt: 5 }}>
+                    <Typography variant="h5" fontWeight="bold">
+                        Create a Gym Owner Account
+                    </Typography>
+                    <Typography variant="body2" color="gray" sx={{ mb: 3 }}>
+                        Register to start managing your gym.
+                    </Typography>
+
+                    {error && (
+                        <Typography color="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Typography>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        {/* Username Input */}
+                        <TextField
+                            fullWidth
+                            label="Username"
+                            variant="outlined"
+                            margin="normal"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            disabled={loading}
+                            required
+                        />
+
+                        {/* First Name Input */}
+                        <TextField
+                            fullWidth
+                            label="First Name"
+                            variant="outlined"
+                            margin="normal"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            disabled={loading}
+                            required
+                        />
+
+                        {/* Last Name Input */}
+                        <TextField
+                            fullWidth
+                            label="Last Name"
+                            variant="outlined"
+                            margin="normal"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            disabled={loading}
+                            required
+                        />
+
+                        {/* Email Input */}
+                        <TextField
+                            fullWidth
+                            label="Email"
+                            type="email"
+                            variant="outlined"
+                            margin="normal"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            disabled={loading}
+                            required
+                        />
+
+                        {/* Password Input */}
+                        <TextField
+                            fullWidth
+                            label="Password"
+                            type="password"
+                            variant="outlined"
+                            margin="normal"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            disabled={loading}
+                            required
+                        />
+
+                        {/* Black Register Button */}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            sx={{ mt: 3, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}
+                            disabled={loading}
+                        >
+                            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign up"}
+                        </Button>
+                    </form>
+
+                    {/* Sign In Link */}
+                    <Typography variant="body2" sx={{ mt: 2 }}>
+                        Already have an account?{" "}
+                        <Link href="#" underline="hover" onClick={handleLogin}>
+                            Log in
+                        </Link>
+                    </Typography>
+                </Paper>
+            </Container>
+        </>
     );
 }
-
-export default Register;

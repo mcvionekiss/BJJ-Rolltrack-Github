@@ -39,7 +39,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'rest_framework',
     'corsheaders',  # Allow frontend requests
+    'server',
 ]
+
+AUTH_USER_MODEL = 'server.GymOwner'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
 from django.views import View
 import json
+from .models import GymOwner
 
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
@@ -41,27 +42,50 @@ class LogoutView(View):
         response["Access-Control-Allow-Credentials"] = "true"  # ✅ Ensure session cookies are sent
         return response
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(View):
-    """Handles user registration"""
-
     def post(self, request):
         try:
             data = json.loads(request.body)
-            username = data.get("username")  # Username field
-            email = data.get("email")  # Email field
-            password = data.get("password")  # Password field
+            username = data.get('username')
+            email = data.get('email')
+            password = data.get('password')
+            first_name = data.get('firstName', '')
+            last_name = data.get('lastName', '')
 
-            # ✅ Check if the email is already registered
-            if User.objects.filter(email=email).exists():
-                return JsonResponse({"success": False, "message": "Email already registered"}, status=400)
+            # Check if email already exists
+            if GymOwner.objects.filter(email=email).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Email already registered'
+                }, status=400)
 
-            # ✅ Create the user (Django automatically hashes the password)
-            user = User.objects.create_user(username=username, email=email, password=password)
+            # Create new gym owner
+            user = GymOwner.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
 
-            # ✅ Automatically log in the user after registration
+            # Log the user in
             login(request, user)
 
-            return JsonResponse({"success": True, "message": "User registered successfully"})
+            return JsonResponse({
+                'success': True,
+                'message': 'Registration successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'firstName': user.first_name,
+                    'lastName': user.last_name
+                }
+            })
 
         except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=400)
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=400)

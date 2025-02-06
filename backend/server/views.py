@@ -17,20 +17,33 @@ class LoginView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            email = data.get("username")  # ✅ Match frontend input (username = email)
+            email = data.get("email")
             password = data.get("password")
 
+            # Find user by email
             try:
-                user = User.objects.get(email=email)  # ✅ Look up user by email
-                user = authenticate(username=user.username, password=password)  # ✅ Authenticate with username
-            except User.DoesNotExist:
-                user = None
+                user = GymOwner.objects.get(email=email)
+            except GymOwner.DoesNotExist:
+                return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+
+            # Authenticate user with their email and password
+            user = authenticate(username=user.username, password=password)
 
             if user:
                 login(request, user)
-                return JsonResponse({"success": True, "message": "Login successful"})
-
-            return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+                return JsonResponse({
+                    "success": True,
+                    "message": "Login successful",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "firstName": user.first_name,
+                        "lastName": user.last_name,
+                    }
+                })
+            else:
+                return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=400)

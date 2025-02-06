@@ -44,7 +44,7 @@ function Login() {
         setLoading(true);
 
         try {
-            const response = await loginUser({ username: formData.email, password: formData.password }, csrfToken);
+            const response = await loginUser({ email: formData.email, password: formData.password }, csrfToken);
             console.log("🟢 Login successful", response.data);
             navigate("/dashboard"); // ✅ Redirect to dashboard
         } catch (error) {

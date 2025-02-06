@@ -88,7 +88,7 @@ WSGI_APPLICATION = "server.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": 'laravel',
+        "NAME": 'test',
         "USER": "admin",
         "PASSWORD": "RollTrackTeam495080",
         "HOST": "rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com",

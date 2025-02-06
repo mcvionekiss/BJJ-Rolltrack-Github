@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import {
+    TextField,
+    Button,
+    Checkbox,
+    FormControlLabel,
+    Typography,
+    Container,
+    Paper,
+    Box,
+    Link,
+    CircularProgress,
+    AppBar,
+    Toolbar,
+} from "@mui/material";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -59,62 +73,107 @@ function Login() {
     };
 
     return (
-        <div className="mb-6">
-            <h3 className="h3">Account Login</h3>
-            <p>Login to access your account.</p>
+        <>
+            {/* Top Navigation Bar with Logo */}
+            <AppBar position="static" elevation={0} sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 0" }}>
+                <Toolbar sx={{ display: "flex", justifyContent: "space-between", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+                    {/* Left: Logo Image */}
+                    <img
+                        // src={logo}
+                        alt="RollTrack Logo"
+                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
+                        onClick={() => navigate("/")}
+                    />
 
-            <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                    <label className="label">
-                        <span>Email</span>
-                        <input
-                            className="input"
-                            type="email"
+                    {/* Right: Log in & Sign Up Buttons */}
+                    <Box>
+                        <Button color="inherit" onClick={() => navigate("/login")} sx={{ textTransform: "none" }}>
+                            Log in
+                        </Button>
+                        <Button variant="contained" onClick={handleSignUp} sx={{ ml: 2, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}>
+                            Sign up
+                        </Button>
+                    </Box>
+                </Toolbar>
+            </AppBar>
+
+            {/* Centered Login Form */}
+            <Container maxWidth="sm">
+                <Paper elevation={3} sx={{ p: 4, textAlign: "center", mt: 5 }}>
+                    <Typography variant="h5" fontWeight="bold">
+                        Log in to your account
+                    </Typography>
+                    <Typography variant="body2" color="gray" sx={{ mb: 3 }}>
+                        Welcome back! Please enter your details.
+                    </Typography>
+
+                    {error && (
+                        <Typography color="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Typography>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        {/* Email Input */}
+                        <TextField
+                            fullWidth
+                            label="Email"
+                            variant="outlined"
+                            margin="normal"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
                             disabled={loading}
-                            placeholder="john@doe.com"
                             required
                         />
-                    </label>
-                </div>
 
-                <div className="mb-6">
-                    <label className="label">
-                        <span>Password</span>
-                        <input
-                            className="input"
+                        {/* Password Input */}
+                        <TextField
+                            fullWidth
+                            label="Password"
                             type="password"
+                            variant="outlined"
+                            margin="normal"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
                             disabled={loading}
                             required
                         />
-                    </label>
-                </div>
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn variant-filled-primary w-full font-bold text-white"
-                >
-                    {loading ? "Logging in..." : "Login"}
-                </button>
-                <a href="/forgot" className="block pt-2 text-center">
-                    Forgot Password?
-                </a>
-            </form>
+                        {/* Remember Me & Forgot Password */}
+                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+                            <FormControlLabel
+                                control={<Checkbox />}
+                                label="Remember me"
+                            />
+                            <Link href="/forgot" underline="hover">
+                                Forgot password?
+                            </Link>
+                        </Box>
 
-            <button
-                type="button"
-                onClick={handleSignUp}
-                disabled={loading}
-                className="btn variant-filled-primary w-full font-bold text-white">
-                Sign Up
-            </button>
-        </div>
+                        {/* Black Sign In Button */}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            sx={{ mt: 3, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}
+                            disabled={loading}
+                        >
+                            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign in"}
+                        </Button>
+                    </form>
+
+                    {/* Sign Up Link */}
+                    <Typography variant="body2" sx={{ mt: 2 }}>
+                        Don’t have an account?{" "}
+                        <Link href="#" underline="hover" onClick={handleSignUp}>
+                            Sign up
+                        </Link>
+                    </Typography>
+                </Paper>
+            </Container>
+        </>
     );
 }
 

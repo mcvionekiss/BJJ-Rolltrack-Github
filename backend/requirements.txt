@@ -9,3 +9,9 @@ django-cors-headers==4.6.0
 mysqlclient==2.2.4
 python-dotenv==1.0.1
 djangorestframework-simplejwt==5.3.1
+
+# Testing dependencies
+pytest==8.0.0
+pytest-django==4.8.0
+pytest-cov==4.1.0
+factory-boy==3.3.0

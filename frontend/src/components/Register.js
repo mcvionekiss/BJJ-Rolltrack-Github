@@ -13,9 +13,8 @@ import {
     AppBar,
     Toolbar,
 } from "@mui/material";
+import logo from "../assets/logo.jpeg"; // Import the logo image
 
-// Import the logo image
-// import logo from "../assets/bjjrolltracklogo.jpeg"; // Adjust the path if needed
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -97,7 +96,7 @@ export default function Register() {
                 >
                     {/* Left: Logo Image */}
                     <img
-                        // src={logo}
+                        src={logo}
                         alt="RollTrack Logo"
                         style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
                         onClick={() => navigate("/")}

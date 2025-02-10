@@ -15,6 +15,7 @@ import {
     AppBar,
     Toolbar,
 } from "@mui/material";
+import logo from '../assets/logo.jpeg';
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -79,7 +80,7 @@ function Login() {
                 <Toolbar sx={{ display: "flex", justifyContent: "space-between", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
                     {/* Left: Logo Image */}
                     <img
-                        // src={logo}
+                        src={logo}
                         alt="RollTrack Logo"
                         style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
                         onClick={() => navigate("/")}

@@ -19,6 +19,7 @@ yarn-error.log
 /.vscode
 # Python/Django
 *.pyc
+__pycache__/*
 __pycache__/
 *.py[cod]
 *$py.class
@@ -102,7 +103,7 @@ backend/server/__pycache__/wsgi.cpython-312.pyc
 backend/server/__pycache__/views.cpython-312.pyc
 backend/server/__pycache__/urls.cpython-312.pyc
 backend/server/__pycache__/__init__.cpython-312.pyc
-"htmlcov/" 
+"htmlcov/"
 backend/server/__pycache__/__init__.cpython-312.pyc
 backend/server/__pycache__/views.cpython-312.pyc
 backend/server/__pycache__/wsgi.cpython-312.pyc

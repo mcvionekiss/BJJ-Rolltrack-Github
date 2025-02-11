@@ -1,6 +1,9 @@
+import Calendar from "./Calendar";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Button, Box, Typography } from "@mui/material";
+
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -24,7 +27,7 @@ function Dashboard() {
                 "http://localhost:8000/auth/logout/",
                 {},
                 {
-                    headers: {"X-CSRFToken": csrfToken},
+                    headers: { "X-CSRFToken": csrfToken },
                     withCredentials: true
                 });
             console.log("🟢 Logged out successfully");
@@ -35,12 +38,14 @@ function Dashboard() {
     };
 
     return (
-        <div>
+        <>
+            <h1>Welcome to the Dashboard</h1>
+            <div id='calendar'></div>
             <h1>Welcome to the Dashboard</h1>
             <button onClick={handleLogout} className="btn variant-filled-primary">
                 Logout
             </button>
-        </div>
+        </>
     );
 }
 

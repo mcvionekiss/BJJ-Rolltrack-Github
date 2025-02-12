@@ -40,3 +40,51 @@ class GymOwnersGym(models.Model):  # ✅ Fixed inheritance
 
     def __str__(self):
         return f"{self.owner.username} - {self.gym.name}"
+    
+class Student(models.Model):
+    """
+    Model representing students who check into classes.
+    """
+    studentID = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+
+    class Meta:
+        db_table = "student"  
+        managed = False  
+
+    def __str__(self):
+        return f"{self.name} ({self.email})"
+    
+class Class(models.Model):
+    """
+    Model representing a class.
+    """
+    classID = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    startTime = models.TimeField()
+    endTime = models.TimeField()
+    recurring = models.BooleanField(default=False)  # True if it's a weekly class
+    # date = models.DateField(null=True, blank=True)  # Only used for one-time classes
+    # gym = models.ForeignKey("Gym", on_delete=models.CASCADE, related_name="classes", null=True, blank=True)
+
+    class Meta:
+        db_table = "class"
+
+    def __str__(self):
+        return f"{self.name} ({self.startTime} - {self.endTime})"
+
+class Checkin(models.Model):
+    """
+    Tracks student check-ins for classes.
+    """
+    checkinID = models.AutoField(primary_key=True)
+    student = models.ForeignKey("Student", on_delete=models.CASCADE, db_column="studentID")
+    class_instance = models.ForeignKey("Class", on_delete=models.CASCADE, db_column="classID", related_name="checkins")
+    checkinTime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "checkin"
+
+    def __str__(self):
+        return f"{self.student.name} checked into {self.class_instance.name} on {self.checkinTime}"

@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
-
+import Checkin from "./components/Checkin";
+import AvailableClasses from "./components/AvailableClasses";
+import ClassDetails from "./components/ClassDetails";
 function App() {
     return (
         <Router>
@@ -12,6 +14,9 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/checkin" element={<Checkin />} />
+                <Route path="/available-classes" element={<AvailableClasses />} />
+                <Route path="/class-details/:id" element={<ClassDetails />} />
             </Routes>
         </Router>
     );

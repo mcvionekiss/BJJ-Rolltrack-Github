@@ -1,4 +1,4 @@
-import Calendar from "./Calendar";
+import Calendar from './Calendar'
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -39,12 +39,13 @@ function Dashboard() {
 
     return (
         <>
-            <h1>Welcome to the Dashboard</h1>
-            <div id='calendar'></div>
-            <h1>Welcome to the Dashboard</h1>
-            <button onClick={handleLogout} className="btn variant-filled-primary">
-                Logout
-            </button>
+            <Box display="flex" justifyContent="space-between" >
+                <h1>Welcome to the Dashboard</h1>
+                <button onClick={handleLogout} className="btn variant-filled-primary">
+                    Logout
+                </button>
+            </Box>
+            <Calendar />
         </>
     );
 }

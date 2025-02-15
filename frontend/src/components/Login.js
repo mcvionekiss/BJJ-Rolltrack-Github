@@ -74,7 +74,7 @@ function Login() {
     };
 
     return (
-        <>
+        <Container maxWidth="xl">
             {/* Top Navigation Bar with Logo */}
             <AppBar position="static" elevation={0} sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 0" }}>
                 <Toolbar sx={{ display: "flex", justifyContent: "space-between", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
@@ -174,7 +174,7 @@ function Login() {
                     </Typography>
                 </Paper>
             </Container>
-        </>
+        </Container>
     );
 }
 

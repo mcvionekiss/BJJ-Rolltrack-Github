@@ -179,7 +179,7 @@ export default function Register() {
                                 <TextField label="Address" placeholder="Enter street address" name="address" value={formData.address} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="City" placeholder="Enter city" name="city" value={formData.city} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="State" placeholder="Enter state" name="state" value={formData.state} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Gym Email" placeholder="Enter gym email" name="gymEmail" value={formData.gymEmail} onChange={handleChange} fullWidth margin="normal" required />
+                                <TextField label="Gym Email" placeholder="Enter gym email" name="gymEmail" type="email" value={formData.gymEmail} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Gym Phone Number" placeholder="Enter gym phone number" name="gymPhoneNumber" value={formData.gymPhoneNumber} onChange={handleChange} fullWidth margin="normal" required />
                             </>
                         )}

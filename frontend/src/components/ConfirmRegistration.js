@@ -12,7 +12,7 @@ const ConfirmRegistration = ({ formData, onEdit, onSubmit }) => {
         </div>
         <p>Name: {formData.firstName} {formData.lastName}</p>
         <p>Email: {formData.email}</p>
-        <p>Phone Number: {formData.phone}</p>
+        {formData.phone && <p>Phone Number: {formData.phone}</p>}
       </div>
 
       <div className="section">

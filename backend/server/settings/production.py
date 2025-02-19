@@ -40,7 +40,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'rest_framework',
     'corsheaders',  # Allow frontend requests
+    'server',
 ]
+
+AUTH_USER_MODEL = 'server.GymOwner'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -50,11 +53,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # ✅ Allow cookies and authentication
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # ✅ Allow frontend to call backend
+    "http://18.117.9.192",
 ]
 
 ROOT_URLCONF = "server.urls"

@@ -42,6 +42,7 @@ const registerUser = async (userData, csrfToken) => {
 };
 
 const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
+const stepperSteps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -133,7 +134,7 @@ export default function Register() {
                 <Typography variant="h5" className="signup-title">Sign Up</Typography>
 
                 <Stepper 
-                    activeStep={activeStep} 
+                    activeStep={activeStep < stepperSteps.length ? activeStep : stepperSteps.length - 1}
                     orientation="vertical"
                     sx={{
                         "& .MuiStepIcon-root": {
@@ -147,7 +148,7 @@ export default function Register() {
                         },
                       }}
                 >
-                    {steps.map((label, index) => (
+                    {stepperSteps.map((label, index) => (
                         <Step key={index}>
                             <StepLabel>{label}</StepLabel>
                         </Step>

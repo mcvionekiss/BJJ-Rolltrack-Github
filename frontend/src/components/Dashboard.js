@@ -42,10 +42,13 @@ function Dashboard() {
             <Box display="flex" justifyContent="space-between" >
                 <h1>Welcome to the Dashboard</h1>
                 <button onClick={handleLogout} className="btn variant-filled-primary">
-                    Logout
+                    Profile
                 </button>
             </Box>
-            <Calendar />
+            <hr></hr>
+            <Box style={{ marginLeft: '50px', marginRight: '50px'}}>
+                <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </Box>
         </>
     );
 }

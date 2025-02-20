@@ -6,6 +6,8 @@ import Dashboard from "./components/Dashboard";
 import Checkin from "./components/Checkin";
 import AvailableClasses from "./components/AvailableClasses";
 import ClassDetails from "./components/ClassDetails";
+import Analytics from './components/analytics';
+import ClientsPage from './components/ClientsPage';
 function App() {
     return (
         <Router>
@@ -17,6 +19,8 @@ function App() {
                 <Route path="/checkin" element={<Checkin />} />
                 <Route path="/available-classes" element={<AvailableClasses />} />
                 <Route path="/class-details/:id" element={<ClassDetails />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/clients-page" element={<ClientsPage />} />
             </Routes>
         </Router>
     );

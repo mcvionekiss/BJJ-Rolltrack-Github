@@ -20,6 +20,7 @@ import "./Register.css";
 import logo from "../assets/logo.jpeg"; // Import the logo image
 import ScheduleDetails from "./ScheduleDetails.js";
 import ConfirmRegistration from "./ConfirmRegistration.js";
+import WelcomePage from "./WelcomePage.js"
 import AddressAutocomplete from "./AddressAutocomplete";
 
 const fetchCsrfToken = async (setCsrfToken) => {
@@ -40,7 +41,7 @@ const registerUser = async (userData, csrfToken) => {
     });
 };
 
-const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
+const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -92,7 +93,7 @@ export default function Register() {
             try {
                 const response = await registerUser(formData, csrfToken);
                 console.log("🟢 Registration successful", response.data);
-                navigate("/dashboard");
+                setActiveStep(activeStep + 1); // Move to Welcome Page step
             } catch (error) {
                 console.error("🔴 Registration failed", error.response?.data || error);
                 setError(error.response?.data?.message || "Registration failed. Please try again.");
@@ -259,6 +260,8 @@ export default function Register() {
                                 onSubmit={handleSubmit}
                             />
                         )}
+
+                        {activeStep === 4 && (<WelcomePage />)}
 
                         {error && (
                             <Typography color="error" align="center" sx={{ marginBottom: 2 }}>

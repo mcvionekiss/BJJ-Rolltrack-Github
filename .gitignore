@@ -109,3 +109,5 @@ backend/server/__pycache__/views.cpython-312.pyc
 backend/server/__pycache__/wsgi.cpython-312.pyc
 backend/server/settings/__pycache__/__init__.cpython-312.pyc
 backend/server/settings/__pycache__/local.cpython-312.pyc
+
+restartDocker.sh

@@ -8,9 +8,9 @@ services:
     environment:
       - DEBUG=True
       - DJANGO_SECRET_KEY=django-insecure-y14*(xukzjxpq=9q&xwa78(ttxjus-2#5j0l59iyeb4(-p0i8f
-      - DB_NAME=laravel
+      - DB_NAME=test
       - DB_USER=admin
-      - DB_PASSWORD=your_db_password
+      - DB_PASSWORD=RollTrackTeam495080
       - DB_HOST=rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com
       - DB_PORT=3306
     volumes:
@@ -24,4 +24,3 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules

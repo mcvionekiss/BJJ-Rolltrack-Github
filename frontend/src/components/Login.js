@@ -128,19 +128,19 @@ function Login() {
                             required
                         />
 
-                        {/* Password Input */}
-                        <TextField
-                            fullWidth
-                            label="Password"
-                            type="password"
-                            variant="outlined"
-                            margin="normal"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                        />
+            {/* Password Input */}
+            <TextField
+              fullWidth
+              label="Password"
+              // type="password"
+              variant="outlined"
+              margin="normal"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              disabled={loading}
+              required
+            />
 
                         {/* Remember Me & Forgot Password */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>

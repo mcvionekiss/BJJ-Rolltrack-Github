@@ -10,9 +10,11 @@ const ConfirmRegistration = ({ formData, onEdit, onSubmit }) => {
           <h3>Personal Information</h3>
           <button onClick={() => onEdit("personal")}>Edit</button>
         </div>
-        <p>Name: {formData.firstName} {formData.lastName}</p>
-        <p>Email: {formData.email}</p>
-        {formData.phone && <p>Phone Number: {formData.phone}</p>}
+        <div className="section-content">
+          <p><span>Name:</span> {formData.firstName} {formData.lastName}</p>
+          <p><span>Email:</span> {formData.email}</p>
+          {formData.phone && <p><span>Phone Number:</span> {formData.phone}</p>}
+        </div>
       </div>
 
       <div className="section">
@@ -20,12 +22,14 @@ const ConfirmRegistration = ({ formData, onEdit, onSubmit }) => {
           <h3>Gym Details</h3>
           <button onClick={() => onEdit("gym")}>Edit</button>
         </div>
-        <p>Gym Name: {formData.gymName}</p>
-        <p>Address: {formData.address}</p>
-        <p>City: {formData.city}</p>
-        <p>State: {formData.state}</p>
-        <p>Gym Email: {formData.gymEmail}</p>
-        <p>Gym Phone: {formData.gymPhoneNumber}</p>
+        <div className="section-content">
+          <p>Gym Name: {formData.gymName}</p>
+          <p>Address: {formData.address}</p>
+          <p>City: {formData.city}</p>
+          <p>State: {formData.state}</p>
+          <p>Gym Email: {formData.gymEmail}</p>
+          <p>Gym Phone: {formData.gymPhoneNumber}</p>
+        </div>
       </div>
 
       <div className="section">
@@ -33,17 +37,19 @@ const ConfirmRegistration = ({ formData, onEdit, onSubmit }) => {
           <h3>Schedule Details</h3>
           <button onClick={() => onEdit("schedule")}>Edit</button>
         </div>
+        <div className="section-content">
         <p>Gym Hours:</p>
-        <ul>
-          {formData.schedule && formData.schedule.length > 0 ? (
-            formData.schedule.map((entry, index) => (
-                <li key={index}>
-                    {entry.day}: {entry.closed ? "Closed" : `${entry.openTime} - ${entry.closeTime}`}
-                </li>
-            )) ) : (
-            <p>No schedule available</p>
-          )}
-        </ul>
+          <ul>
+            {formData.schedule && formData.schedule.length > 0 ? (
+              formData.schedule.map((entry, index) => (
+                  <li key={index}>
+                      {entry.day}: {entry.closed ? "Closed" : `${entry.openTime} - ${entry.closeTime}`}
+                  </li>
+              )) ) : (
+              <p>No schedule available</p>
+            )}
+          </ul>
+        </div>
       </div>
     </div>
   );

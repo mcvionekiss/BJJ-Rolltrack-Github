@@ -102,4 +102,37 @@ th, td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
+}
+
+/* for ConfirmRegistration.js */
+.section-content{
+    display: flex;
+    flex-direction: column; /* Ensures items stack vertically */
+    align-items: center; /* Aligns text to the left */
+    text-align: center; /* Ensures inner text is left-aligned */
+}
+
+/* for ConfirmRegistration.js */
+.section-content {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  text-align: left; /* Ensures labels and values stay aligned */
+}
+
+/* for ConfirmRegistration.js */
+.section-content p {
+  display: left;
+  justify-content: center; /* Centers the text horizontally */
+  gap: 10px; /* Adds spacing between label and value */
+  min-width: 200px; /* Adjust as needed to keep labels aligned */
+  margin: 5px 0;  /* Reduces top & bottom margin */
+  padding: 0;      /* Ensures no padding is adding extra space */
+}
+
+/* for ConfirmRegistration.js */
+.section-content ul {
+    list-style-type: none; /* Removes bullet points */
+    padding: 0; /* Removes default padding */
+    margin: 0; /* Removes default margin */
+}

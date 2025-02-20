@@ -159,7 +159,9 @@ export default function Register() {
             {/* Right Form Section */}
             <div className="form-container">
                 <Paper elevation={3} className="form-box">
+                {activeStep < steps.length - 1 && (
                     <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
+                )}
 
                     <form onSubmit={handleNext} className="form">
                         {activeStep === 0 && (

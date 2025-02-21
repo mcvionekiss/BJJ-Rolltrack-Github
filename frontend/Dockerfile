@@ -6,15 +6,14 @@ RUN apk add --no-cache python3 make g++ git
 # Set working directory explicitly to frontend
 WORKDIR /app/frontend
 
-# Copy package files for frontend only
-COPY package*.json ./
-COPY package-lock*.json ./
+# Copy package files first
+COPY frontend/package*.json ./
+
+# Install dependencies before copying the rest of the files
+RUN npm install
 
 # Copy the frontend application
-COPY . .
-
-# Install dependencies
-RUN npm install
+COPY frontend/ .
 
 # Create logs directory
 RUN mkdir -p logs && \

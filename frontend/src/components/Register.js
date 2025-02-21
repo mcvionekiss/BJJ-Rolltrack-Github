@@ -42,6 +42,7 @@ const registerUser = async (userData, csrfToken) => {
 };
 
 const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
+const stepperSteps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -133,7 +134,7 @@ export default function Register() {
                 <Typography variant="h5" className="signup-title">Sign Up</Typography>
 
                 <Stepper 
-                    activeStep={activeStep} 
+                    activeStep={activeStep < stepperSteps.length ? activeStep : stepperSteps.length}
                     orientation="vertical"
                     sx={{
                         "& .MuiStepIcon-root": {
@@ -147,7 +148,7 @@ export default function Register() {
                         },
                       }}
                 >
-                    {steps.map((label, index) => (
+                    {stepperSteps.map((label, index) => (
                         <Step key={index}>
                             <StepLabel>{label}</StepLabel>
                         </Step>
@@ -269,23 +270,25 @@ export default function Register() {
                             </Typography>
                         )}
 
-                        <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-                            {activeStep > 0 && (
-                                <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
-                            )}
-                            <Button 
-                                type="submit" 
-                                variant="contained" 
-                                sx={{
-                                    backgroundColor: "black",
-                                    color: "white",
-                                    "&:hover": { backgroundColor: "#333" } // Darker shade on hover
-                                }}
-                                disabled={loading}
-                            >
-                                {loading ? "Submitting..." : activeStep === steps.length - 1 ? "Submit" : "Continue"}
-                            </Button>
-                        </Box>
+                        {activeStep < 4 && (
+                            <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                                {activeStep > 0 && (
+                                    <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
+                                )}
+                                <Button 
+                                    type="submit" 
+                                    variant="contained" 
+                                    sx={{
+                                        backgroundColor: "black",
+                                        color: "white",
+                                        "&:hover": { backgroundColor: "#333" } // Darker shade on hover
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Submitting..." : activeStep === steps.length - 2 ? "Submit" : "Continue"}
+                                </Button>
+                            </Box>
+                        )}
                     </form>
 
                     {activeStep === 0 && (

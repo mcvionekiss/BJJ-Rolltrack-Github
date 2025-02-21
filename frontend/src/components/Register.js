@@ -270,23 +270,25 @@ export default function Register() {
                             </Typography>
                         )}
 
-                        <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-                            {activeStep > 0 && (
-                                <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
-                            )}
-                            <Button 
-                                type="submit" 
-                                variant="contained" 
-                                sx={{
-                                    backgroundColor: "black",
-                                    color: "white",
-                                    "&:hover": { backgroundColor: "#333" } // Darker shade on hover
-                                }}
-                                disabled={loading}
-                            >
-                                {loading ? "Submitting..." : activeStep === steps.length - 1 ? "Submit" : "Continue"}
-                            </Button>
-                        </Box>
+                        {activeStep < 4 && (
+                            <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                                {activeStep > 0 && (
+                                    <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
+                                )}
+                                <Button 
+                                    type="submit" 
+                                    variant="contained" 
+                                    sx={{
+                                        backgroundColor: "black",
+                                        color: "white",
+                                        "&:hover": { backgroundColor: "#333" } // Darker shade on hover
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Submitting..." : activeStep === steps.length - 2 ? "Submit" : "Continue"}
+                                </Button>
+                            </Box>
+                        )}
                     </form>
 
                     {activeStep === 0 && (

@@ -134,7 +134,7 @@ export default function Register() {
                 <Typography variant="h5" className="signup-title">Sign Up</Typography>
 
                 <Stepper 
-                    activeStep={activeStep < stepperSteps.length ? activeStep : stepperSteps.length - 1}
+                    activeStep={activeStep < stepperSteps.length ? activeStep : stepperSteps.length}
                     orientation="vertical"
                     sx={{
                         "& .MuiStepIcon-root": {

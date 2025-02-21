@@ -12,6 +12,7 @@
     "@fullcalendar/timegrid": "^6.1.15",
     "@mui/icons-material": "^6.4.3",
     "@mui/material": "^6.4.3",
+    "@mui/x-date-pickers": "7.27.0",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",
     "react": "^18.3.1",
@@ -19,13 +20,16 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.5",
     "react-scripts": "5.0.1",
-    "web-vitals": "^4.2.4"
+    "web-vitals": "^4.2.4",
+    "dayjs": "^1.11.10"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "GENERATE_SOURCEMAP=true react-scripts start | tee logs/npm-start.log",
+    "build": "GENERATE_SOURCEMAP=true react-scripts build | tee logs/npm-build.log",
+    "test": "react-scripts test --verbose | tee logs/npm-test.log",
+    "eject": "react-scripts eject",
+    "prestart": "mkdir -p logs",
+    "prebuild": "mkdir -p logs"
   },
   "eslintConfig": {
     "extends": [

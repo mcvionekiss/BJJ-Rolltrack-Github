@@ -35,6 +35,7 @@ export default function AddressAutocomplete({ onAddressSelect }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 margin="normal"
+                required
             />
             {suggestions.length > 0 && (
                 <Paper elevation={3} style={{ position: "absolute", zIndex: 2, width: "100%" }}>

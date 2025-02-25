@@ -7,8 +7,7 @@ const WelcomePage = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="welcome-container">
-            <Paper elevation={3} className="welcome-box">
+            <Paper elevation={0} className="welcome-box">
                 <Typography variant="h4" className="welcome-title">
                     Welcome to RollTrack!
                 </Typography>
@@ -27,7 +26,6 @@ const WelcomePage = () => {
                     Start
                 </Button>
             </Paper>
-        </div>
     );
 };
 

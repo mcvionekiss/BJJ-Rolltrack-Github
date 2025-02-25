@@ -16,6 +16,7 @@ import {
     Step,
     StepLabel,
 } from "@mui/material";
+import MuiPhoneNumber from 'mui-phone-number';
 import "./Register.css";
 import logo from "../assets/logo.jpeg"; // Import the logo image
 import ScheduleDetails from "./ScheduleDetails.js";
@@ -118,6 +119,10 @@ export default function Register() {
         setFormData(prev => ({ ...prev, schedule: scheduleData }));
     };
 
+    const handlePhoneChange = (name, value) => {
+        handleChange({ target: { name, value } }); // Simulate an event to match handleChange format
+    };
+
     return (
         <div className="signup-container">
 
@@ -173,7 +178,8 @@ export default function Register() {
                                 <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Phone (optional)" placeholder="Enter your phone number" name="phone" value={formData.phone} onChange={handleChange} fullWidth margin="normal" />
+                                {/* MUI Phone Number for Personal Phone */}
+                                <MuiPhoneNumber defaultCountry={"us"} label="Phone Number" variant="outlined" name="phone" value={formData.phone} onChange={(value) => handlePhoneChange("phone", value)} fullWidth margin="normal" />
                             </>
                         )}
 
@@ -233,15 +239,17 @@ export default function Register() {
                                     margin="normal" 
                                     required 
                                 />
-                                <TextField 
-                                    label="Gym Phone Number" 
-                                    placeholder="Enter gym phone number" 
-                                    name="gymPhoneNumber" 
-                                    value={formData.gymPhoneNumber} 
-                                    onChange={handleChange} 
-                                    fullWidth 
-                                    margin="normal" 
-                                    required 
+                                {/* MUI Phone Number for Gym Phone */}
+                                <MuiPhoneNumber
+                                    defaultCountry={"us"}
+                                    label="Gym Phone Number"
+                                    variant="outlined"
+                                    name="gymPhoneNumber"
+                                    value={formData.gymPhoneNumber}
+                                    onChange={(value) => handlePhoneChange("gymPhoneNumber", value)}
+                                    fullWidth
+                                    margin="normal"
+                                    required
                                 />
                             </>
                         )}

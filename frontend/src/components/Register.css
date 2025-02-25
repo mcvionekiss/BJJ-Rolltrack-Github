@@ -125,7 +125,7 @@ th, td {
   display: left;
   justify-content: center; /* Centers the text horizontally */
   gap: 10px; /* Adds spacing between label and value */
-  min-width: 200px; /* Adjust as needed to keep labels aligned */
+  min-width: 300px; /* Adjust as needed to keep labels aligned */
   margin: 5px 0;  /* Reduces top & bottom margin */
   padding: 0;      /* Ensures no padding is adding extra space */
 }

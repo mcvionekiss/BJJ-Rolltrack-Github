@@ -1,6 +1,6 @@
 .signup-container {
     display: flex;
-    height: 100vh;
+    height: 92vh;
 }
 
 /* Left Sidebar */
@@ -12,6 +12,7 @@
     align-items: center;
     padding: 2rem;
     position: relative;
+    height: 92vh;
 }
 
 /* Logo Styling */
@@ -46,6 +47,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    height: 92vh;
 }
 
 .form-box {

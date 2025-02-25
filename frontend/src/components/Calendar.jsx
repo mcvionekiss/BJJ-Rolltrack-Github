@@ -8,7 +8,7 @@ import { Dialog } from '@base-ui-components/react/dialog';
 export default function Calendar() {
   const [events, setEvents] = useState([
     {
-      title: 'Adult Fundamentals',
+      title: 'Adult Fundamentals', 
       start: '2025-02-20T10:00:00Z',
       end: '2025-02-20T12:00:00Z',
       color: '#E0E0E0',

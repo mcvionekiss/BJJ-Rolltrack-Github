@@ -115,6 +115,11 @@ export default function Register() {
         if (stepName === "schedule") setActiveStep(2);
     };
 
+    const handleSkip = (stepName) => {
+        if (stepName === "gym") setActiveStep(2);
+        if (stepName === "schedule") setActiveStep(3);
+    };
+
     const handleScheduleUpdate = (scheduleData) => {
         setFormData(prev => ({ ...prev, schedule: scheduleData }));
     };
@@ -166,9 +171,18 @@ export default function Register() {
             {/* Right Form Section */}
             <div className="form-container">
                 <Paper elevation={3} className="form-box">
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 {activeStep < 3 && (
                     <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
                 )}
+                {activeStep === 1 && (
+                        <button onClick={() => handleSkip("gym")}>Skip</button>
+                )}
+                {activeStep === 2 && (
+                        <button onClick={() => handleSkip("schedule")}>Skip</button>
+                    
+                )}
+                </Box>
 
                     <form onSubmit={handleNext} className="form">
                         {activeStep === 0 && (

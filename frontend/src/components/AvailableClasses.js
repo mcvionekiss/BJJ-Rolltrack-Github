@@ -24,7 +24,7 @@ function AvailableClasses() {
 
     useEffect(() => {
         // Fetch available classes for the current week
-        axios.get("http://localhost:8000/api/available_classes/")
+        axios.get("http://3.133.113.101:8000/api/available_classes/")
             .then(response => {
                 setClasses(response.data.classes);
                 setLoading(false);

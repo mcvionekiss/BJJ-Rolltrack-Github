@@ -55,11 +55,11 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://18.117.9.192"]  # ✅ Add this to allow frontend requests
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://3.133.113.101"]  # ✅ Add this to allow frontend requests
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://18.117.9.192",
+    "http://3.133.113.101",
 ]
 
 ROOT_URLCONF = "server.urls"

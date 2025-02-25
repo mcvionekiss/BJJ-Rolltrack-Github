@@ -19,7 +19,7 @@ function Checkin() {
         setError(""); // Clear previous errors
 
         try {
-            const response = await axios.post("http://localhost:8000/api/check_student/", { email });
+            const response = await axios.post("http://3.133.113.101:8000/api/check_student/", { email });
 
             if (response.data.exists) {
                 console.log("✅ Student found:", response.data);

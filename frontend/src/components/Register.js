@@ -66,6 +66,7 @@ export default function Register() {
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -74,10 +75,26 @@ export default function Register() {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === "confirmPassword") {
+            if (formData.password !== e.target.value) {
+                setConfirmPasswordError("Passwords do not match.");
+            } else {
+                setConfirmPasswordError("");
+            }
+        }
     };
 
     const handleNext = (e) => {
         e.preventDefault();
+
+        // Password match validation
+        if (formData.password !== formData.confirmPassword) {
+            setConfirmPasswordError("Passwords do not match.");
+            return;
+        }
+    
+        setConfirmPasswordError(""); // Clear error if passwords match
+
         if (activeStep < steps.length - 1) {
             setActiveStep(activeStep + 1);
         }
@@ -171,18 +188,18 @@ export default function Register() {
             {/* Right Form Section */}
             <div className="form-container">
                 <Paper elevation={3} className="form-box">
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                {activeStep < 3 && (
-                    <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
-                )}
-                {activeStep === 1 && (
-                        <button onClick={() => handleSkip("gym")}>Skip</button>
-                )}
-                {activeStep === 2 && (
-                        <button onClick={() => handleSkip("schedule")}>Skip</button>
-                    
-                )}
-                </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    {activeStep < 3 && (
+                        <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
+                    )}
+                    {activeStep === 1 && (
+                            <button onClick={() => handleSkip("gym")}>Skip</button>
+                    )}
+                    {activeStep === 2 && (
+                            <button onClick={() => handleSkip("schedule")}>Skip</button>
+                        
+                    )}
+                    </Box>
 
                     <form onSubmit={handleNext} className="form">
                         {activeStep === 0 && (
@@ -191,7 +208,7 @@ export default function Register() {
                                 <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required />
+                                <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
                                 {/* MUI Phone Number for Personal Phone */}
                                 <MuiPhoneNumber defaultCountry={"us"} label="Phone Number" variant="outlined" name="phone" value={formData.phone} onChange={(value) => handlePhoneChange("phone", value)} fullWidth margin="normal" />
                             </>

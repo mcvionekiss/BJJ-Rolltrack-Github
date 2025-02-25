@@ -51,7 +51,7 @@ function Dashboard() {
                 }}
             >
                 <Box display="flex" justifyContent="space-between">
-                    <Typography variant="h4" fontWeight="bold">Dashboard</Typography>
+                    
                     <button onClick={handleLogout} className="btn variant-filled-primary">
                         Profile
                     </button>

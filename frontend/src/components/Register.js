@@ -166,7 +166,7 @@ export default function Register() {
             {/* Right Form Section */}
             <div className="form-container">
                 <Paper elevation={3} className="form-box">
-                {activeStep < steps.length - 1 && (
+                {activeStep < 3 && (
                     <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
                 )}
 
@@ -278,7 +278,7 @@ export default function Register() {
                             </Typography>
                         )}
 
-                        {activeStep < 4 && (
+                        {activeStep < 3 && (
                             <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
                                 {activeStep > 0 && (
                                     <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
@@ -294,6 +294,23 @@ export default function Register() {
                                     disabled={loading}
                                 >
                                     {loading ? "Submitting..." : activeStep === steps.length - 2 ? "Submit" : "Continue"}
+                                </Button>
+                            </Box>
+                        )}
+                        {activeStep === 3 && (
+                            <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
+                                <Button 
+                                    type="submit" 
+                                    variant="contained" 
+                                    sx={{
+                                        backgroundColor: "black",
+                                        color: "white",
+                                        textTransform: "none", // Prevents all caps
+                                        "&:hover": { backgroundColor: "#333" } // Darker shade on hover
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Submitting..." : activeStep === 3 && "Complete Registration"}
                                 </Button>
                             </Box>
                         )}

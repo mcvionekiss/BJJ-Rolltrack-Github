@@ -229,6 +229,7 @@ export default function Register() {
                                 
                                 {/* Address Autocomplete Component */}
                                 <AddressAutocomplete 
+                                    value={formData.address} 
                                     onAddressSelect={(address, city, state) => 
                                         setFormData((prev) => ({
                                             ...prev, 

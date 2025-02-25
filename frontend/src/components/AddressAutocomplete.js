@@ -2,13 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { TextField, List, ListItem, Paper } from "@mui/material";
 import axios from "axios";
 
-export default function AddressAutocomplete({ onAddressSelect }) {
-    const [query, setQuery] = useState("");
+
+export default function AddressAutocomplete({ onAddressSelect, value }) {
+    const [query, setQuery] = useState(value || ""); // Initialize with value from parent
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const suggestionBoxRef = useRef(null);
 
-    // Fetch address suggestions when the user types
+    useEffect(() => {
+        setQuery(value || ""); // Update when parent prop changes
+    }, [value]);
+
     useEffect(() => {
         if (query.length > 2) {
             fetchSuggestions(query);

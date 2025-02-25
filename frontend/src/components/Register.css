@@ -132,7 +132,6 @@ th, td {
 
 /* for ConfirmRegistration.js */
 .section-content ul {
-    list-style-type: none; /* Removes bullet points */
     padding: 0; /* Removes default padding */
     margin: 0; /* Removes default margin */
 }

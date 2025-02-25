@@ -19,6 +19,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import MenuIcon from "@mui/icons-material/Menu";
+import logo from '../assets/logo.jpeg';
 
 const NavigationMenu = ({ onWidthChange }) => {
     const navigate = useNavigate();
@@ -57,7 +58,7 @@ const NavigationMenu = ({ onWidthChange }) => {
     const menuItems = [
         { text: "Schedule", path: "/dashboard", icon: <CalendarTodayIcon /> },
         { text: "Analytics", path: "/analytics", icon: <BarChartIcon /> },
-        { text: "Clients", path: "/clients", icon: <PeopleIcon /> }
+        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> }
     ];
 
     return (
@@ -79,6 +80,14 @@ const NavigationMenu = ({ onWidthChange }) => {
                 justifyContent={sidebarWidth > MIN_WIDTH ? "space-between" : "center"}
                 mb={2}
             >
+                {sidebarWidth > MIN_WIDTH && (
+                    <img
+                        src={logo}
+                        alt="RollTrack Logo"
+                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
+                        onClick={() => navigate("/")}
+                    />
+                )}
                 {sidebarWidth > MIN_WIDTH && (
                     <Typography variant="h5" fontWeight="bold">
                         Rolltrack

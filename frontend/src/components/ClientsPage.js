@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { 
     Box,
     Paper, 
@@ -18,6 +18,7 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import NavigationMenu from "./NavigationMenu";
 
 // Mock data for clients
 const mockClients = [
@@ -76,6 +77,7 @@ const mockClients = [
 function ClientsPage() {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [anchorEl, setAnchorEl] = React.useState(null);
+    const [sidebarWidth, setSidebarWidth] = useState(250);
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -86,111 +88,120 @@ function ClientsPage() {
     };
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
-            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 5 }}>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
-                    Clients
-                </Typography>
+        <Box display="flex">
+            <NavigationMenu onWidthChange={setSidebarWidth} />
+            <Box sx={{
+                    flexGrow: 1,
+                    padding: 3,
+                    maxWidth: 1200,
+                    transition: "margin-left 0.3s ease-in-out",
+                    marginLeft: `${sidebarWidth}px`}}
+            >
+                <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 5 }}>
+                    <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
+                        Clients
+                    </Typography>
 
-                {/* Search and Filter Bar */}
-                <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: { xs: 2, sm: 0 },
-                    justifyContent: 'space-between', 
-                    alignItems: { xs: 'stretch', sm: 'center' },
-                    mb: 4 
-                }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<FilterListIcon />}
-                        sx={{ 
-                            borderColor: 'grey.300',
-                            color: 'grey.700',
-                            textTransform: 'none',
-                            width: { xs: '100%', sm: 'auto' }
-                        }}
-                    >
-                        Filters
-                    </Button>
+                    {/* Search and Filter Bar */}
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 2, sm: 0 },
+                        justifyContent: 'space-between',
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        mb: 4
+                    }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<FilterListIcon />}
+                            sx={{
+                                borderColor: 'grey.300',
+                                color: 'grey.700',
+                                textTransform: 'none',
+                                width: { xs: '100%', sm: 'auto' }
+                            }}
+                        >
+                            Filters
+                        </Button>
 
-                    <TextField
-                        placeholder="Search"
-                        size="small"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ 
-                            width: { xs: '100%', sm: '300px' }
-                        }}
-                        InputProps={{
-                            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                        }}
-                    />
-                </Box>
+                        <TextField
+                            placeholder="Search"
+                            size="small"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{
+                                width: { xs: '100%', sm: '300px' }
+                            }}
+                            InputProps={{
+                                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                            }}
+                        />
+                    </Box>
 
-                {/* Table */}
-                <TableContainer sx={{ overflowX: 'auto' }}>
-                    <Table sx={{ minWidth: 800 }}>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>ID</TableCell>
-                                <TableCell>NAME</TableCell>
-                                <TableCell>AGE</TableCell>
-                                <TableCell>GENDER</TableCell>
-                                <TableCell>CONTACT</TableCell>
-                                <TableCell>SKILL LEVEL</TableCell>
-                                <TableCell>LAST TRAINING DATE</TableCell>
-                                <TableCell>SUBSCRIPTION</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {mockClients.map((client) => (
-                                <TableRow 
-                                    key={client.id}
-                                    hover
-                                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                >
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.id}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.name}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.age}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.gender}</TableCell>
-                                    <TableCell sx={{ 
-                                        whiteSpace: 'nowrap',
-                                        maxWidth: '200px',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        {client.contact}
-                                    </TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.skillLevel}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.lastTrainingDate}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.subscription}</TableCell>
-                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                                        <IconButton 
-                                            size="small"
-                                            onClick={handleMenuClick}
-                                        >
-                                            <MoreVertIcon />
-                                        </IconButton>
-                                    </TableCell>
+                    {/* Table */}
+                    <TableContainer sx={{ overflowX: 'auto' }}>
+                        <Table sx={{ minWidth: 800 }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>ID</TableCell>
+                                    <TableCell>NAME</TableCell>
+                                    <TableCell>AGE</TableCell>
+                                    <TableCell>GENDER</TableCell>
+                                    <TableCell>CONTACT</TableCell>
+                                    <TableCell>SKILL LEVEL</TableCell>
+                                    <TableCell>LAST TRAINING DATE</TableCell>
+                                    <TableCell>SUBSCRIPTION</TableCell>
+                                    <TableCell></TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                            </TableHead>
+                            <TableBody>
+                                {mockClients.map((client) => (
+                                    <TableRow
+                                        key={client.id}
+                                        hover
+                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                    >
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.id}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.name}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.age}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.gender}</TableCell>
+                                        <TableCell sx={{
+                                            whiteSpace: 'nowrap',
+                                            maxWidth: '200px',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            {client.contact}
+                                        </TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.skillLevel}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.lastTrainingDate}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{client.subscription}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                            <IconButton
+                                                size="small"
+                                                onClick={handleMenuClick}
+                                            >
+                                                <MoreVertIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
 
-                {/* Actions Menu */}
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                >
-                    <MenuItem onClick={handleMenuClose}>View Details</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Edit</MenuItem>
-                    <MenuItem onClick={handleMenuClose}>Delete</MenuItem>
-                </Menu>
-            </Paper>
+                    {/* Actions Menu */}
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleMenuClose}
+                    >
+                        <MenuItem onClick={handleMenuClose}>View Details</MenuItem>
+                        <MenuItem onClick={handleMenuClose}>Edit</MenuItem>
+                        <MenuItem onClick={handleMenuClose}>Delete</MenuItem>
+                    </Menu>
+                </Paper>
+            </Box>
         </Box>
     );
 }

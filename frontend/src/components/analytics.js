@@ -25,6 +25,7 @@ import {
     Legend
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import NavigationMenu from "./NavigationMenu";
 
 // Mock data for sparklines
 const sparklineData = {
@@ -180,6 +181,7 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
 
 function Analytics() {
     const [timeRange, setTimeRange] = useState('day');
+    const [sidebarWidth, setSidebarWidth] = useState(250);
 
     const getChartData = (timeRange) => {
         switch (timeRange) {
@@ -193,158 +195,168 @@ function Analytics() {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: 6 }}>
-            <Typography variant="h4" sx={{ mb: 6 }}>
-                Analytics
-            </Typography>
-
-            {/* Attendance Stats Cards */}
-            <Grid container spacing={4} sx={{ mb: 6 }}>
-                <Grid xs={12} md={4}>
-                    <AttendanceStatsCard 
-                        title="Daily Attendance" 
-                        value="80"
-                        percentage="1.08"
-                        timePeriod="Since yesterday"
-                        data={sparklineData.daily}
-                    />
-                </Grid>
-                <Grid xs={12} md={4}>
-                    <AttendanceStatsCard 
-                        title="Weekly Attendance" 
-                        value="400"
-                        percentage="2.85"
-                        timePeriod="Since last week"
-                        data={sparklineData.weekly}
-                    />
-                </Grid>
-                <Grid xs={12} md={4}>
-                    <AttendanceStatsCard 
-                        title="Monthly Attendance" 
-                        value="1,600"
-                        percentage="5.38"
-                        timePeriod="Since last month"
-                        data={sparklineData.monthly}
-                    />
-                </Grid>
-            </Grid>
-
-            {/* Today's Classes and Trends */}
-            <Grid container spacing={4}>
-                {/* Today's Classes */}
-                <Grid xs={12} md={3}>
-                    <Paper 
-                        sx={{ 
-                            p: 4, 
-                            borderRadius: 3,
-                            minHeight: '450px'
+        <Box display="flex">
+            <NavigationMenu onWidthChange={setSidebarWidth} />
+            <Container maxWidth="lg"
+                       sx={{
+                        flexGrow: 1,
+                        padding: 3,
+                        transition: "margin-left 0.3s ease-in-out",
+                        marginLeft: `${sidebarWidth}px`
                         }}
-                    >
-                        <Typography variant="h5" sx={{ mb: 4 }}>
-                            Today's Classes
-                        </Typography>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>CLASS NAME</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>CHECK-INS</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>TIME</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {mockClassData.map((classItem, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{classItem.name}</TableCell>
-                                        <TableCell>{classItem.checkIns}</TableCell>
-                                        <TableCell>{classItem.time}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </Paper>
+            >
+                <Typography variant="h4" sx={{ mb: 6 }}>
+                    Analytics
+                </Typography>
+
+                {/* Attendance Stats Cards */}
+                <Grid container spacing={4} sx={{ mb: 6 }}>
+                    <Grid xs={12} md={4}>
+                        <AttendanceStatsCard
+                            title="Daily Attendance"
+                            value="80"
+                            percentage="1.08"
+                            timePeriod="Since yesterday"
+                            data={sparklineData.daily}
+                        />
+                    </Grid>
+                    <Grid xs={12} md={4}>
+                        <AttendanceStatsCard
+                            title="Weekly Attendance"
+                            value="400"
+                            percentage="2.85"
+                            timePeriod="Since last week"
+                            data={sparklineData.weekly}
+                        />
+                    </Grid>
+                    <Grid xs={12} md={4}>
+                        <AttendanceStatsCard
+                            title="Monthly Attendance"
+                            value="1,600"
+                            percentage="5.38"
+                            timePeriod="Since last month"
+                            data={sparklineData.monthly}
+                        />
+                    </Grid>
                 </Grid>
 
-                {/* Trends */}
-                <Grid xs={12} md={9}>
-                    <Paper 
-                        sx={{ 
-                            p: 4, 
-                            borderRadius: 3,
-                            minHeight: '450px',
-                            width: '100%'
-                        }}
-                    >
-                        <Box sx={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            mb: 4 
-                        }}>
-                            <Typography variant="h5">
-                                Trends
+                {/* Today's Classes and Trends */}
+                <Grid container spacing={4}>
+                    {/* Today's Classes */}
+                    <Grid xs={12} md={3}>
+                        <Paper
+                            sx={{
+                                p: 4,
+                                borderRadius: 3,
+                                minHeight: '450px'
+                            }}
+                        >
+                            <Typography variant="h5" sx={{ mb: 4 }}>
+                                Today's Classes
                             </Typography>
-                            <ToggleButtonGroup
-                                size="small"
-                                value={timeRange}
-                                exclusive
-                                onChange={(e, newValue) => setTimeRange(newValue)}
-                                sx={{
-                                    '& .MuiToggleButton-root': {
-                                        textTransform: 'none',
-                                        px: 3
-                                    }
-                                }}
-                            >
-                                <ToggleButton value="day">Day</ToggleButton>
-                                <ToggleButton value="week">Week</ToggleButton>
-                                <ToggleButton value="month">Month</ToggleButton>
-                            </ToggleButtonGroup>
-                        </Box>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <BarChart 
-                                data={getChartData(timeRange)}
-                                margin={{
-                                    top: 20,
-                                    right: 30,
-                                    left: 30,
-                                    bottom: 20,
-                                }}
-                                barGap={15}
-                                barCategoryGap={80}
-                            >
-                                <XAxis 
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    dy={10}
-                                    interval={0}
-                                    tick={{ fontSize: 12 }}
-                                />
-                                <YAxis 
-                                    axisLine={false}
-                                    tickLine={false}
-                                />
-                                <Tooltip />
-                                <Legend 
-                                    verticalAlign="bottom"
-                                    height={36}
-                                    layout="horizontal"
-                                    align="center"
-                                    wrapperStyle={{
-                                        paddingTop: '10px',
-                                        paddingBottom: '10px'
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>CLASS NAME</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>CHECK-INS</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>TIME</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {mockClassData.map((classItem, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{classItem.name}</TableCell>
+                                            <TableCell>{classItem.checkIns}</TableCell>
+                                            <TableCell>{classItem.time}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </Paper>
+                    </Grid>
+
+                    {/* Trends */}
+                    <Grid xs={12} md={9}>
+                        <Paper
+                            sx={{
+                                p: 4,
+                                borderRadius: 3,
+                                minHeight: '450px',
+                                width: '100%'
+                            }}
+                        >
+                            <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mb: 4
+                            }}>
+                                <Typography variant="h5">
+                                    Trends
+                                </Typography>
+                                <ToggleButtonGroup
+                                    size="small"
+                                    value={timeRange}
+                                    exclusive
+                                    onChange={(e, newValue) => setTimeRange(newValue)}
+                                    sx={{
+                                        '& .MuiToggleButton-root': {
+                                            textTransform: 'none',
+                                            px: 3
+                                        }
                                     }}
-                                />
-                                <Bar dataKey="Fundamental" fill="#e0e0e0" />
-                                <Bar dataKey="Beginner" fill="#bdbdbd" />
-                                <Bar dataKey="Intermediate" fill="#9e9e9e" />
-                                <Bar dataKey="Advanced" fill="#757575" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Paper>
+                                >
+                                    <ToggleButton value="day">Day</ToggleButton>
+                                    <ToggleButton value="week">Week</ToggleButton>
+                                    <ToggleButton value="month">Month</ToggleButton>
+                                </ToggleButtonGroup>
+                            </Box>
+                            <ResponsiveContainer width="100%" height={400}>
+                                <BarChart
+                                    data={getChartData(timeRange)}
+                                    margin={{
+                                        top: 20,
+                                        right: 30,
+                                        left: 30,
+                                        bottom: 20,
+                                    }}
+                                    barGap={15}
+                                    barCategoryGap={80}
+                                >
+                                    <XAxis
+                                        dataKey="name"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        dy={10}
+                                        interval={0}
+                                        tick={{ fontSize: 12 }}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                    />
+                                    <Tooltip />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        layout="horizontal"
+                                        align="center"
+                                        wrapperStyle={{
+                                            paddingTop: '10px',
+                                            paddingBottom: '10px'
+                                        }}
+                                    />
+                                    <Bar dataKey="Fundamental" fill="#e0e0e0" />
+                                    <Bar dataKey="Beginner" fill="#bdbdbd" />
+                                    <Bar dataKey="Intermediate" fill="#9e9e9e" />
+                                    <Bar dataKey="Advanced" fill="#757575" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </Paper>
+                    </Grid>
                 </Grid>
-            </Grid>
-        </Container>
+            </Container>
+        </Box>
     );
 }
 

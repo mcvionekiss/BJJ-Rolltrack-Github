@@ -7,8 +7,6 @@ import {
     Box,
     Grid,
     Card,
-    CardContent,
-    IconButton,
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import GroupIcon from "@mui/icons-material/Group";
@@ -62,7 +60,7 @@ function AvailableClasses() {
         <Container maxWidth="sm" sx={{ mt: 4, pb: 4 }}>
             <Box display="flex" alignItems="center" mb={2}>
                 <ArrowBackIosIcon
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("/checkin")}
                     sx={{ cursor: "pointer", color: "#757575" }}
                 />
                 <Typography variant="h5" fontWeight="bold" sx={{ ml: 1 }}>
@@ -123,7 +121,8 @@ function AvailableClasses() {
                                     </Typography>
                                     <Box display="flex" alignItems="center" mt={1}>
                                         <Typography variant="body2" color="text.secondary">
-                                            John Doe
+                                            {/* cls.trainer */}
+                                            Trainer Placeholder
                                         </Typography>
                                         <GroupIcon sx={{ fontSize: "16px", ml: 1, mr: 0.5, color: "#757575" }} />
                                         <Typography variant="body2" color="text.secondary">

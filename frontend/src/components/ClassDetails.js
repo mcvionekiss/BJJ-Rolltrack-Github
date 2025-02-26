@@ -13,7 +13,7 @@ function ClassDetails() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        axios.get(`http://3.133.113.101:8000/api/class_details/${id}/`)
+        axios.get(`http://localhost:8000/api/class_details/${id}/`)
             .then(response => {
                 setClassDetails(response.data);
             })
@@ -25,7 +25,7 @@ function ClassDetails() {
     const handleCheckIn = async () => {
         setLoading(true);
         try {
-            await axios.post("http://3.133.113.101:8000/api/checkin/", {
+            await axios.post("http://localhost:8000/api/checkin/", {
                 email: studentEmail,
                 classID: id
             });

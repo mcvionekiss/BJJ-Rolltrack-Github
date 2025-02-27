@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet, Link } from "react-router-dom";
 import axios from "axios";
 import { Button, Box, Typography } from "@mui/material";
 import NavigationMenu from "./NavigationMenu";
@@ -10,7 +10,6 @@ function Dashboard() {
     const [csrfToken, setCsrfToken] = useState("");
     const [sidebarWidth, setSidebarWidth] = useState(250);
 
-    // ✅ Fetch CSRF token before making logout requests
     useEffect(() => {
         axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true })
             .then(response => {
@@ -32,36 +31,42 @@ function Dashboard() {
                     withCredentials: true
                 });
             console.log("🟢 Logged out successfully");
-            navigate("/login");  // ✅ Redirect to login page after logout
+            navigate("/login");
         } catch (error) {
             console.error("🔴 Logout failed", error);
         }
     };
 
     return (
-        <Box display="flex">
-            <NavigationMenu onWidthChange={setSidebarWidth} />
-            <Box
-                component="main"
-                sx={{
-                    flexGrow: 1,
-                    padding: 3,
-                    transition: "margin-left 0.3s ease-in-out",
-                    marginLeft: `${sidebarWidth}px`
-                }}
-            >
-                <Box display="flex" justifyContent="space-between">
-                    
-                    <button onClick={handleLogout} className="btn variant-filled-primary">
-                        Profile
-                    </button>
-                </Box>
-                <hr />
-                <Box style={{ marginLeft: '50px', marginRight: '50px' }}>
-                    <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                </Box>
-            </Box>
-        </Box>
+        <div className="dashboard-container">
+            <nav className="dashboard-nav">
+                <h1>Welcome to the Dashboard</h1>
+                <ul>
+                    <li>
+                        <Link to="/dashboard">Home</Link>
+                    </li>
+                    <li>
+                        <Link to="/available-classes">Available Classes</Link>
+                    </li>
+                    <li>
+                        <Link to="/checkin">Check In</Link>
+                    </li>
+                    <li>
+                        <Link to="/analytics">Analytics</Link>
+                    </li>
+                    <li>
+                        <Link to="/clients-page">Clients Page</Link>
+                    </li>
+                </ul>
+                <button onClick={handleLogout} className="btn variant-filled-primary">
+                    Logout
+                </button>
+            </nav>
+            
+            <main className="dashboard-content">
+                <Outlet /> {/* This is where Analytics will render */}
+            </main>
+        </div>
     );
 }
 

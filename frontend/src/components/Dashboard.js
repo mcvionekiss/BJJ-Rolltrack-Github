@@ -1,13 +1,14 @@
-import Calendar from './Calendar'
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
 import { Button, Box, Typography } from "@mui/material";
-
+import NavigationMenu from "./NavigationMenu";
+import Calendar from './Calendar'
 
 function Dashboard() {
     const navigate = useNavigate();
     const [csrfToken, setCsrfToken] = useState("");
+    const [sidebarWidth, setSidebarWidth] = useState(250);
 
     // ✅ Fetch CSRF token before making logout requests
     useEffect(() => {
@@ -38,18 +39,29 @@ function Dashboard() {
     };
 
     return (
-        <>
-            <Box display="flex" justifyContent="space-between" >
-                <h1>Welcome to the Dashboard</h1>
-                <button onClick={handleLogout} className="btn variant-filled-primary">
-                    Profile
-                </button>
+        <Box display="flex">
+            <NavigationMenu onWidthChange={setSidebarWidth} />
+            <Box
+                component="main"
+                sx={{
+                    flexGrow: 1,
+                    padding: 3,
+                    transition: "margin-left 0.3s ease-in-out",
+                    marginLeft: `${sidebarWidth}px`
+                }}
+            >
+                <Box display="flex" justifyContent="space-between">
+                    
+                    <button onClick={handleLogout} className="btn variant-filled-primary">
+                        Profile
+                    </button>
+                </Box>
+                <hr />
+                <Box style={{ marginLeft: '50px', marginRight: '50px' }}>
+                    <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </Box>
             </Box>
-            <hr></hr>
-            <Box style={{ marginLeft: '50px', marginRight: '50px'}}>
-                <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </Box>
-        </>
+        </Box>
     );
 }
 

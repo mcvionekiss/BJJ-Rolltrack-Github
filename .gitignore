@@ -19,8 +19,7 @@ yarn-error.log
 /.vscode
 # Python/Django
 *.pyc
-__pycache__/*
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 *.so
@@ -111,3 +110,4 @@ backend/server/settings/__pycache__/__init__.cpython-312.pyc
 backend/server/settings/__pycache__/local.cpython-312.pyc
 
 restartDocker.sh
+/backend/server/__pycache__

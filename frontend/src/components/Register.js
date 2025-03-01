@@ -293,6 +293,7 @@ export default function Register() {
                                 onContinue={() => setActiveStep(activeStep + 1)}
                                 onBack={() => setActiveStep(activeStep - 1)}
                                 setScheduleData={handleScheduleUpdate}
+                                initialSchedule={formData.schedule} // Pass stored schedule
                             />
                         )}
 

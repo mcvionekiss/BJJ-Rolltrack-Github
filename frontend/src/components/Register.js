@@ -229,7 +229,9 @@ export default function Register() {
                                 
                                 {/* Address Autocomplete Component */}
                                 <AddressAutocomplete 
-                                    value={formData.address} 
+                                    addressValue={formData.address} 
+                                    cityValue={formData.city} 
+                                    stateValue={formData.state}
                                     onAddressSelect={(address, city, state) => 
                                         setFormData((prev) => ({
                                             ...prev, 
@@ -241,7 +243,7 @@ export default function Register() {
                                 />
 
                                 <TextField 
-                                    label="City" 
+                                    label="City R.js" 
                                     placeholder="City" 
                                     name="city" 
                                     value={formData.city} 
@@ -251,7 +253,7 @@ export default function Register() {
                                     required 
                                 />
                                 <TextField 
-                                    label="State" 
+                                    label="State R.js" 
                                     placeholder="State" 
                                     name="state" 
                                     value={formData.state} 

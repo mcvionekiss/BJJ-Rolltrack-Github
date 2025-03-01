@@ -3,25 +3,31 @@ import { TextField, List, ListItem, Paper } from "@mui/material";
 import axios from "axios";
 
 
-export default function AddressAutocomplete({ onAddressSelect, value }) {
-    const [query, setQuery] = useState(value || ""); // Initialize with value from parent
+export default function AddressAutocomplete({ onAddressSelect, addressValue, cityValue, stateValue }) {
+    const [addressQuery, setAddressQuery] = useState(addressValue || ""); // Address field state
+    const [cityQuery, setCityQuery] = useState(cityValue || ""); // City field state
+    const [stateQuery, setStateQuery] = useState(stateValue || ""); // State field state
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const suggestionBoxRef = useRef(null);
 
     useEffect(() => {
-        setQuery(value || ""); // Update when parent prop changes
-    }, [value]);
+        setAddressQuery(addressValue || ""); // Update when parent prop changes
+    }, [addressValue]);
 
     useEffect(() => {
-        if (query.length > 2) {
-            fetchSuggestions(query);
-            setShowSuggestions(true);
-        } else {
-            setSuggestions([]);
-            setShowSuggestions(false);
+        setCityQuery(cityValue || ""); // Update when parent prop changes
+    }, [cityValue]);
+
+    useEffect(() => {
+        setStateQuery(stateValue || ""); // Update when parent prop changes
+    }, [stateValue]);
+
+    useEffect(() => {
+        if (addressQuery.length > 2 && showSuggestions) { // <- Only trigger if user already opened suggestions
+            fetchSuggestions(addressQuery);
         }
-    }, [query]);
+    }, [addressQuery, showSuggestions]);
 
     const fetchSuggestions = async (input) => {
         try {
@@ -36,69 +42,56 @@ export default function AddressAutocomplete({ onAddressSelect, value }) {
 
     const handleSelectAddress = (suggestion) => {
         const { address } = suggestion;
-
-        const streetNumber = address.house_number || "";
-        const streetName = address.road || "";
-        const formattedAddress = `${streetNumber} ${streetName}`.trim();
-
-        const city =
-            address.city ||
-            address.town ||
-            address.village ||
-            address.suburb ||
-            address.hamlet ||
-            address.municipality ||
-            address.state_district ||
-            address.locality ||
-            "City not found, enter manually.";
+        console.log(address);
+        
         const state = address.state || "";
         const postcode = address.postcode || "";
         const formattedState = `${state} ${postcode}`.trim();
 
-        // Update parent component with the selected address
+        // Extract values based on index
+        const addressArray = Object.values(suggestion.address);
+        console.log("Address Array:", addressArray);
+        const numberAddress = addressArray[0] || ""; // House number
+        const streetName = addressArray[1] || ""; // Street/Road name
+        const formattedAddress = `${numberAddress} ${streetName}`.trim();
+        const city = addressArray[2] || ""; // City/Village/Suburb
+
+        // Update states to display selected values in respective input fields
+        setAddressQuery(formattedAddress);
+        setCityQuery(city);
+        setStateQuery(formattedState);
+
+        // Send data to parent component
         onAddressSelect(formattedAddress, city, formattedState);
-        setQuery(formattedAddress); // Show selected address
-        setShowSuggestions(false); // Hide suggestion list
+
+        // Hide suggestion list
+        setShowSuggestions(false); 
     };
 
     const handleManualInput = () => {
         // Call onAddressSelect when user manually enters an address
-        if (query.length > 2) {
-            onAddressSelect(query, "", ""); // Pass city & state as empty (manual entry)
-        }
+        setAddressQuery(addressQuery);
+        onAddressSelect(addressQuery, cityQuery, stateQuery);
+
         setShowSuggestions(false); // Hide suggestions when user moves to another field
     };
-
-    const handleClickOutside = (event) => {
-        if (suggestionBoxRef.current && !suggestionBoxRef.current.contains(event.target)) {
-            setShowSuggestions(false);
-        }
-    };
-
-    useEffect(() => {
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-
 
     return (
         <div style={{ position: "relative" }}>
             <TextField
                 label="Gym Address"
                 placeholder="Start typing your address..."
-                fullWidth
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                name = "address"
+                value={addressQuery}
+                onChange={(e) => setAddressQuery(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={handleManualInput} // Save manually entered address when leaving the field
+                fullWidth
                 margin="normal"
                 required
             />
             
             {showSuggestions && suggestions.length > 0 && (
-
                 <Paper
                     ref={suggestionBoxRef}
                     elevation={3}
@@ -109,12 +102,15 @@ export default function AddressAutocomplete({ onAddressSelect, value }) {
                         maxHeight: "200px",
                         overflowY: "auto",
                     }}
-                ><List>
+                >
+                    <List>
                         {suggestions.map((suggestion, index) => (
                             <ListItem
                                 key={index}
-                                button
-                                onClick={() => handleSelectAddress(suggestion)}
+                                button={true}
+                                onMouseDown={(event) => {
+                                    handleSelectAddress(suggestion);
+                                }}
                             >
                                 {suggestion.display_name}
                             </ListItem>

@@ -243,7 +243,7 @@ export default function Register() {
                                 />
 
                                 <TextField 
-                                    label="City R.js" 
+                                    label="City" 
                                     placeholder="City" 
                                     name="city" 
                                     value={formData.city} 
@@ -253,7 +253,7 @@ export default function Register() {
                                     required 
                                 />
                                 <TextField 
-                                    label="State R.js" 
+                                    label="State" 
                                     placeholder="State" 
                                     name="state" 
                                     value={formData.state} 

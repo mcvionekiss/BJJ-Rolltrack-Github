@@ -54,8 +54,9 @@ function ClassDetails() {
                 classID: id
             });
 
-            alert("✅ Successfully checked in!");
-            navigate("/");
+            navigate("/checkin-success", {
+                state: { studentName: "John Doe", className: classDetails.name, email: studentEmail } // Replace with actual student name
+            });
         } catch (error) {
             setError("Error checking in. Please try again.");
         } finally {

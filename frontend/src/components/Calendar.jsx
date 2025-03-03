@@ -18,6 +18,7 @@ export default function Calendar() {
     p: 4,
     borderRadius: '20px'
   };
+
   const [events, setEvents] = useState([
     {
       title: 'Adult Fundamentals',
@@ -28,7 +29,7 @@ export default function Calendar() {
       borderColor: 'black',
     },
     {
-      title: 'Adult Advances',
+      title: 'Adult Advanced',
       start: '2025-02-20T12:30:00Z',
       end: '2025-02-20T14:20:00Z',
       color: '#E0E0E0',
@@ -64,7 +65,7 @@ export default function Calendar() {
         titleFormat={{ year: 'numeric', month: 'long' }}
         height={'95vh'}
       />
-      <Modal // in the works, updating content with MUI components; maybe create a component for this
+      <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
         aria-labelledby="modal-modal-title"
@@ -78,8 +79,10 @@ export default function Calendar() {
             onSubmit={(e) => {
               e.preventDefault();
               const title = e.target.elements.title.value;
-              const start = e.target.elements.start.value;
-              const end = e.target.elements.end.value;
+              const date = e.target.elements.date.value;
+              const start = `${date}T${e.target.elements.start.value}:00`;
+              const end = `${date}T${e.target.elements.end.value}:00`;
+
               setEvents([
                 ...events,
                 {
@@ -97,13 +100,12 @@ export default function Calendar() {
             <div>
               <label>Class Name</label>
               <TextField
-                id="modal-modal-description"
                 fullWidth
                 type="text"
                 label="Enter class name"
                 variant="outlined"
                 margin="normal"
-                name="email"
+                name="title"
                 required
               />
             </div>
@@ -128,33 +130,32 @@ export default function Calendar() {
               </Box>
             </Box>
             <Box>
-                <label style={{ marginBottom: '4px' }}>Date</label>
-                <TextField
-                  type="date"
-                  name="date"
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box>
-                <label style={{ marginBottom: '4px' }}>Instructor</label>
-                <TextField
-                  type="text"
-                  name="Enter instructor"
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box>
-                <label style={{ marginBottom: '4px' }}>Age</label>
-                <TextField
-                  type="text"
-                  name="Enter age"
-                  required
-                  fullWidth
-                />
-              </Box>
-
+              <label style={{ marginBottom: '4px' }}>Date</label>
+              <TextField
+                type="date"
+                name="date"
+                required
+                fullWidth
+              />
+            </Box>
+            <Box>
+              <label style={{ marginBottom: '4px' }}>Instructor</label>
+              <TextField
+                type="text"
+                name="instructor"
+                required
+                fullWidth
+              />
+            </Box>
+            <Box>
+              <label style={{ marginBottom: '4px' }}>Age</label>
+              <TextField
+                type="text"
+                name="age"
+                required
+                fullWidth
+              />
+            </Box>
             <Button type="submit" variant="contained" sx={{ mt: 2 }}>
               Save
             </Button>

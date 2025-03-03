@@ -17,6 +17,7 @@ import {
     StepLabel,
 } from "@mui/material";
 import MuiPhoneNumber from 'mui-phone-number';
+import PasswordChecklist from "react-password-checklist";
 import "./Register.css";
 import logo from "../assets/logo.jpeg"; // Import the logo image
 import ScheduleDetails from "./ScheduleDetails.js";
@@ -62,10 +63,18 @@ export default function Register() {
         schedule: [],
     });
 
+    const passwordMessages = {
+        minLength: "At least 8 characters!",
+        specialChar: "At least one special character!",
+        number: "At least one number!",
+        capital: "At least one uppercase letter!",
+    };
+
     const [activeStep, setActiveStep] = useState(0);
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [unmetCriteria, setUnmetCriteria] = useState([]);
     const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const navigate = useNavigate();
 
@@ -95,6 +104,7 @@ export default function Register() {
     
         setConfirmPasswordError(""); // Clear error if passwords match
 
+        setError("");
         if (activeStep < steps.length - 1) {
             setActiveStep(activeStep + 1);
         }
@@ -207,8 +217,29 @@ export default function Register() {
                                 <TextField label="First Name" placeholder="Enter your first name" name="firstName" value={formData.firstName} onChange={handleChange} fullWidth margin="normal" required/>
                                 <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required />
+                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required 
+                                    error={formData.password.length > 0 && unmetCriteria.length > 0} // Show red border only if password is entered and invalid
+                                    helperText={
+                                        formData.password.length > 0 && unmetCriteria.length > 0
+                                            ? `⚠️ ${unmetCriteria.map(rule => passwordMessages[rule]).join(" ")}`
+                                            : "" // Hide if no unmet criteria
+                                    }
+                                />
                                 <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
+                                
+                                {/* Hidden Password Checklist for Validation */}
+                                {formData.password.length > 0 && (
+                                    <PasswordChecklist
+                                        rules={["minLength", "specialChar", "number", "capital"]}
+                                        minLength={8}
+                                        value={formData.password}
+                                        valueAgain={formData.confirmPassword}
+                                        onChange={(isValid, failedRules) => setUnmetCriteria(failedRules)}
+                                        messages={passwordMessages}
+                                        style={{ display: "none" }} // Hide checklist UI
+                                    />
+                                )}
+                                
                                 {/* MUI Phone Number for Personal Phone */}
                                 <MuiPhoneNumber defaultCountry={"us"} label="Phone Number" variant="outlined" name="phone" value={formData.phone} onChange={(value) => handlePhoneChange("phone", value)} fullWidth margin="normal" />
                             </>
@@ -353,7 +384,14 @@ export default function Register() {
 
                     {activeStep === 0 && (
                         <Typography variant="body2" align="center" sx={{ marginTop: 2 }}>
-                            Already have an account? <a href="/login" className="login-link">Log in</a>
+                            Already have an account?{" "}
+                            <Link 
+                                component="button" 
+                                onClick={() => navigate("/login")}
+                                sx={{ cursor: "pointer", textDecoration: "underline", color: "black" }}
+                            >
+                                Log in
+                            </Link>
                         </Typography>
                     )}
                 </Paper>

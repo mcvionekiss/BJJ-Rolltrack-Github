@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, re_path
 from django.views.generic import RedirectView
-from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, check_student, available_classes, class_details, checkin
+from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, check_student, available_classes_today, class_details, checkin
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -11,7 +11,7 @@ urlpatterns = [
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/checkin/", CheckinView.as_view(), name="checkin"),
     path("api/check_student/", check_student, name="check_student"),
-    path("api/available_classes/", available_classes, name="available_classes"),
+    path("api/available_classes_today/", available_classes_today, name="available_classes_today"),
     path("api/class_details/<int:classID>/", class_details, name="class_details"),
     path("api/checkin/", checkin, name="checkin"),
     

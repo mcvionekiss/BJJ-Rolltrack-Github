@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate, Routes, Route } from "react-router-dom";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Box, Modal, Typography, Button, TextField } from '@mui/material';
 import '../Calendar.css';
+import AddClass from './AddClass';
 
 export default function Calendar() {
+  const navigate = useNavigate();
   const style = {
     position: 'absolute',
     top: '50%',
@@ -39,11 +42,11 @@ export default function Calendar() {
   ]);
 
   // State to control the modal visibility
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Handlers for opening and closing the modal
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  // const handleOpenModal = () => setIsModalOpen(true);
+  // const handleCloseModal = () => setIsModalOpen(false);
 
   return (
     <div>
@@ -59,20 +62,20 @@ export default function Calendar() {
         customButtons={{
           addClassButton: {
             text: 'Add Class',
-            click: handleOpenModal,
+            click: () => navigate('/add-class'),
           },
         }}
         titleFormat={{ year: 'numeric', month: 'long' }}
         height={'95vh'}
       />
-      <Modal
+      {/* <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
+          <Typography id="modal-modal-title" variant="h6" component="h2" style={{ marginBottom: '20px' }}>
             Add Class
           </Typography>
           <form
@@ -99,63 +102,18 @@ export default function Calendar() {
           >
             <div>
               <label>Class Name</label>
-              <TextField
-                fullWidth
-                type="text"
-                label="Enter class name"
-                variant="outlined"
-                margin="normal"
-                name="title"
-                required
-              />
-            </div>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <label style={{ marginBottom: '4px' }}>Time Start</label>
-                <TextField
-                  type="time"
-                  name="start"
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <label style={{ marginBottom: '4px' }}>Time End</label>
-                <TextField
-                  type="time"
-                  name="end"
-                  required
-                  fullWidth
-                />
-              </Box>
-            </Box>
-            <Box>
-              <label style={{ marginBottom: '4px' }}>Date</label>
-              <TextField
-                type="date"
-                name="date"
-                required
-                fullWidth
-              />
-            </Box>
-            <Box>
-              <label style={{ marginBottom: '4px' }}>Instructor</label>
-              <TextField
-                type="text"
-                name="instructor"
-                required
-                fullWidth
-              />
-            </Box>
-            <Box>
-              <label style={{ marginBottom: '4px' }}>Age</label>
-              <TextField
-                type="text"
-                name="age"
-                required
-                fullWidth
-              />
-            </Box>
+              <TextField fullWidth label="Class Name" name="title" required margin="normal" />
+              <label>Time Start</label>
+              <TextField fullWidth type="time" name="start" required margin="normal" />
+              <label>Time End</label>
+              <TextField fullWidth type="time" name="end" required margin="normal" />
+              <label>Date</label>
+              <TextField fullWidth type="date" name="date" required margin="normal" />
+              <label>Instructor</label>
+              <TextField fullWidth label="Instructor" name="instructor" required margin="normal" />
+              <label>Age</label>
+              <TextField fullWidth label="Age" name="age" required margin="normal" /> 
+              </div>
             <Button type="submit" variant="contained" sx={{ mt: 2 }}>
               Save
             </Button>
@@ -164,7 +122,7 @@ export default function Calendar() {
             </Button>
           </form>
         </Box>
-      </Modal>
+      </Modal> */}
 
       <style>
         {`

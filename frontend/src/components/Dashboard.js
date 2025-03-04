@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import { Button, Box, Typography } from "@mui/material";
 import NavigationMenu from "./NavigationMenu";
 import Calendar from './Calendar'
+import AddClass from './AddClass.js';
 
 function Dashboard() {
     const navigate = useNavigate();
     const [csrfToken, setCsrfToken] = useState("");
     const [sidebarWidth, setSidebarWidth] = useState(250);
+    const [events, setEvents] = useState([]);
+    const addEvent = (newEvent) => {
+        setEvents((prev) => [...prev, newEvent]);
+    };
 
     // ✅ Fetch CSRF token before making logout requests
     useEffect(() => {
@@ -51,11 +56,14 @@ function Dashboard() {
                 }}
             >
                 <Box display="flex" justifyContent="space-between">
-                    
+
                     <button onClick={handleLogout} className="btn variant-filled-primary">
                         Profile
                     </button>
                 </Box>
+                {/* <Routes>
+                    <Route path="AddClass" element={<AddClass />} />
+                </Routes> */}
                 <hr />
                 <Box style={{ marginLeft: '50px', marginRight: '50px' }}>
                     <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />

@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.utils.timezone import localdate
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
@@ -8,7 +9,6 @@ from django.views import View
 import json
 from .models import GymOwner, Student, Class, Checkin
 from django.utils.timezone import now
-import datetime
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
@@ -133,31 +133,36 @@ def check_student(request):
             return JsonResponse({"exists": False, "message": str(e)}, status=400)
 
 @api_view(['GET'])
-def available_classes(request):
-    """Fetch available classes for check-in."""
-    if request.method == "GET":
-        # Try to get cached data first
-        cached_classes = cache.get("available_classes")
-        if cached_classes:
-            return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+def available_classes_today(request):
+    """Fetch only today's available classes for check-in."""
+    today = localdate()  # Get today's date
 
-        classes = Class.objects.all().order_by("startTime")  # Optimize query
+    # Try to get cached data first
+    cached_classes = cache.get(f"available_classes_{today}")
+    if cached_classes:
+        return JsonResponse({"success": True, "classes": cached_classes}, status=200)
 
-        data = [
-            {
-                "classID": cls.classID,
-                "name": cls.name,
-                "startTime": cls.startTime.strftime("%H:%M"),
-                "endTime": cls.endTime.strftime("%H:%M"),
-                "recurring": cls.recurring
-            }
-            for cls in classes
-        ]
+    # Query only classes for today
+    # classes = Class.objects.filter(date=today).order_by("startTime")
 
-        # Store in cache for 30 seconds
-        cache.set("available_classes", data, timeout=30)
+    # Query for ALL classes
+    classes = Class.objects.all().order_by("startTime")
 
-        return JsonResponse({"success": True, "classes": data}, status=200)
+    data = [
+        {
+            "classID": cls.classID,
+            "name": cls.name,
+            "startTime": cls.startTime.strftime("%H:%M"),
+            "endTime": cls.endTime.strftime("%H:%M"),
+            "recurring": cls.recurring
+        }
+        for cls in classes
+    ]
+
+    # Store in cache for 30 seconds
+    cache.set(f"available_classes_{today}", data, timeout=30)
+
+    return JsonResponse({"success": True, "classes": data}, status=200)
 
 def class_details(request, classID):
     """Returns details of a specific class."""

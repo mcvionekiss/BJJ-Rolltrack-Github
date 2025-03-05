@@ -16,7 +16,7 @@ import {
     Step,
     StepLabel,
 } from "@mui/material";
-import MuiPhoneNumber from 'mui-phone-number';
+import { MuiTelInput } from 'mui-tel-input'; // Updated import
 import PasswordChecklist from "react-password-checklist";
 import "./Register.css";
 import logo from "../assets/logo.jpeg"; // Import the logo image
@@ -151,8 +151,9 @@ export default function Register() {
         setFormData(prev => ({ ...prev, schedule: scheduleData }));
     };
 
+    // Updated phone handler for MuiTelInput
     const handlePhoneChange = (name, value) => {
-        handleChange({ target: { name, value } }); // Simulate an event to match handleChange format
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     return (
@@ -240,8 +241,16 @@ export default function Register() {
                                     />
                                 )}
                                 
-                                {/* MUI Phone Number for Personal Phone */}
-                                <MuiPhoneNumber defaultCountry={"us"} label="Phone Number" variant="outlined" name="phone" value={formData.phone} onChange={(value) => handlePhoneChange("phone", value)} fullWidth margin="normal" />
+                                {/* Updated MuiTelInput for Personal Phone */}
+                                <MuiTelInput
+                                    defaultCountry="US"
+                                    label="Phone Number"
+                                    variant="outlined"
+                                    value={formData.phone}
+                                    onChange={(value) => handlePhoneChange("phone", value)}
+                                    fullWidth
+                                    margin="normal"
+                                />
                             </>
                         )}
 
@@ -304,12 +313,11 @@ export default function Register() {
                                     margin="normal" 
                                     required 
                                 />
-                                {/* MUI Phone Number for Gym Phone */}
-                                <MuiPhoneNumber
-                                    defaultCountry={"us"}
+                                {/* Updated MuiTelInput for Gym Phone */}
+                                <MuiTelInput
+                                    defaultCountry="US"
                                     label="Gym Phone Number"
                                     variant="outlined"
-                                    name="gymPhoneNumber"
                                     value={formData.gymPhoneNumber}
                                     onChange={(value) => handlePhoneChange("gymPhoneNumber", value)}
                                     fullWidth

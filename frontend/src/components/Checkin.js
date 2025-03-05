@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Button,
     TextField,
@@ -13,21 +13,58 @@ function Checkin() {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+    
+    // Log component mount
+    useEffect(() => {
+        console.log("🔷 Checkin component mounted");
+        
+        return () => {
+            console.log("🔷 Checkin component unmounted");
+        };
+    }, []);
+    
+    // Log email state changes
+    useEffect(() => {
+        if (email) {
+            console.log(`🔹 Email state updated: ${email}`);
+        }
+    }, [email]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log(`🔶 Form submitted with email: ${email}`);
         setError(""); // Clear previous errors
+        console.log("🔶 Previous errors cleared");
 
         try {
+            console.log(`🔶 Making API request to check_student with email: ${email}`);
+            const startTime = performance.now();
             const response = await axios.post("http://localhost:8000/api/check_student/", { email });
+            const endTime = performance.now();
+            
+            console.log(`🔶 API response received in ${(endTime - startTime).toFixed(2)}ms`);
+            console.log("🔶 API response data:", response.data);
 
             if (response.data.exists) {
-                console.log("✅ Student found:", response.data);
+                console.log(`✅ Student found: ${email}`, {
+                    studentData: response.data,
+                    timestamp: new Date().toISOString()
+                });
+                console.log(`🔶 Navigating to /available-classes with email: ${email}`);
                 navigate("/available-classes", { state: { email } });
+            } else {
+                console.warn(`⚠️ Student exists=false for email: ${email}`);
             }
         } catch (error) {
-            console.error("🔴 Student not found:", error.response?.data?.message || "Error checking student.");
+            console.error("🔴 Student not found:", {
+                email,
+                errorMessage: error.response?.data?.message || "Error checking student.",
+                status: error.response?.status,
+                timestamp: new Date().toISOString(),
+                fullError: error
+            });
             setError("Email not found. Please try again or contact an instructor.");
+            console.log("🔶 Error state updated with message: Email not found. Please try again or contact an instructor.");
         }
     };
 

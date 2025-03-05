@@ -6,6 +6,8 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
 from django.views import View
 import json
+import logging
+import time
 from .models import GymOwner, Student, Class, Checkin
 from django.utils.timezone import now
 import datetime
@@ -116,21 +118,55 @@ class CheckinView(View):
 
 @csrf_exempt
 def check_student(request):
+    logger = logging.getLogger(__name__)
+    request_id = f"req_{int(time.time() * 1000)}"  # Generate a unique request ID
+    
+    logger.info(f"[{request_id}] check_student endpoint called with method: {request.method}")
+    
     if request.method == "POST":
+        logger.info(f"[{request_id}] Processing POST request to check_student")
         try:
+            # Log request headers for debugging
+            logger.debug(f"[{request_id}] Request headers: {dict(request.headers)}")
+            
+            # Parse request body
+            start_time = time.time()
             data = json.loads(request.body)
             email = data.get("email")
-
+            logger.info(f"[{request_id}] Parsed request body. Email to check: {email}")
+            
             # Check if student exists
+            logger.debug(f"[{request_id}] Querying database for student with email: {email}")
+            query_start_time = time.time()
             student_exists = Student.objects.filter(email=email).exists()
-
+            query_time = time.time() - query_start_time
+            logger.debug(f"[{request_id}] Database query completed in {query_time:.4f}s")
+            
+            # Prepare response
             if student_exists:
-                return JsonResponse({"exists": True, "message": "Student found"}, status=200)
+                logger.info(f"[{request_id}] Student found with email: {email}")
+                response = {"exists": True, "message": "Student found"}
+                status_code = 200
             else:
-                return JsonResponse({"exists": False, "message": "Student not found"}, status=404)
+                logger.warning(f"[{request_id}] Student not found with email: {email}")
+                response = {"exists": False, "message": "Student not found"}
+                status_code = 404
+            
+            # Log response details
+            total_time = time.time() - start_time
+            logger.info(f"[{request_id}] Returning response with status: {status_code}, exists: {student_exists}, total processing time: {total_time:.4f}s")
+            
+            return JsonResponse(response, status=status_code)
 
+        except json.JSONDecodeError as e:
+            logger.error(f"[{request_id}] JSON decode error: {str(e)}")
+            return JsonResponse({"exists": False, "message": f"Invalid JSON: {str(e)}"}, status=400)
         except Exception as e:
+            logger.error(f"[{request_id}] Unexpected error in check_student: {str(e)}", exc_info=True)
             return JsonResponse({"exists": False, "message": str(e)}, status=400)
+    else:
+        logger.warning(f"[{request_id}] Method not allowed: {request.method}")
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @api_view(['GET'])
 def available_classes(request):

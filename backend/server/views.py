@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
 from django.views import View
 import json
-from .models import GymOwner, Student, Class, Checkin
+from .models import GymOwner, Student, Class, Checkin, Guest
 from django.utils.timezone import now
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
@@ -116,21 +116,24 @@ class CheckinView(View):
 
 @csrf_exempt
 def check_student(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            email = data.get("email")
+    try:
+        print("🔍 Received request:", request.method)  # Debugging line
 
-            # Check if student exists
-            student_exists = Student.objects.filter(email=email).exists()
+        if request.method != "POST":
+            return JsonResponse({"error": "Only POST allowed"}, status=405)
 
-            if student_exists:
-                return JsonResponse({"exists": True, "message": "Student found"}, status=200)
-            else:
-                return JsonResponse({"exists": False, "message": "Student not found"}, status=404)
+        data = json.loads(request.body)
+        email = data.get("email")
+        print("📧 Checking student email:", email)  # Debugging line
 
-        except Exception as e:
-            return JsonResponse({"exists": False, "message": str(e)}, status=400)
+        student_exists = Student.objects.filter(email=email).exists()
+        print("✅ Student exists:", student_exists)  # Debugging line
+
+        return JsonResponse({"exists": student_exists}, status=200)
+
+    except Exception as e:
+        print("🔥 ERROR:", str(e))  # Debugging line
+        return JsonResponse({"error": str(e)}, status=500)
 
 @api_view(['GET'])
 def available_classes_today(request):
@@ -205,3 +208,23 @@ def checkin(request):
 
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=400)
+
+@csrf_exempt
+def guest_checkin(request):
+    """Handles guest check-in by first name, last name, and email."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            first_name = data.get("firstName")
+            last_name = data.get("lastName")
+            email = data.get("email")
+
+            if not first_name or not last_name or not email:
+                return JsonResponse({"success": False, "message": "All fields are required."}, status=400)
+
+            # Check if guest already exists
+            guest, created = Guest.objects.get_or_create(email=email, defaults={"first_name": first_name, "last_name": last_name})
+
+            return JsonResponse({"success": True, "message": "Guest check-in successful!"}, status=200)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)

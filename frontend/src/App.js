@@ -9,6 +9,7 @@ import ClassDetails from "./components/ClassDetails";
 import Analytics from './components/analytics';
 import ClientsPage from './components/ClientsPage';
 import CheckinSuccess from './components/CheckinSuccess';
+import GuestCheckin from "./components/GuestCheckin";
 function App() {
     return (
         <Router>
@@ -26,6 +27,7 @@ function App() {
 
                 {/* Check In Flow */}
                 <Route path="/checkin" element={<Checkin />} />
+                <Route path="/guest-checkin" element={<GuestCheckin />} />
                 <Route path="/available-classes" element={<AvailableClasses />} />
                 <Route path="/class-details/:id" element={<ClassDetails />} />
                 <Route path="/checkin-success" element={<CheckinSuccess />} />

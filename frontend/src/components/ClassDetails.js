@@ -14,6 +14,7 @@ import banner from "../assets/banner.png";
 
 // Icons
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import Checkin from "./Checkin";
 
 // Utility function to format date
 const formatDate = (date) => {
@@ -24,20 +25,26 @@ const formatDate = (date) => {
 // Utility function to format time to 12-hour format
 const formatTime = (time) => {
     const date = new Date(`1970-01-01T${time}Z`);
-    return date.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', hour12: true});
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
 function ClassDetails() {
     const { id } = useParams();  // Get class ID from URL
     const location = useLocation();
     const navigate = useNavigate();
-    const studentEmail = location.state?.email || "";
+
+    const firstName = location.state?.firstName || "";
+    const lastName = location.state?.lastName || "";
+    const email = location.state?.email || "";
+    const isGuest = location.state?.isGuest || false;
+
     const [classDetails, setClassDetails] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        axios.get(`http://localhost:8000/api/class_details/${id}/`)
+        // TODO: CHANGE THIS TO RUN LOCALLY
+        axios.get(`http://192.168.2.1:8000/api/class_details/${id}/`)
             .then(response => {
                 setClassDetails(response.data);
             })
@@ -49,13 +56,15 @@ function ClassDetails() {
     const handleCheckIn = async () => {
         setLoading(true);
         try {
-            await axios.post("http://localhost:8000/api/checkin/", {
-                email: studentEmail,
-                classID: id
-            });
+            const checkInData = isGuest
+                ? { firstName, lastName, email, classID: id } // Guest check-in
+                : { email, classID: id };  // Student check-in
+
+            // TODO: CHANGE THIS TO RUN LOCALLY
+            await axios.post("http://192.168.2.1:8000/api/checkin/", checkInData);
 
             navigate("/checkin-success", {
-                state: { studentName: "John Doe", className: classDetails.name, email: studentEmail } // Replace with actual student name
+                state: { studentName: "John Doe", className: classDetails.name, email: email } // Replace with actual student name
             });
         } catch (error) {
             setError("Error checking in. Please try again.");
@@ -179,19 +188,13 @@ function ClassDetails() {
                         sx={{
                             mt: 3,
                             borderRadius: "30px",
-                            // backgroundColor: classDetails.isAvailable ? "black" : "#E0E0E0",
                             backgroundColor: "black",
-                            // color: classDetails.isAvailable ? "white" : "#757575",
                             color: "white",
-                            // "&:hover": {
-                            //     backgroundColor: classDetails.isAvailable ? "#333" : "#E0E0E0"
-                            // }
                             "&:hover": {
                                 backgroundColor: "#333"
                             }
                         }}
                         onClick={handleCheckIn}
-                        // disabled={loading || !classDetails.isAvailable}
                         disabled={loading}
                     >
                         {loading ? "Checking In..." : "Check In"}

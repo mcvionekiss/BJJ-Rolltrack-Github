@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Button,
     TextField,
@@ -19,7 +19,8 @@ function Checkin() {
         setError(""); // Clear previous errors
 
         try {
-            const response = await axios.post("http://localhost:8000/api/check_student/", { email });
+            // TODO: CHANGE THIS TO RUN LOCALLY
+            const response = await axios.post("http://192.168.2.1:8000/api/check_student/", { email });
 
             if (response.data.exists) {
                 console.log("✅ Student found:", response.data);
@@ -67,6 +68,16 @@ function Checkin() {
                         Continue
                     </Button>
                 </form>
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                    onClick={() => navigate("/guest-checkin")}
+                    fullWidth
+                    sx={{ mt: 2, backgroundColor: "black", color: "white" }}
+                >
+                    Guest Check-in
+                </Button>
             </Paper>
         </Container>
     );

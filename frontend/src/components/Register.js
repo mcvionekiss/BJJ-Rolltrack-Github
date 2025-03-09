@@ -132,10 +132,6 @@ export default function Register() {
         }
     };
 
-    const handleLogin = () => {
-        navigate("/login");
-    };
-
     const handleEdit = (stepName) => {
         if (stepName === "personal") setActiveStep(0);
         if (stepName === "gym") setActiveStep(1);
@@ -166,7 +162,10 @@ export default function Register() {
                         src={logo} 
                         alt="RollTrack Logo" 
                         className="logo-img"
-                        onClick={() => navigate("/")}
+                        onClick={(e) => {
+                            console.log("Navigating to login...");
+                            window.location.href = "/"; // Forces full page reload
+                        }}
                     />
                 </div>
                 <Typography variant="h5" className="signup-title">Sign Up</Typography>
@@ -395,7 +394,9 @@ export default function Register() {
                             Already have an account?{" "}
                             <Link 
                                 component="button" 
-                                onClick={() => navigate("/login")}
+                                onClick={(e) => {
+                                    window.location.href = "/"; // Forces full page reload
+                                }}
                                 sx={{ cursor: "pointer", textDecoration: "underline", color: "black" }}
                             >
                                 Log in

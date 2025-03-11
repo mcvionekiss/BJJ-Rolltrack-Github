@@ -12,10 +12,18 @@ import {
     CircularProgress,
     AppBar,
     Toolbar,
+    Stepper,
+    Step,
+    StepLabel,
 } from "@mui/material";
-
-// Import the logo image
-// import logo from "../assets/bjjrolltracklogo.jpeg"; // Adjust the path if needed
+import { MuiTelInput } from 'mui-tel-input'; // Updated import
+import PasswordChecklist from "react-password-checklist";
+import "./Register.css";
+import logo from "../assets/logo.jpeg"; // Import the logo image
+import ScheduleDetails from "./ScheduleDetails.js";
+import ConfirmRegistration from "./ConfirmRegistration.js";
+import WelcomePage from "./WelcomePage.js"
+import AddressAutocomplete from "./AddressAutocomplete";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -35,17 +43,39 @@ const registerUser = async (userData, csrfToken) => {
     });
 };
 
+const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
+const stepperSteps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
+
 export default function Register() {
     const [formData, setFormData] = useState({
-        username: "",
         firstName: "",
         lastName: "",
         email: "",
         password: "",
+        confirmPassword: "",
+        phone: "",
+        gymName: "",
+        address: "",
+        city: "",
+        state: "",
+        gymEmail: "",
+        gymPhoneNumber: "",
+        schedule: [],
     });
+
+    const passwordMessages = {
+        minLength: "At least 8 characters!",
+        specialChar: "At least one special character!",
+        number: "At least one number!",
+        capital: "At least one uppercase letter!",
+    };
+
+    const [activeStep, setActiveStep] = useState(0);
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [unmetCriteria, setUnmetCriteria] = useState([]);
+    const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -54,176 +84,327 @@ export default function Register() {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === "confirmPassword") {
+            if (formData.password !== e.target.value) {
+                setConfirmPasswordError("Passwords do not match.");
+            } else {
+                setConfirmPasswordError("");
+            }
+        }
+    };
+
+    const handleNext = (e) => {
+        e.preventDefault();
+
+        // Password match validation
+        if (formData.password !== formData.confirmPassword) {
+            setConfirmPasswordError("Passwords do not match.");
+            return;
+        }
+    
+        setConfirmPasswordError(""); // Clear error if passwords match
+
+        setError("");
+        if (activeStep < steps.length - 1) {
+            setActiveStep(activeStep + 1);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (loading) return;
-        setLoading(true);
-        setError("");
+        if (activeStep < steps.length - 1) {
+            setActiveStep(activeStep + 1);
+        } else {
+            if (loading) return;
+            setLoading(true);
+            setError("");
 
-        try {
-            const response = await registerUser(formData, csrfToken);
-            console.log("🟢 Registration successful", response.data);
-            navigate("/dashboard");
-        } catch (error) {
-            console.error("🔴 Registration failed", error.response?.data || error);
-            setError(error.response?.data?.message || "Registration failed. Please try again.");
-        } finally {
-            setLoading(false);
+            try {
+                const response = await registerUser(formData, csrfToken);
+                console.log("🟢 Registration successful", response.data);
+                setActiveStep(activeStep + 1); // Move to Welcome Page step
+            } catch (error) {
+                console.error("🔴 Registration failed", error.response?.data || error);
+                setError(error.response?.data?.message || "Registration failed. Please try again.");
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
-    const handleLogin = () => {
-        navigate("/login");
+    const handleEdit = (stepName) => {
+        if (stepName === "personal") setActiveStep(0);
+        if (stepName === "gym") setActiveStep(1);
+        if (stepName === "schedule") setActiveStep(2);
+    };
+
+    const handleSkip = (stepName) => {
+        if (stepName === "gym") setActiveStep(2);
+        if (stepName === "schedule") setActiveStep(3);
+    };
+
+    const handleScheduleUpdate = (scheduleData) => {
+        setFormData(prev => ({ ...prev, schedule: scheduleData }));
+    };
+
+    // Updated phone handler for MuiTelInput
+    const handlePhoneChange = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     return (
-        <>
-            {/* Top Navigation Bar with Logo */}
-            <AppBar
-                position="static"
-                elevation={0}
-                sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 0" }}
-            >
-                <Toolbar
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        maxWidth: "1200px",
-                        margin: "0 auto",
-                        width: "100%",
-                    }}
-                >
-                    {/* Left: Logo Image */}
-                    <img
-                        // src={logo}
-                        alt="RollTrack Logo"
-                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
-                        onClick={() => navigate("/")}
+        <div className="signup-container">
+
+            {/* Left Sidebar - Stepper */}
+            <div className="sidebar">
+                <div className="logo-container">
+                    <img 
+                        src={logo} 
+                        alt="RollTrack Logo" 
+                        className="logo-img"
+                        onClick={(e) => {
+                            console.log("Navigating to login...");
+                            window.location.href = "/"; // Forces full page reload
+                        }}
                     />
+                </div>
+                <Typography variant="h5" className="signup-title">Sign Up</Typography>
 
-                    {/* Right: Log in & Sign Up Buttons */}
-                    <Box>
-                        <Button color="inherit" onClick={handleLogin} sx={{ textTransform: "none" }}>
-                            Log in
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={() => navigate("/register")}
-                            sx={{ ml: 2, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}
-                        >
-                            Sign up
-                        </Button>
-                    </Box>
-                </Toolbar>
-            </AppBar>
+                <Stepper 
+                    activeStep={activeStep < stepperSteps.length ? activeStep : stepperSteps.length}
+                    orientation="vertical"
+                    sx={{
+                        "& .MuiStepIcon-root": {
+                          color: "#d3d3d3", // Default color (gray)
+                        },
+                        "& .MuiStepIcon-root.Mui-active": {
+                          color: "black", // Active step icon color
+                        },
+                        "& .MuiStepIcon-root.Mui-completed": {
+                          color: "black", // Completed step icon color
+                        },
+                      }}
+                >
+                    {stepperSteps.map((label, index) => (
+                        <Step key={index}>
+                            <StepLabel>{label}</StepLabel>
+                        </Step>
+                    ))}
+                </Stepper>
 
-            {/* Centered Registration Form */}
-            <Container maxWidth="sm">
-                <Paper elevation={3} sx={{ p: 4, textAlign: "center", mt: 5 }}>
-                    <Typography variant="h5" fontWeight="bold">
-                        Create a Gym Owner Account
-                    </Typography>
-                    <Typography variant="body2" color="gray" sx={{ mb: 3 }}>
-                        Register to start managing your gym.
-                    </Typography>
+                <Typography variant="body2" className="help-email">help-center@email.com</Typography>
+            </div>
 
-                    {error && (
-                        <Typography color="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Typography>
+            {/* Right Form Section */}
+            <div className="form-container">
+                <Paper elevation={3} className="form-box">
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    {activeStep < 3 && (
+                        <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
                     )}
+                    {activeStep === 1 && (
+                            <button onClick={() => handleSkip("gym")}>Skip</button>
+                    )}
+                    {activeStep === 2 && (
+                            <button onClick={() => handleSkip("schedule")}>Skip</button>
+                        
+                    )}
+                    </Box>
 
-                    <form onSubmit={handleSubmit}>
-                        {/* Username Input */}
-                        <TextField
-                            fullWidth
-                            label="Username"
-                            variant="outlined"
-                            margin="normal"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                        />
+                    <form onSubmit={handleNext} className="form">
+                        {activeStep === 0 && (
+                            <>
+                                <TextField label="First Name" placeholder="Enter your first name" name="firstName" value={formData.firstName} onChange={handleChange} fullWidth margin="normal" required/>
+                                <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
+                                <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
+                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required 
+                                    error={formData.password.length > 0 && unmetCriteria.length > 0} // Show red border only if password is entered and invalid
+                                    helperText={
+                                        formData.password.length > 0 && unmetCriteria.length > 0
+                                            ? `⚠️ ${unmetCriteria.map(rule => passwordMessages[rule]).join(" ")}`
+                                            : "" // Hide if no unmet criteria
+                                    }
+                                />
+                                <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
+                                
+                                {/* Hidden Password Checklist for Validation */}
+                                {formData.password.length > 0 && (
+                                    <PasswordChecklist
+                                        rules={["minLength", "specialChar", "number", "capital"]}
+                                        minLength={8}
+                                        value={formData.password}
+                                        valueAgain={formData.confirmPassword}
+                                        onChange={(isValid, failedRules) => setUnmetCriteria(failedRules)}
+                                        messages={passwordMessages}
+                                        style={{ display: "none" }} // Hide checklist UI
+                                    />
+                                )}
+                                
+                                {/* Updated MuiTelInput for Personal Phone */}
+                                <MuiTelInput
+                                    defaultCountry="US"
+                                    label="Phone Number"
+                                    variant="outlined"
+                                    value={formData.phone}
+                                    onChange={(value) => handlePhoneChange("phone", value)}
+                                    fullWidth
+                                    margin="normal"
+                                />
+                            </>
+                        )}
 
-                        {/* First Name Input */}
-                        <TextField
-                            fullWidth
-                            label="First Name"
-                            variant="outlined"
-                            margin="normal"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                        />
+                        {activeStep === 1 && (
+                            <>
+                                <TextField 
+                                    label="Gym Name" 
+                                    placeholder="Enter gym name" 
+                                    name="gymName" 
+                                    value={formData.gymName} 
+                                    onChange={handleChange} 
+                                    fullWidth 
+                                    margin="normal" 
+                                    required 
+                                />
+                                
+                                {/* Address Autocomplete Component */}
+                                <AddressAutocomplete 
+                                    addressValue={formData.address} 
+                                    cityValue={formData.city} 
+                                    stateValue={formData.state}
+                                    onAddressSelect={(address, city, state) => 
+                                        setFormData((prev) => ({
+                                            ...prev, 
+                                            address, 
+                                            city, 
+                                            state
+                                        }))
+                                    } 
+                                />
 
-                        {/* Last Name Input */}
-                        <TextField
-                            fullWidth
-                            label="Last Name"
-                            variant="outlined"
-                            margin="normal"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                        />
+                                <TextField 
+                                    label="City" 
+                                    placeholder="City" 
+                                    name="city" 
+                                    value={formData.city} 
+                                    onChange={handleChange} 
+                                    fullWidth 
+                                    margin="normal" 
+                                    required 
+                                />
+                                <TextField 
+                                    label="State" 
+                                    placeholder="State" 
+                                    name="state" 
+                                    value={formData.state} 
+                                    onChange={handleChange} 
+                                    fullWidth 
+                                    margin="normal" 
+                                    required 
+                                />
+                                <TextField 
+                                    label="Gym Email" 
+                                    placeholder="Enter gym email" 
+                                    name="gymEmail" 
+                                    type="email" 
+                                    value={formData.gymEmail} 
+                                    onChange={handleChange} 
+                                    fullWidth 
+                                    margin="normal" 
+                                    required 
+                                />
+                                {/* Updated MuiTelInput for Gym Phone */}
+                                <MuiTelInput
+                                    defaultCountry="US"
+                                    label="Gym Phone Number"
+                                    variant="outlined"
+                                    value={formData.gymPhoneNumber}
+                                    onChange={(value) => handlePhoneChange("gymPhoneNumber", value)}
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                />
+                            </>
+                        )}
 
-                        {/* Email Input */}
-                        <TextField
-                            fullWidth
-                            label="Email"
-                            type="email"
-                            variant="outlined"
-                            margin="normal"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                        />
+                        {activeStep === 2 && (
+                            <ScheduleDetails 
+                                onContinue={() => setActiveStep(activeStep + 1)}
+                                onBack={() => setActiveStep(activeStep - 1)}
+                                setScheduleData={handleScheduleUpdate}
+                                initialSchedule={formData.schedule} // Pass stored schedule
+                            />
+                        )}
 
-                        {/* Password Input */}
-                        <TextField
-                            fullWidth
-                            label="Password"
-                            type="password"
-                            variant="outlined"
-                            margin="normal"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                        />
+                        {activeStep === 3 && (
+                            <ConfirmRegistration
+                                formData={formData}
+                                onEdit={handleEdit}
+                                onSubmit={handleSubmit}
+                            />
+                        )}
 
-                        {/* Black Register Button */}
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            fullWidth
-                            sx={{ mt: 3, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}
-                            disabled={loading}
-                        >
-                            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign up"}
-                        </Button>
+                        {activeStep === 4 && (<WelcomePage />)}
+
+                        {error && (
+                            <Typography color="error" align="center" sx={{ marginBottom: 2 }}>
+                                {error}
+                            </Typography>
+                        )}
+
+                        {activeStep < 3 && (
+                            <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                                {activeStep > 0 && (
+                                    <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
+                                )}
+                                <Button 
+                                    type="submit" 
+                                    variant="contained" 
+                                    sx={{
+                                        backgroundColor: "black",
+                                        color: "white",
+                                        "&:hover": { backgroundColor: "#333" } // Darker shade on hover
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Submitting..." : activeStep === steps.length - 2 ? "Submit" : "Continue"}
+                                </Button>
+                            </Box>
+                        )}
+                        {activeStep === 3 && (
+                            <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
+                                <Button 
+                                    type="submit" 
+                                    variant="contained" 
+                                    sx={{
+                                        backgroundColor: "black",
+                                        color: "white",
+                                        textTransform: "none", // Prevents all caps
+                                        "&:hover": { backgroundColor: "#333" } // Darker shade on hover
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Submitting..." : activeStep === 3 && "Complete Registration"}
+                                </Button>
+                            </Box>
+                        )}
                     </form>
 
-                    {/* Sign In Link */}
-                    <Typography variant="body2" sx={{ mt: 2 }}>
-                        Already have an account?{" "}
-                        <Link href="#" underline="hover" onClick={handleLogin}>
-                            Log in
-                        </Link>
-                    </Typography>
+                    {activeStep === 0 && (
+                        <Typography variant="body2" align="center" sx={{ marginTop: 2 }}>
+                            Already have an account?{" "}
+                            <Link 
+                                component="button" 
+                                onClick={(e) => {
+                                    window.location.href = "/"; // Forces full page reload
+                                }}
+                                sx={{ cursor: "pointer", textDecoration: "underline", color: "black" }}
+                            >
+                                Log in
+                            </Link>
+                        </Typography>
+                    )}
                 </Paper>
-            </Container>
-        </>
+            </div>
+        </div>
     );
 }

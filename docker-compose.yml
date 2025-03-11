@@ -1,26 +1,33 @@
-# docker-compose.yml
-
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: bjj-backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
     environment:
-      - DEBUG=True
-      - DJANGO_SECRET_KEY=django-insecure-y14*(xukzjxpq=9q&xwa78(ttxjus-2#5j0l59iyeb4(-p0i8f
+      - DEBUG=False
+      - DJANGO_SECRET_KEY="DJANGO_SECRET_KEY"
       - DB_NAME=test
       - DB_USER=admin
-      - DB_PASSWORD=RollTrackTeam495080
-      - DB_HOST=rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com
+      - DB_PASSWORD=your-password
+      - DB_HOST=your-host
       - DB_PORT=3306
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - frontend
-
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: bjj-frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    

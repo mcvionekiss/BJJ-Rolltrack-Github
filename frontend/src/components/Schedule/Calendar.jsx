@@ -23,20 +23,44 @@ export default function Calendar() {
 
   const [events, setEvents] = useState([
     {
-      title: 'Adult Fundamentals',
-      start: '2025-02-20T10:00:00Z',
-      end: '2025-02-20T12:00:00Z',
-      color: '#E0E0E0',
-      textColor: 'black',
-      borderColor: 'black',
+      "title": "Adult Fundamentals",
+      "start": "2025-03-11T11:00:00Z",
+      "end": "2025-03-11T12:00:00Z",
+      "color": "#FF5733",
+      "textColor": "white",
+      "borderColor": "black"
     },
     {
-      title: 'Adult Advanced',
-      start: '2025-02-20T12:30:00Z',
-      end: '2025-02-20T14:20:00Z',
-      color: '#E0E0E0',
-      textColor: 'black',
-      borderColor: 'black',
+      "title": "Adult Advanced",
+      "start": "2025-03-12T09:00:00Z",
+      "end": "2025-03-12T10:30:00Z",
+      "color": "#E0E0E0",
+      "textColor": "black",
+      "borderColor": "black"
+    },
+    {
+      "title": "Tiny Champs",
+      "start": "2025-03-12T10:30:00Z",
+      "end": "2025-03-12T11:30:00Z",
+      "color": "#76B947",
+      "textColor": "white",
+      "borderColor": "black"
+    },
+    {
+      "title": "Advanced Teams",
+      "start": "2025-03-13T13:00:00Z",
+      "end": "2025-03-13T14:30:00Z",
+      "color": "#4287f5",
+      "textColor": "white",
+      "borderColor": "black"
+    },
+    {
+      "title": "Adult Advances",
+      "start": "2025-03-14T14:00:00Z",
+      "end": "2025-03-14T15:30:00Z",
+      "color": "#FFD700",
+      "textColor": "black",
+      "borderColor": "black"
     },
   ]);
 

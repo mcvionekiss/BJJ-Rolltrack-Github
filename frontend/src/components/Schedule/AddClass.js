@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField } from '@mui/material';
-import NavigationMenu from "./NavigationMenu";
+import NavigationMenu from "../NavigationMenu";
+import './Dashboard.css';
+import Calendar from './Calendar';
 
 export default function AddClass({ addEvent }) { // Pass function to update Calendar events
   const navigate = useNavigate();
@@ -66,10 +68,12 @@ export default function AddClass({ addEvent }) { // Pass function to update Cale
                 <TextField fullWidth type="date" name="date" required margin="normal" />
                 <label>Instructor</label>
                 <TextField fullWidth label="Enter instructor" name="instructor" required margin="normal" />
+                <label>Description</label>
+                <TextField fullWidth label="Enter description" name="description" required margin="normal" />
                 <label>Age</label>
                 <TextField fullWidth label="Age" name="age" required margin="normal" />
               </div>
-              <Button type="submit" variant="contained" style={{ margin: "5px",  marginTop: "50px" }}>Save</Button>
+              <Button id="blackButtons" type="submit" variant="contained" style={{ margin: "5px",  marginTop: "50px" }}>Save</Button>
               <Button onClick={() => navigate('/dashboard')} variant="outlined" style={{ margin: "5px", marginTop: "50px"}}>Cancel</Button>
             </form >
           </div>

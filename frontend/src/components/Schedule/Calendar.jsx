@@ -5,7 +5,6 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Box, Modal, Typography, Button, TextField } from '@mui/material';
-import '../Calendar.css';
 import AddClass from './AddClass';
 
 export default function Calendar() {
@@ -42,11 +41,11 @@ export default function Calendar() {
   ]);
 
   // State to control the modal visibility
-  // const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Handlers for opening and closing the modal
-  // const handleOpenModal = () => setIsModalOpen(true);
-  // const handleCloseModal = () => setIsModalOpen(false);
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
 
   return (
     <div>
@@ -59,6 +58,10 @@ export default function Calendar() {
           end: 'addClassButton',
         }}
         events={events}
+        selectable={true}
+        select={() => {
+          handleOpenModal();
+        }}
         customButtons={{
           addClassButton: {
             text: 'Add Class',
@@ -68,7 +71,7 @@ export default function Calendar() {
         titleFormat={{ year: 'numeric', month: 'long' }}
         height={'95vh'}
       />
-      {/* <Modal
+      <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
         aria-labelledby="modal-modal-title"
@@ -103,18 +106,26 @@ export default function Calendar() {
             <div>
               <label>Class Name</label>
               <TextField fullWidth label="Class Name" name="title" required margin="normal" />
-              <label>Time Start</label>
-              <TextField fullWidth type="time" name="start" required margin="normal" />
-              <label>Time End</label>
-              <TextField fullWidth type="time" name="end" required margin="normal" />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <label style={{ marginBottom: '4px' }}>Time Start</label>
+                  <TextField type="time" name="start" required fullWidth />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <label style={{ marginBottom: '4px' }}>Time End</label>
+                  <TextField type="time" name="end" required fullWidth />
+                </Box>
+              </Box>
               <label>Date</label>
               <TextField fullWidth type="date" name="date" required margin="normal" />
               <label>Instructor</label>
               <TextField fullWidth label="Instructor" name="instructor" required margin="normal" />
+              <label>Class Level</label>
+              <TextField fullWidth label="Class Level" name="classLevel" required margin="normal" />
               <label>Age</label>
-              <TextField fullWidth label="Age" name="age" required margin="normal" /> 
-              </div>
-            <Button type="submit" variant="contained" sx={{ mt: 2 }}>
+              <TextField fullWidth label="Age" name="age" required margin="normal" />
+            </div>
+            <Button type="submit" variant="contained" sx={{ mt: 2, backgroundColor: "black" }}>
               Save
             </Button>
             <Button onClick={handleCloseModal} sx={{ mt: 2 }}>
@@ -122,24 +133,7 @@ export default function Calendar() {
             </Button>
           </form>
         </Box>
-      </Modal> */}
-
-      <style>
-        {`
-          .fc-toolbar.fc-header-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: nowrap;
-          }
-          
-          .fc-toolbar-chunk {
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px;
-          }
-        `}
-      </style>
+      </Modal>
     </div>
   );
 }

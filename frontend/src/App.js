@@ -2,8 +2,8 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import Dashboard from "./components/Dashboard";
-import AddClass from "./components/AddClass";
+import Dashboard from "./components/Schedule/Dashboard";
+import AddClass from "./components/Schedule/AddClass";
 
 function App() {
     return (

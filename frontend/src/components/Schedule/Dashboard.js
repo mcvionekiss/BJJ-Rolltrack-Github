@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Outlet, Link } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import { Button, Box, Typography } from "@mui/material";
-import NavigationMenu from "./NavigationMenu";
+import NavigationMenu from "../NavigationMenu.js";
 import Calendar from './Calendar'
+import AddClass from './AddClass.js';
+import './Dashboard.css';
 
 function Dashboard() {
     const navigate = useNavigate();
     const [csrfToken, setCsrfToken] = useState("");
     const [sidebarWidth, setSidebarWidth] = useState(250);
+    const addEvent = (newEvent) => {
+        setEvents((prev) => [...prev, newEvent]);
+    };
+    const [events, setEvents] = useState([
+        {
+          title: 'Adult Fundamentals',
+          start: '2025-02-20T10:00:00Z',
+          end: '2025-02-20T12:00:00Z',
+          color: '#E0E0E0',
+          textColor: 'black',
+          borderColor: 'black',
+        },
+        {
+          title: 'Adult Advanced',
+          start: '2025-02-20T12:30:00Z',
+          end: '2025-02-20T14:20:00Z',
+          color: '#E0E0E0',
+          textColor: 'black',
+          borderColor: 'black',
+        },
+      ]);
 
     // ✅ Fetch CSRF token before making logout requests
     useEffect(() => {
@@ -39,35 +62,22 @@ function Dashboard() {
     };
 
     return (
-        <div className="dashboard-container">
-            <nav className="dashboard-nav">
-                <h1>Welcome to the Dashboard</h1>
-                <ul>
-                    <li>
-                        <Link to="/dashboard">Home</Link>
-                    </li>
-                    <li>
-                        <Link to="/available-classes">Available Classes</Link>
-                    </li>
-                    <li>
-                        <Link to="/checkin">Check In</Link>
-                    </li>
-                    <li>
-                        <Link to="/analytics">Analytics</Link>
-                    </li>
-                    <li>
-                        <Link to="/clients-page">Clients Page</Link>
-                    </li>
-                </ul>
-                <button onClick={handleLogout} className="btn variant-filled-primary">
-                    Logout
-                </button>
-            </nav>
-            
-            <main className="dashboard-content">
-                <Outlet /> {/* This is where Analytics will render */}
-            </main>
-        </div>
+        <Box display="flex">
+            <NavigationMenu onWidthChange={setSidebarWidth} />
+            <Box
+                component="main"
+                sx={{
+                    flexGrow: 1,
+                    padding: 3,
+                    transition: "margin-left 0.3s ease-in-out",
+                    marginLeft: `${sidebarWidth}px`
+                }}
+            >
+                <Box style={{ marginLeft: '50px', marginRight: '50px' }}>
+                    <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </Box>
+            </Box>
+        </Box>
     );
 }
 

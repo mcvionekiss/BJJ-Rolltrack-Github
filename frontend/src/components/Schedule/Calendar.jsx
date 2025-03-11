@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate, Routes, Route } from "react-router-dom";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Box, Modal, Typography, Button, TextField } from '@mui/material';
-import '../Calendar.css';
+import AddClass from './AddClass';
 
 export default function Calendar() {
+  const navigate = useNavigate();
   const style = {
     position: 'absolute',
     top: '50%',
@@ -18,6 +20,7 @@ export default function Calendar() {
     p: 4,
     borderRadius: '20px'
   };
+
   const [events, setEvents] = useState([
     {
       title: 'Adult Fundamentals',
@@ -28,7 +31,7 @@ export default function Calendar() {
       borderColor: 'black',
     },
     {
-      title: 'Adult Advances',
+      title: 'Adult Advanced',
       start: '2025-02-20T12:30:00Z',
       end: '2025-02-20T14:20:00Z',
       color: '#E0E0E0',
@@ -55,31 +58,37 @@ export default function Calendar() {
           end: 'addClassButton',
         }}
         events={events}
+        selectable={true}
+        select={() => {
+          handleOpenModal();
+        }}
         customButtons={{
           addClassButton: {
             text: 'Add Class',
-            click: handleOpenModal,
+            click: () => navigate('/add-class'),
           },
         }}
         titleFormat={{ year: 'numeric', month: 'long' }}
         height={'95vh'}
       />
-      <Modal // in the works, updating content with MUI components; maybe create a component for this
+      <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
+          <Typography id="modal-modal-title" variant="h6" component="h2" style={{ marginBottom: '20px' }}>
             Add Class
           </Typography>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const title = e.target.elements.title.value;
-              const start = e.target.elements.start.value;
-              const end = e.target.elements.end.value;
+              const date = e.target.elements.date.value;
+              const start = `${date}T${e.target.elements.start.value}:00`;
+              const end = `${date}T${e.target.elements.end.value}:00`;
+
               setEvents([
                 ...events,
                 {
@@ -96,66 +105,27 @@ export default function Calendar() {
           >
             <div>
               <label>Class Name</label>
-              <TextField
-                id="modal-modal-description"
-                fullWidth
-                type="text"
-                label="Enter class name"
-                variant="outlined"
-                margin="normal"
-                name="email"
-                required
-              />
+              <TextField fullWidth label="Class Name" name="title" required margin="normal" />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <label style={{ marginBottom: '4px' }}>Time Start</label>
+                  <TextField type="time" name="start" required fullWidth />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <label style={{ marginBottom: '4px' }}>Time End</label>
+                  <TextField type="time" name="end" required fullWidth />
+                </Box>
+              </Box>
+              <label>Date</label>
+              <TextField fullWidth type="date" name="date" required margin="normal" />
+              <label>Instructor</label>
+              <TextField fullWidth label="Instructor" name="instructor" required margin="normal" />
+              <label>Class Level</label>
+              <TextField fullWidth label="Class Level" name="classLevel" required margin="normal" />
+              <label>Age</label>
+              <TextField fullWidth label="Age" name="age" required margin="normal" />
             </div>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <label style={{ marginBottom: '4px' }}>Time Start</label>
-                <TextField
-                  type="time"
-                  name="start"
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <label style={{ marginBottom: '4px' }}>Time End</label>
-                <TextField
-                  type="time"
-                  name="end"
-                  required
-                  fullWidth
-                />
-              </Box>
-            </Box>
-            <Box>
-                <label style={{ marginBottom: '4px' }}>Date</label>
-                <TextField
-                  type="date"
-                  name="date"
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box>
-                <label style={{ marginBottom: '4px' }}>Instructor</label>
-                <TextField
-                  type="text"
-                  name="Enter instructor"
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box>
-                <label style={{ marginBottom: '4px' }}>Age</label>
-                <TextField
-                  type="text"
-                  name="Enter age"
-                  required
-                  fullWidth
-                />
-              </Box>
-
-            <Button type="submit" variant="contained" sx={{ mt: 2 }}>
+            <Button type="submit" variant="contained" sx={{ mt: 2, backgroundColor: "black" }}>
               Save
             </Button>
             <Button onClick={handleCloseModal} sx={{ mt: 2 }}>
@@ -164,23 +134,6 @@ export default function Calendar() {
           </form>
         </Box>
       </Modal>
-
-      <style>
-        {`
-          .fc-toolbar.fc-header-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: nowrap;
-          }
-          
-          .fc-toolbar-chunk {
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px;
-          }
-        `}
-      </style>
     </div>
   );
 }

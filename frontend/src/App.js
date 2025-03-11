@@ -2,13 +2,14 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import Dashboard from "./components/Dashboard";
+import Dashboard from "./components/Schedule/Dashboard";
 import Checkin from "./components/Checkin";
 import AvailableClasses from "./components/AvailableClasses";
 import ClassDetails from "./components/ClassDetails";
 import Analytics from './components/analytics';
 import ClientsPage from './components/ClientsPage';
 import CheckinSuccess from './components/CheckinSuccess';
+import AddClass from "./components/Schedule/AddClass";
 function App() {
     return (
         <Router>
@@ -21,6 +22,7 @@ function App() {
 
                 {/* Gym Owner Pages */}
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/add-class" element={<AddClass/>}/>
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/clients-page" element={<ClientsPage />} />
 

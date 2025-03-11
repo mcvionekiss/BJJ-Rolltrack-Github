@@ -3,7 +3,8 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Box, Modal, Typography, Button } from '@mui/material';
+import { Box, Modal, Typography, Button, TextField } from '@mui/material';
+import '../Calendar.css';
 
 export default function Calendar() {
   const style = {
@@ -13,13 +14,13 @@ export default function Calendar() {
     transform: 'translate(-50%, -50%)',
     width: 400,
     bgcolor: 'background.paper',
-    border: '2px solid #000',
     boxShadow: 24,
     p: 4,
+    borderRadius: '20px'
   };
   const [events, setEvents] = useState([
     {
-      title: 'Adult Fundamentals', 
+      title: 'Adult Fundamentals',
       start: '2025-02-20T10:00:00Z',
       end: '2025-02-20T12:00:00Z',
       color: '#E0E0E0',
@@ -63,7 +64,7 @@ export default function Calendar() {
         titleFormat={{ year: 'numeric', month: 'long' }}
         height={'95vh'}
       />
-      <Modal // in the works, prob not keeping this
+      <Modal // in the works, updating content with MUI components; maybe create a component for this
         open={isModalOpen}
         onClose={handleCloseModal}
         aria-labelledby="modal-modal-title"
@@ -71,10 +72,7 @@ export default function Calendar() {
       >
         <Box sx={style}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
-            Add New Class
-          </Typography>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            Enter the details for the new class.
+            Add Class
           </Typography>
           <form
             onSubmit={(e) => {
@@ -97,19 +95,68 @@ export default function Calendar() {
             }}
           >
             <div>
-              <label>Title:</label>
-              <input type="text" name="title" required />
+              <label>Class Name</label>
+              <TextField
+                id="modal-modal-description"
+                fullWidth
+                type="text"
+                label="Enter class name"
+                variant="outlined"
+                margin="normal"
+                name="email"
+                required
+              />
             </div>
-            <div>
-              <label>Start:</label>
-              <input type="datetime-local" name="start" required />
-            </div>
-            <div>
-              <label>End:</label>
-              <input type="datetime-local" name="end" required />
-            </div>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <label style={{ marginBottom: '4px' }}>Time Start</label>
+                <TextField
+                  type="time"
+                  name="start"
+                  required
+                  fullWidth
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <label style={{ marginBottom: '4px' }}>Time End</label>
+                <TextField
+                  type="time"
+                  name="end"
+                  required
+                  fullWidth
+                />
+              </Box>
+            </Box>
+            <Box>
+                <label style={{ marginBottom: '4px' }}>Date</label>
+                <TextField
+                  type="date"
+                  name="date"
+                  required
+                  fullWidth
+                />
+              </Box>
+              <Box>
+                <label style={{ marginBottom: '4px' }}>Instructor</label>
+                <TextField
+                  type="text"
+                  name="Enter instructor"
+                  required
+                  fullWidth
+                />
+              </Box>
+              <Box>
+                <label style={{ marginBottom: '4px' }}>Age</label>
+                <TextField
+                  type="text"
+                  name="Enter age"
+                  required
+                  fullWidth
+                />
+              </Box>
+
             <Button type="submit" variant="contained" sx={{ mt: 2 }}>
-              Add Event
+              Save
             </Button>
             <Button onClick={handleCloseModal} sx={{ mt: 2 }}>
               Cancel

@@ -23,6 +23,7 @@ import logo from '../assets/logo.jpeg';
 
 const NavigationMenu = ({ onWidthChange }) => {
     const navigate = useNavigate();
+    const currentPath = window.location.pathname;
 
     // State for Sidebar Width
     const [sidebarWidth, setSidebarWidth] = useState(250);
@@ -118,6 +119,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                             sx={{
                                 mb: 1,
                                 borderRadius: "8px",
+                                backgroundColor: currentPath === item.path ? "#e0e0e0" : "transparent",
                                 "&:hover": {
                                     backgroundColor: "#e0e0e0"
                                 }

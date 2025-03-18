@@ -29,7 +29,7 @@ export default function Calendar() {
   const handleChange = (event) => {
     setAge(event.target.value);
   };
-  const [repeat, setRepeat] = useState(false); 
+  const [repeat, setRepeat] = useState(false);
 
 
   // State to control the modal visibility
@@ -117,26 +117,22 @@ export default function Calendar() {
               <TextField fullWidth label="Instructor" name="instructor" required margin="normal" />
               <label>Class Level</label>
               <TextField fullWidth label="Class Level" name="classLevel" required margin="normal" />
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box>
-                  <label>Age</label>
-                  <Select
-                    labelId="age-label"
-                    name="age"
-                    value={age}  // Controlled component needs value
-                    onChange={handleChange}
-                    fullWidth
-                  >
-                    <MenuItem value=""><em>None</em></MenuItem>
-                    <MenuItem value="Adult">Adult</MenuItem>
-                    <MenuItem value="Teen">Teen</MenuItem>
-                    <MenuItem value="Child">Child</MenuItem>
-                  </Select>
-                </Box>
-                {/* <Box>
+              <label>Age</label>
+              <Select
+                labelId="age-label"
+                name="age"
+                value={age}  // Controlled component needs value
+                onChange={handleChange}
+                fullWidth
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                <MenuItem value="Adult">Adult</MenuItem>
+                <MenuItem value="Teen">Teen</MenuItem>
+                <MenuItem value="Child">Child</MenuItem>
+              </Select>
+              {/* <Box>
                 <FormControlLabel control={<Switch />} label="Repeat" />
                 </Box> */}
-              </Box>
             </div>
             <Button type="submit" variant="contained" sx={{ mt: 2, backgroundColor: "black" }}>
               Save

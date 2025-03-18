@@ -30,6 +30,9 @@ export default function AddClass() {
       instructor: formData.get("instructor"),
       description: formData.get("description"),
       age: formData.get("age"),
+      color: "#E0E0E0",
+      textColor: "black",
+      borderColor: "black",
     };
 
     // Update events state

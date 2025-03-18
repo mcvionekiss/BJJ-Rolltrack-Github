@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Routes, Route } from "react-router-dom";
 import FullCalendar from '@fullcalendar/react';
+import rrulePlugin from '@fullcalendar/rrule'
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Box, Modal, Typography, Button, TextField } from '@mui/material';
-import AddClass from './AddClass';
+import { useEvents } from './EventContext';
+import { Box, Modal, Typography, Button, TextField, Select, MenuItem, Switch, FormControlLabel } from '@mui/material';
+
 
 export default function Calendar() {
   const navigate = useNavigate();
@@ -21,60 +23,28 @@ export default function Calendar() {
     borderRadius: '20px'
   };
 
-  const [events, setEvents] = useState([
-    {
-      "title": "Adult Fundamentals",
-      "start": "2025-03-11T11:00:00Z",
-      "end": "2025-03-11T12:00:00Z",
-      "color": "#FF5733",
-      "textColor": "white",
-      "borderColor": "black"
-    },
-    {
-      "title": "Adult Advanced",
-      "start": "2025-03-12T09:00:00Z",
-      "end": "2025-03-12T10:30:00Z",
-      "color": "#E0E0E0",
-      "textColor": "black",
-      "borderColor": "black"
-    },
-    {
-      "title": "Tiny Champs",
-      "start": "2025-03-12T10:30:00Z",
-      "end": "2025-03-12T11:30:00Z",
-      "color": "#76B947",
-      "textColor": "white",
-      "borderColor": "black"
-    },
-    {
-      "title": "Advanced Teams",
-      "start": "2025-03-13T13:00:00Z",
-      "end": "2025-03-13T14:30:00Z",
-      "color": "#4287f5",
-      "textColor": "white",
-      "borderColor": "black"
-    },
-    {
-      "title": "Adult Advances",
-      "start": "2025-03-14T14:00:00Z",
-      "end": "2025-03-14T15:30:00Z",
-      "color": "#FFD700",
-      "textColor": "black",
-      "borderColor": "black"
-    },
-  ]);
+  const { events, setEvents } = useEvents();
+
+  const [age, setAge] = React.useState('');
+  const handleChange = (event) => {
+    setAge(event.target.value);
+  };
+  const [repeat, setRepeat] = useState(false); 
+
 
   // State to control the modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
+
 
   // Handlers for opening and closing the modal
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+
   return (
     <div>
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
         initialView="timeGridWeek"
         headerToolbar={{
           start: 'timeGridDay,timeGridWeek,dayGridMonth today',
@@ -113,6 +83,7 @@ export default function Calendar() {
               const start = `${date}T${e.target.elements.start.value}:00`;
               const end = `${date}T${e.target.elements.end.value}:00`;
 
+
               setEvents([
                 ...events,
                 {
@@ -146,8 +117,26 @@ export default function Calendar() {
               <TextField fullWidth label="Instructor" name="instructor" required margin="normal" />
               <label>Class Level</label>
               <TextField fullWidth label="Class Level" name="classLevel" required margin="normal" />
-              <label>Age</label>
-              <TextField fullWidth label="Age" name="age" required margin="normal" />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box>
+                  <label>Age</label>
+                  <Select
+                    labelId="age-label"
+                    name="age"
+                    value={age}  // Controlled component needs value
+                    onChange={handleChange}
+                    fullWidth
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    <MenuItem value="Adult">Adult</MenuItem>
+                    <MenuItem value="Teen">Teen</MenuItem>
+                    <MenuItem value="Child">Child</MenuItem>
+                  </Select>
+                </Box>
+                {/* <Box>
+                <FormControlLabel control={<Switch />} label="Repeat" />
+                </Box> */}
+              </Box>
             </div>
             <Button type="submit" variant="contained" sx={{ mt: 2, backgroundColor: "black" }}>
               Save

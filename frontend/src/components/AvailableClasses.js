@@ -55,7 +55,7 @@ function AvailableClasses() {
 
     useEffect(() => {
         // Fetch available classes for the current week
-        axios.get("http://localhost:8000/api/available_classes_today/")
+        axios.get("http://192.168.2.1:8000/api/available_classes_today/")
             .then(response => {
                 setClasses(response.data.classes);
                 setLoading(false);
@@ -100,30 +100,29 @@ function AvailableClasses() {
             </Box>
 
             {/* Date Display */}
-            <Grid2 container direction="row" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
+            <Grid2 container size="auto" display="flex" flexDirection="row" justifyContent="center" spacing={1} columns={7} sx={{ mb: 2 }}>
                 {weekDays.map(({ shortName, dateNumber }, index) => {
                     const today = new Date().getDate(); // Get today's day number
 
                     const isToday = dateNumber === today; // Check if this is today's date
 
                     return (
-                        <Grid2 item xs={12} sx={{ display: "flex", justifyContent: "center" }} key={index}>
+                        <Grid2 container size="grow" sx={{ display: "flex", justifyContent: "center" }} key={index}>
                             <Card
                                 sx={{
-                                    width: "100%",
                                     borderRadius: "15px",
                                     transition: "transform 0.2s",
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "10px 15px",
+                                    justifyContent: "center",
+                                    padding: "15px 15px",
                                     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
                                     backgroundColor: isToday ? "black" : "white",
                                     color: isToday ? "white" : "black",
                                 }}
                             >
-                                <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+                                <Typography variant="subtitle2" fontWeight="bold">
                                     {shortName}
                                 </Typography>
                                 <Typography variant="h6" fontWeight="bold">

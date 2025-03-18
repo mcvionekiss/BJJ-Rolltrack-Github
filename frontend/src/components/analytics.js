@@ -200,9 +200,11 @@ function Analytics() {
             <Container maxWidth="lg"
                        sx={{
                         flexGrow: 1,
-                        padding: 3,
+                        px: { xs: 2, sm: 3, md: 5 },
+                        pt: { xs: 2, sm: 3, md: 5 },
                         transition: "margin-left 0.3s ease-in-out",
-                        marginLeft: `${sidebarWidth}px`
+                        marginLeft: `${sidebarWidth}px`,
+                        maxWidth: "1400px"
                         }}
             >
                 <Typography variant="h4" sx={{ mb: 6 }}>

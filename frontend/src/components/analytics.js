@@ -197,23 +197,19 @@ function Analytics() {
     return (
         <Box display="flex">
             <NavigationMenu onWidthChange={setSidebarWidth} />
-            <Container maxWidth="lg"
+            <Container disableGutters maxWidth={false}
                        sx={{
                         flexGrow: 1,
                         px: { xs: 2, sm: 3, md: 5 },
                         pt: { xs: 2, sm: 3, md: 5 },
-                        transition: "margin-left 0.3s ease-in-out",
                         marginLeft: `${sidebarWidth}px`,
-                        maxWidth: "1400px"
-                        }}
+                        width: "calc(100% - " + sidebarWidth + "px)"
+                    }}
             >
-                <Typography variant="h4" sx={{ mb: 6 }}>
-                    Analytics
-                </Typography>
 
                 {/* Attendance Stats Cards */}
-                <Grid container spacing={4} sx={{ mb: 6 }}>
-                    <Grid xs={12} md={4}>
+                <Grid container spacing={4} sx={{ mb: 6, width: '100%' }}>
+                    <Grid xs={12} md={4} flexGrow={1}>
                         <AttendanceStatsCard
                             title="Daily Attendance"
                             value="80"
@@ -222,7 +218,7 @@ function Analytics() {
                             data={sparklineData.daily}
                         />
                     </Grid>
-                    <Grid xs={12} md={4}>
+                    <Grid xs={12} md={4} flexGrow={1}>
                         <AttendanceStatsCard
                             title="Weekly Attendance"
                             value="400"
@@ -231,7 +227,7 @@ function Analytics() {
                             data={sparklineData.weekly}
                         />
                     </Grid>
-                    <Grid xs={12} md={4}>
+                    <Grid xs={12} md={4} flexGrow={1}>
                         <AttendanceStatsCard
                             title="Monthly Attendance"
                             value="1,600"
@@ -243,14 +239,15 @@ function Analytics() {
                 </Grid>
 
                 {/* Today's Classes and Trends */}
-                <Grid container spacing={4}>
-                    {/* Today's Classes */}
-                    <Grid xs={12} md={3}>
-                        <Paper
+                <Grid container flexGrow={1} spacing={4} sx={{ display: 'flex', flexWrap: 'nowrap' }}>
+                {/* Today's Classes */}
+                    <Grid xs={12} sm={4} md={4} flexShrink={0} display="flex" flexDirection="column">
+                    <Paper
                             sx={{
                                 p: 4,
                                 borderRadius: 3,
-                                minHeight: '450px'
+                                minHeight: '450px',
+                                height: '100%',
                             }}
                         >
                             <Typography variant="h5" sx={{ mb: 4 }}>
@@ -278,13 +275,14 @@ function Analytics() {
                     </Grid>
 
                     {/* Trends */}
-                    <Grid xs={12} md={9}>
-                        <Paper
+                    <Grid xs={12} sm={8} md={8} display="flex" flexDirection="column">
+                    <Paper
                             sx={{
-                                p: 4,
+                                p: 5,
                                 borderRadius: 3,
                                 minHeight: '450px',
-                                width: '100%'
+                                height: '100%',
+                                width: '91.5%'
                             }}
                         >
                             <Box sx={{
@@ -319,11 +317,11 @@ function Analytics() {
                                     margin={{
                                         top: 20,
                                         right: 30,
-                                        left: 30,
+                                        left: 10,
                                         bottom: 20,
                                     }}
-                                    barGap={15}
-                                    barCategoryGap={80}
+                                    barGap={12}
+                                    barCategoryGap={40}
                                 >
                                     <XAxis
                                         dataKey="name"

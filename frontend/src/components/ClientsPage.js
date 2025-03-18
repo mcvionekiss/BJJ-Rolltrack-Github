@@ -85,6 +85,7 @@ function ClientsPage() {
     const [filter, setFilter] = useState('id');
     const [filterAnchorEl, setFilterAnchorEl] = useState(null);
     const [editClient, setEditClient] = useState(null);
+    const [filteredClients, setFilteredClients] = useState(mockClients);
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -114,13 +115,13 @@ function ClientsPage() {
     const handleDelete = (clientId) => {
         const confirmDelete = window.confirm('Are you sure you want to delete this client?');
         if (confirmDelete) {
-            const updatedClients = sortedClients.filter(client => client.id !== clientId);
+            const updatedClients = filteredClients.filter(client => client.id !== clientId);
             console.log('Deleted client ID:', clientId);
             // You would also update your state or backend here
         }
     };
 
-    const sortedClients = [...mockClients].sort((a, b) => {
+    const sortedClients = [...filteredClients].sort((a, b) => {
         if (filter === 'name' || filter === 'gender' || filter === 'skillLevel') {
             return a[filter].localeCompare(b[filter]);
         } else {
@@ -183,7 +184,14 @@ function ClientsPage() {
                             placeholder="Search"
                             size="small"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                const query = e.target.value.toLowerCase().trim();
+                                setSearchQuery(query);
+                                const filtered = mockClients.filter(client =>
+                                    client.name.toLowerCase().includes(query)
+                                );
+                                setFilteredClients(filtered);
+                            }}
                             sx={{
                                 width: { xs: '100%', sm: '300px' }
                             }}
@@ -194,7 +202,7 @@ function ClientsPage() {
                     </Box>
 
                     {/* Table */}
-                    <TableContainer sx={{ overflowX: 'auto' }}>
+                    <TableContainer sx={{ overflowX: 'auto', height: '70vh' }}>
                         <Table sx={{ minWidth: 800 }}>
                             <TableHead>
                                 <TableRow>

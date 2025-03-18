@@ -6,7 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
-import { Box, Modal, Typography, Button, TextField } from '@mui/material';
+import { Box, Modal, Typography, Button, TextField, Select, MenuItem } from '@mui/material';
 
 
 export default function Calendar() {
@@ -24,6 +24,11 @@ export default function Calendar() {
  };
 
  const { events, setEvents } = useEvents();
+
+ const [age, setAge] = React.useState('');
+ const handleChange = (event) => {
+   setAge(event.target.value);
+ };
 
 
  // State to control the modal visibility
@@ -112,7 +117,18 @@ export default function Calendar() {
              <label>Class Level</label>
              <TextField fullWidth label="Class Level" name="classLevel" required margin="normal" />
              <label>Age</label>
-             <TextField fullWidth label="Age" name="age" required margin="normal" />
+             <Select
+                  labelId="age-label"
+                  name="age"
+                  value={age}  // Controlled component needs value
+                  onChange={handleChange}
+                  fullWidth
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  <MenuItem value="Adult">Adult</MenuItem>
+                  <MenuItem value="Teen">Teen</MenuItem>
+                  <MenuItem value="Child">Child</MenuItem>
+                </Select>
            </div>
            <Button type="submit" variant="contained" sx={{ mt: 2, backgroundColor: "black" }}>
              Save

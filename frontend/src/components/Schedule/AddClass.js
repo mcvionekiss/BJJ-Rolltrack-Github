@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, TextField } from '@mui/material';
+import { Box, Typography, Button, TextField, Select, MenuItem, InputLabel } from '@mui/material';
 import NavigationMenu from "../NavigationMenu";
 import './Dashboard.css';
 import { useEvents } from './EventContext';
@@ -11,11 +11,16 @@ export default function AddClass() {
 
   const navigate = useNavigate();
 
+  const [age, setAge] = React.useState('');
+  const handleChange = (event) => {
+    setAge(event.target.value);
+  };
+
   const [sidebarWidth, setSidebarWidth] = useState(250);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Collect form data
     const formData = new FormData(e.target);
     const newEvent = {
@@ -26,12 +31,12 @@ export default function AddClass() {
       description: formData.get("description"),
       age: formData.get("age"),
     };
-  
+
     // Update events state
     setEvents([...events, newEvent]);
-  
+
     console.log("New Event Added:", newEvent);
-  
+
     // Navigate back to dashboard
     navigate('/dashboard');
   };
@@ -71,7 +76,18 @@ export default function AddClass() {
                 <label>Description</label>
                 <TextField fullWidth label="Enter description" name="description" required margin="normal" />
                 <label>Age</label>
-                <TextField fullWidth label="Age" name="age" required margin="normal" />
+                <Select
+                  labelId="age-label"
+                  name="age"
+                  value={age}  // Controlled component needs value
+                  onChange={handleChange}
+                  fullWidth
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  <MenuItem value="Adult">Adult</MenuItem>
+                  <MenuItem value="Teen">Teen</MenuItem>
+                  <MenuItem value="Child">Child</MenuItem>
+                </Select>
               </div>
               <Button id="blackButtons" type="submit" variant="contained" style={{ margin: "5px", marginTop: "50px" }}>Save</Button>
               <Button onClick={() => navigate('/dashboard')} variant="outlined" style={{ margin: "5px", marginTop: "50px" }}>Cancel</Button>

@@ -10,6 +10,7 @@
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
+    "@fullcalendar/rrule": "6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@mui/icons-material": "^6.4.6",
     "@mui/material": "^6.4.6",
@@ -26,6 +27,7 @@
     "react-router-dom": "^7.1.5",
     "react-scripts": "5.0.1",
     "recharts": "2.15.1",
+    "rrule": "2.8.1",
     "web-vitals": "^4.2.4"
   },
   "scripts": {

@@ -3,36 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField } from '@mui/material';
 import NavigationMenu from "../NavigationMenu";
 import './Dashboard.css';
+import { useEvents } from './EventContext';
 import Calendar from './Calendar';
 
-export default function AddClass({ addEvent }) { // Pass function to update Calendar events
+export default function AddClass() {
+  const { events, setEvents } = useEvents();
+
   const navigate = useNavigate();
-  const [eventData, setEventData] = useState({
-    title: '',
-    date: '',
-    start: '',
-    end: '',
-    instructor: '',
-    age: '',
-  });
+
   const [sidebarWidth, setSidebarWidth] = useState(250);
-  const handleChange = (e) => {
-    setEventData({ ...eventData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { title, date, start, end } = eventData;
+    
+    // Collect form data
+    const formData = new FormData(e.target);
     const newEvent = {
-      title,
-      start: `${date}T${start}:00`,
-      end: `${date}T${end}:00`,
-      color: '#E0E0E0',
-      textColor: 'black',
-      borderColor: 'black',
+      title: formData.get("title"),
+      start: `${formData.get("date")}T${formData.get("start")}`, // Combine date and time
+      end: `${formData.get("date")}T${formData.get("end")}`,
+      instructor: formData.get("instructor"),
+      description: formData.get("description"),
+      age: formData.get("age"),
     };
-
-    addEvent(newEvent); // Update Calendar events
+  
+    // Update events state
+    setEvents([...events, newEvent]);
+  
+    console.log("New Event Added:", newEvent);
+  
+    // Navigate back to dashboard
     navigate('/dashboard');
   };
 
@@ -73,8 +73,8 @@ export default function AddClass({ addEvent }) { // Pass function to update Cale
                 <label>Age</label>
                 <TextField fullWidth label="Age" name="age" required margin="normal" />
               </div>
-              <Button id="blackButtons" type="submit" variant="contained" style={{ margin: "5px",  marginTop: "50px" }}>Save</Button>
-              <Button onClick={() => navigate('/dashboard')} variant="outlined" style={{ margin: "5px", marginTop: "50px"}}>Cancel</Button>
+              <Button id="blackButtons" type="submit" variant="contained" style={{ margin: "5px", marginTop: "50px" }}>Save</Button>
+              <Button onClick={() => navigate('/dashboard')} variant="outlined" style={{ margin: "5px", marginTop: "50px" }}>Cancel</Button>
             </form >
           </div>
         </Box >

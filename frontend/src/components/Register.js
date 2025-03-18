@@ -112,23 +112,21 @@ export default function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (activeStep < steps.length - 1) {
-            setActiveStep(activeStep + 1);
-        } else {
-            if (loading) return;
-            setLoading(true);
-            setError("");
-
-            try {
-                const response = await registerUser(formData, csrfToken);
-                console.log("🟢 Registration successful", response.data);
-                setActiveStep(activeStep + 1); // Move to Welcome Page step
-            } catch (error) {
-                console.error("🔴 Registration failed", error.response?.data || error);
-                setError(error.response?.data?.message || "Registration failed. Please try again.");
-            } finally {
-                setLoading(false);
-            }
+        if (loading) return;
+        setLoading(true);
+        setError("");
+    
+        console.log("Submitting with data:", formData, "and CSRF:", csrfToken);
+    
+        try {
+            const response = await registerUser(formData, csrfToken);
+            console.log("🟢 Registration successful", response.data);
+            setActiveStep(activeStep + 1); // Move to Welcome Page step
+        } catch (error) {
+            console.error("🔴 Registration failed", error.response?.data || error);
+            setError(error.response?.data?.message || "Registration failed. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -373,7 +371,7 @@ export default function Register() {
                         {activeStep === 3 && (
                             <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
                                 <Button 
-                                    type="submit" 
+                                    type="button" 
                                     variant="contained" 
                                     sx={{
                                         backgroundColor: "black",
@@ -382,8 +380,9 @@ export default function Register() {
                                         "&:hover": { backgroundColor: "#333" } // Darker shade on hover
                                     }}
                                     disabled={loading}
+                                    onClick={handleSubmit}
                                 >
-                                    {loading ? "Submitting..." : activeStep === 3 && "Complete Registration"}
+                                    {loading ? "Submitting..." : "Complete Registration"}
                                 </Button>
                             </Box>
                         )}

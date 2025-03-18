@@ -60,7 +60,7 @@ class LoginView(View):
 class LogoutView(View):
     def post(self, request):
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
-        response["Access-Control-Allow-Credentials"] = "true"  # ✅ Ensure session cookies are sent
+        response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -68,7 +68,7 @@ class RegisterView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            username = data.get('username')
+            username = data.get('email')
             email = data.get('email')
             password = data.get('password')
             first_name = data.get('firstName', '')

@@ -112,3 +112,4 @@ backend/server/settings/__pycache__/local.cpython-312.pyc
 restartDocker.sh
 /backend/server/__pycache__
 /my-venv
+frontend/bjj_rolltrack_qr.png

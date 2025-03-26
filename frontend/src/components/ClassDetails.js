@@ -120,7 +120,7 @@ function ClassDetails() {
                             <Grid item xs={8}>
                                 <Typography>
                                     {/*{formatDate(classDetails.day)}*/}
-                                    No Date Defined
+                                    Wednesday, March 18
                                 </Typography>
                             </Grid>
 
@@ -132,7 +132,7 @@ function ClassDetails() {
                             <Grid item xs={8}>
                                 <Typography>
                                     {/*{classDetails.trainer}*/}
-                                    No Trainer Defined
+                                    Alex Martinez
                                 </Typography>
                             </Grid>
 
@@ -144,7 +144,7 @@ function ClassDetails() {
                             <Grid item xs={8}>
                                 <Typography>
                                     {/*{classDetails.category}*/}
-                                    No Category Defined
+                                    Fundamentals
                                 </Typography>
                             </Grid>
 
@@ -156,18 +156,18 @@ function ClassDetails() {
                             <Grid item xs={8}>
                                 <Typography>
                                     {/*{classDetails.skillLevel}*/}
-                                    No Skill Defined
+                                    Intermediate
                                 </Typography>
                             </Grid>
 
                             <Grid item xs={4}>
                                 <Typography variant="body2" color="text.secondary" fontWeight="bold">
-                                    ADDRESS:
+                                    LOCATION:
                                 </Typography>
                             </Grid>
                             <Grid item xs={8}>
                                 <Typography>
-                                    Gym Location Placeholder
+                                    Room 1
                                 </Typography>
                             </Grid>
                         </Grid>

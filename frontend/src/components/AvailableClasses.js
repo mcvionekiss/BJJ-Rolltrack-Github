@@ -83,7 +83,7 @@ function AvailableClasses() {
                     sx={{ cursor: "pointer", color: "#757575" }}
                 />
                 <Typography variant="h5" fontWeight="bold" sx={{ ml: 1 }}>
-                    Gym Name
+                    Elite Jiu-Jitsu Academy
                 </Typography>
             </Box>
 
@@ -95,7 +95,7 @@ function AvailableClasses() {
                 textAlign="center"
             >
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    Location Placeholder
+                    628 S Pacific Coast Hwy, Redondo Beach, California
                 </Typography>
             </Box>
 
@@ -166,7 +166,7 @@ function AvailableClasses() {
                                     <Box display="flex" alignItems="center" mt={1}>
                                         <Typography variant="body2" color="text.secondary">
                                             {/* cls.trainer */}
-                                            Trainer Placeholder
+                                            Alex Martinez
                                         </Typography>
                                         <GroupIcon sx={{ fontSize: "16px", ml: 1, mr: 0.5, color: "#757575" }} />
                                         <Typography variant="body2" color="text.secondary">

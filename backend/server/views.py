@@ -241,3 +241,41 @@ def checkin(request):
 
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=400)
+
+@csrf_exempt
+def add_class(request):
+    """API endpoint to add a new class to the database."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            name = data.get("name")
+            start_time = data.get("startTime")
+            end_time = data.get("endTime")
+            recurring = data.get("recurring", False)
+
+            if not all([name, start_time, end_time]):
+                return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
+
+            new_class = Class.objects.create(
+                name=name,
+                startTime=start_time,
+                endTime=end_time,
+                recurring=recurring
+            )
+
+            return JsonResponse({
+                "success": True,
+                "message": "Class added successfully",
+                "class": {
+                    "classID": new_class.classID,
+                    "name": new_class.name,
+                    "startTime": str(new_class.startTime),
+                    "endTime": str(new_class.endTime),
+                    "recurring": new_class.recurring
+                }
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=400)
+    else:
+        return JsonResponse({"error": "Method not allowed"}, status=405)

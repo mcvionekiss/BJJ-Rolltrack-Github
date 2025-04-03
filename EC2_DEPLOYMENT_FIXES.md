@@ -41,6 +41,19 @@ This document outlines the fixes made to resolve deployment issues on Amazon EC2
 
 **Fix:** Removed the `deploy` section from the docker-compose.yml file and replaced it with a standard `restart: unless-stopped` policy. Added a comment explaining how to manually scale the backend service for redundancy using `docker-compose up --scale backend=2`.
 
+### 6. Nginx Global Directives Error
+
+**Problem:** The nginx container was failing to start with the error: `"worker_processes" directive is not allowed here in /etc/nginx/conf.d/default.conf:2`.
+
+**Fix:** Removed all global directives from the nginx/nginx.conf file, including:
+- Removed `worker_processes auto;`
+- Removed `error_log /var/log/nginx/error.log warn;`
+- Removed `pid /var/run/nginx.pid;`
+- Removed the `events { ... }` block
+- Removed the `http { ... }` block (keeping only the server blocks inside)
+
+These global directives should only be in the main nginx.conf file, not in configuration files placed in the conf.d directory.
+
 ## Deployment Instructions
 
 ### 1. Set Up Environment Variables

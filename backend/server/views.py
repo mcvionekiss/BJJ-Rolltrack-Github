@@ -14,11 +14,39 @@ from django.utils.timezone import now
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
-
+from django.db import connection
 
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
     return JsonResponse({"csrfToken": get_token(request)})
+
+@api_view(['GET'])
+def health_check(request):
+    """
+    Health check endpoint for monitoring and load balancing.
+    Checks database connection and returns service status.
+    """
+    status = {
+        "status": "healthy",
+        "timestamp": now().isoformat(),
+        "service": "BJJ RollTrack API",
+        "checks": {
+            "database": "ok"
+        }
+    }
+    
+    # Check database connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception as e:
+        status["status"] = "unhealthy"
+        status["checks"]["database"] = str(e)
+    
+    # Return 200 if healthy, 503 if unhealthy
+    status_code = 200 if status["status"] == "healthy" else 503
+    return JsonResponse(status, status=status_code)
 
 @method_decorator(csrf_exempt, name="dispatch")
 class LoginView(View):

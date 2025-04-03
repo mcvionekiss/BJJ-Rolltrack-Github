@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Routes, Route } from "react-router-dom";
 import axios from "axios";
+import { API_ENDPOINTS } from "../../config";
 import { Button, Box, Typography } from "@mui/material";
 import NavigationMenu from "../NavigationMenu.js";
 import Calendar from './Calendar'
@@ -35,7 +36,7 @@ function Dashboard() {
 
     // ✅ Fetch CSRF token before making logout requests
     useEffect(() => {
-        axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true })
+        axios.get(API_ENDPOINTS.AUTH.CSRF, { withCredentials: true })
             .then(response => {
                 if (!response.data.csrfToken) {
                     throw new Error("CSRF Token missing in response");
@@ -48,7 +49,7 @@ function Dashboard() {
     const handleLogout = async () => {
         try {
             await axios.post(
-                "http://localhost:8000/auth/logout/",
+                API_ENDPOINTS.AUTH.LOGOUT,
                 {},
                 {
                     headers: { "X-CSRFToken": csrfToken },

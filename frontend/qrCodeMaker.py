@@ -1,11 +1,18 @@
 import qrcode
 from PIL import Image
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Path to the BJJ RollTrack logo
 logo_path = "src/assets/logo.jpeg"
 
 # URL or data you want to encode in the QR code
-qr_data = "http://18.118.16.74:3000/checkin"
+# Use environment variable with fallback
+public_url = os.getenv('REACT_APP_PUBLIC_URL', 'http://localhost:3000')
+qr_data = f"{public_url}/checkin"
 
 # Generate a base QR code
 qr = qrcode.QRCode(

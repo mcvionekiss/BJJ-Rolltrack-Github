@@ -1,5 +1,11 @@
 FROM python:3.12-slim
 
+# Set environment variables
+ARG PIPELINE=development
+ENV PIPELINE=${PIPELINE}
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app/backend
 
 # Install system dependencies
@@ -10,16 +16,27 @@ RUN apt-get update && \
 
 COPY backend/requirements.txt .
 
-# Show pip version and verbose installation
+# Install Python dependencies
 RUN pip --version && \
-    pip install --no-cache-dir -v -r requirements.txt
+    pip install --no-cache-dir -v -r requirements.txt && \
+    pip install gunicorn
 
 # Copy the entire project
 COPY /backend .
 
-# Debug: List contents of the current directory
-RUN ls -R
+# Create directory for logs
+RUN mkdir -p /var/log/django && \
+    chmod 777 /var/log/django
+
+# Collect static files
+RUN if [ "$PIPELINE" = "production" ] || [ "$PIPELINE" = "staging" ]; then \
+        python manage.py collectstatic --noinput; \
+    fi
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Use entrypoint script to handle different environments
+COPY backend/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

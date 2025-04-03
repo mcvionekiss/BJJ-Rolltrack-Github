@@ -16,7 +16,8 @@ import {
     Step,
     StepLabel,
 } from "@mui/material";
-import MuiPhoneNumber from 'mui-phone-number';
+import { MuiTelInput } from 'mui-tel-input'; // Updated import
+import PasswordChecklist from "react-password-checklist";
 import "./Register.css";
 import logo from "../assets/logo.jpeg"; // Import the logo image
 import ScheduleDetails from "./ScheduleDetails.js";
@@ -62,10 +63,19 @@ export default function Register() {
         schedule: [],
     });
 
+    const passwordMessages = {
+        minLength: "At least 8 characters!",
+        specialChar: "At least one special character!",
+        number: "At least one number!",
+        capital: "At least one uppercase letter!",
+    };
+
     const [activeStep, setActiveStep] = useState(0);
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [unmetCriteria, setUnmetCriteria] = useState([]);
+    const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -74,10 +84,27 @@ export default function Register() {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === "confirmPassword") {
+            if (formData.password !== e.target.value) {
+                setConfirmPasswordError("Passwords do not match.");
+            } else {
+                setConfirmPasswordError("");
+            }
+        }
     };
 
     const handleNext = (e) => {
         e.preventDefault();
+
+        // Password match validation
+        if (formData.password !== formData.confirmPassword) {
+            setConfirmPasswordError("Passwords do not match.");
+            return;
+        }
+    
+        setConfirmPasswordError(""); // Clear error if passwords match
+
+        setError("");
         if (activeStep < steps.length - 1) {
             setActiveStep(activeStep + 1);
         }
@@ -85,28 +112,22 @@ export default function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (activeStep < steps.length - 1) {
-            setActiveStep(activeStep + 1);
-        } else {
-            if (loading) return;
-            setLoading(true);
-            setError("");
-
-            try {
-                const response = await registerUser(formData, csrfToken);
-                console.log("🟢 Registration successful", response.data);
-                setActiveStep(activeStep + 1); // Move to Welcome Page step
-            } catch (error) {
-                console.error("🔴 Registration failed", error.response?.data || error);
-                setError(error.response?.data?.message || "Registration failed. Please try again.");
-            } finally {
-                setLoading(false);
-            }
+        if (loading) return;
+        setLoading(true);
+        setError("");
+    
+        console.log("Submitting with data:", formData, "and CSRF:", csrfToken);
+    
+        try {
+            const response = await registerUser(formData, csrfToken);
+            console.log("🟢 Registration successful", response.data);
+            setActiveStep(activeStep + 1); // Move to Welcome Page step
+        } catch (error) {
+            console.error("🔴 Registration failed", error.response?.data || error);
+            setError(error.response?.data?.message || "Registration failed. Please try again.");
+        } finally {
+            setLoading(false);
         }
-    };
-
-    const handleLogin = () => {
-        navigate("/login");
     };
 
     const handleEdit = (stepName) => {
@@ -115,12 +136,18 @@ export default function Register() {
         if (stepName === "schedule") setActiveStep(2);
     };
 
+    const handleSkip = (stepName) => {
+        if (stepName === "gym") setActiveStep(2);
+        if (stepName === "schedule") setActiveStep(3);
+    };
+
     const handleScheduleUpdate = (scheduleData) => {
         setFormData(prev => ({ ...prev, schedule: scheduleData }));
     };
 
+    // Updated phone handler for MuiTelInput
     const handlePhoneChange = (name, value) => {
-        handleChange({ target: { name, value } }); // Simulate an event to match handleChange format
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     return (
@@ -133,7 +160,10 @@ export default function Register() {
                         src={logo} 
                         alt="RollTrack Logo" 
                         className="logo-img"
-                        onClick={() => navigate("/")}
+                        onClick={(e) => {
+                            console.log("Navigating to login...");
+                            window.location.href = "/"; // Forces full page reload
+                        }}
                     />
                 </div>
                 <Typography variant="h5" className="signup-title">Sign Up</Typography>
@@ -166,9 +196,18 @@ export default function Register() {
             {/* Right Form Section */}
             <div className="form-container">
                 <Paper elevation={3} className="form-box">
-                {activeStep < 3 && (
-                    <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
-                )}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    {activeStep < 3 && (
+                        <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
+                    )}
+                    {activeStep === 1 && (
+                            <button onClick={() => handleSkip("gym")}>Skip</button>
+                    )}
+                    {activeStep === 2 && (
+                            <button onClick={() => handleSkip("schedule")}>Skip</button>
+                        
+                    )}
+                    </Box>
 
                     <form onSubmit={handleNext} className="form">
                         {activeStep === 0 && (
@@ -176,10 +215,39 @@ export default function Register() {
                                 <TextField label="First Name" placeholder="Enter your first name" name="firstName" value={formData.firstName} onChange={handleChange} fullWidth margin="normal" required/>
                                 <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required />
-                                {/* MUI Phone Number for Personal Phone */}
-                                <MuiPhoneNumber defaultCountry={"us"} label="Phone Number" variant="outlined" name="phone" value={formData.phone} onChange={(value) => handlePhoneChange("phone", value)} fullWidth margin="normal" />
+                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required 
+                                    error={formData.password.length > 0 && unmetCriteria.length > 0} // Show red border only if password is entered and invalid
+                                    helperText={
+                                        formData.password.length > 0 && unmetCriteria.length > 0
+                                            ? `⚠️ ${unmetCriteria.map(rule => passwordMessages[rule]).join(" ")}`
+                                            : "" // Hide if no unmet criteria
+                                    }
+                                />
+                                <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
+                                
+                                {/* Hidden Password Checklist for Validation */}
+                                {formData.password.length > 0 && (
+                                    <PasswordChecklist
+                                        rules={["minLength", "specialChar", "number", "capital"]}
+                                        minLength={8}
+                                        value={formData.password}
+                                        valueAgain={formData.confirmPassword}
+                                        onChange={(isValid, failedRules) => setUnmetCriteria(failedRules)}
+                                        messages={passwordMessages}
+                                        style={{ display: "none" }} // Hide checklist UI
+                                    />
+                                )}
+                                
+                                {/* Updated MuiTelInput for Personal Phone */}
+                                <MuiTelInput
+                                    defaultCountry="US"
+                                    label="Phone Number"
+                                    variant="outlined"
+                                    value={formData.phone}
+                                    onChange={(value) => handlePhoneChange("phone", value)}
+                                    fullWidth
+                                    margin="normal"
+                                />
                             </>
                         )}
 
@@ -198,6 +266,9 @@ export default function Register() {
                                 
                                 {/* Address Autocomplete Component */}
                                 <AddressAutocomplete 
+                                    addressValue={formData.address} 
+                                    cityValue={formData.city} 
+                                    stateValue={formData.state}
                                     onAddressSelect={(address, city, state) => 
                                         setFormData((prev) => ({
                                             ...prev, 
@@ -239,12 +310,11 @@ export default function Register() {
                                     margin="normal" 
                                     required 
                                 />
-                                {/* MUI Phone Number for Gym Phone */}
-                                <MuiPhoneNumber
-                                    defaultCountry={"us"}
+                                {/* Updated MuiTelInput for Gym Phone */}
+                                <MuiTelInput
+                                    defaultCountry="US"
                                     label="Gym Phone Number"
                                     variant="outlined"
-                                    name="gymPhoneNumber"
                                     value={formData.gymPhoneNumber}
                                     onChange={(value) => handlePhoneChange("gymPhoneNumber", value)}
                                     fullWidth
@@ -259,6 +329,7 @@ export default function Register() {
                                 onContinue={() => setActiveStep(activeStep + 1)}
                                 onBack={() => setActiveStep(activeStep - 1)}
                                 setScheduleData={handleScheduleUpdate}
+                                initialSchedule={formData.schedule} // Pass stored schedule
                             />
                         )}
 
@@ -300,7 +371,7 @@ export default function Register() {
                         {activeStep === 3 && (
                             <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
                                 <Button 
-                                    type="submit" 
+                                    type="button" 
                                     variant="contained" 
                                     sx={{
                                         backgroundColor: "black",
@@ -309,8 +380,9 @@ export default function Register() {
                                         "&:hover": { backgroundColor: "#333" } // Darker shade on hover
                                     }}
                                     disabled={loading}
+                                    onClick={handleSubmit}
                                 >
-                                    {loading ? "Submitting..." : activeStep === 3 && "Complete Registration"}
+                                    {loading ? "Submitting..." : "Complete Registration"}
                                 </Button>
                             </Box>
                         )}
@@ -318,7 +390,16 @@ export default function Register() {
 
                     {activeStep === 0 && (
                         <Typography variant="body2" align="center" sx={{ marginTop: 2 }}>
-                            Already have an account? <a href="/login" className="login-link">Log in</a>
+                            Already have an account?{" "}
+                            <Link 
+                                component="button" 
+                                onClick={(e) => {
+                                    window.location.href = "/"; // Forces full page reload
+                                }}
+                                sx={{ cursor: "pointer", textDecoration: "underline", color: "black" }}
+                            >
+                                Log in
+                            </Link>
                         </Typography>
                     )}
                 </Paper>

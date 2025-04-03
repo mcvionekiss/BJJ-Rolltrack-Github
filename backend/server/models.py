@@ -65,7 +65,7 @@ class Class(models.Model):
     startTime = models.TimeField()
     endTime = models.TimeField()
     recurring = models.BooleanField(default=False)  # True if it's a weekly class
-    # date = models.DateField(null=True, blank=True)  # Only used for one-time classes
+    date = models.DateField()  # Only used for one-time classes
     # gym = models.ForeignKey("Gym", on_delete=models.CASCADE, related_name="classes", null=True, blank=True)
 
     class Meta:

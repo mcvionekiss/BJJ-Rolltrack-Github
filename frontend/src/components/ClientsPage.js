@@ -13,7 +13,11 @@ import {
     Button,
     Menu,
     MenuItem,
-    TableContainer
+    TableContainer,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
@@ -78,6 +82,10 @@ function ClientsPage() {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [sidebarWidth, setSidebarWidth] = useState(250);
+    const [filter, setFilter] = useState('id');
+    const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+    const [editClient, setEditClient] = useState(null);
+    const [filteredClients, setFilteredClients] = useState(mockClients);
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -87,15 +95,51 @@ function ClientsPage() {
         setAnchorEl(null);
     };
 
+    const handleFilterClick = (event) => {
+        setFilterAnchorEl(event.currentTarget);
+    };
+
+    const handleFilterClose = () => {
+        setFilterAnchorEl(null);
+    };
+
+    const handleFilterSelect = (filterType) => {
+        setFilter(filterType);
+        setFilterAnchorEl(null);
+    };
+
+    const handleEdit = (client) => {
+        setEditClient(client);
+    };
+
+    const handleDelete = (clientId) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this client?');
+        if (confirmDelete) {
+            const updatedClients = filteredClients.filter(client => client.id !== clientId);
+            console.log('Deleted client ID:', clientId);
+            // You would also update your state or backend here
+        }
+    };
+
+    const sortedClients = [...filteredClients].sort((a, b) => {
+        if (filter === 'name' || filter === 'gender' || filter === 'skillLevel') {
+            return a[filter].localeCompare(b[filter]);
+        } else {
+            return a[filter] - b[filter];
+        }
+    });
+
     return (
         <Box display="flex">
             <NavigationMenu onWidthChange={setSidebarWidth} />
             <Box sx={{
                     flexGrow: 1,
-                    padding: 3,
-                    maxWidth: 1200,
+                    px: { xs: 2, sm: 3, md: 5 },
+                    pt: { xs: 2, sm: 3, md: 5 },
+                    maxWidth: "1400px",
+                    marginLeft: `${sidebarWidth}px`,
                     transition: "margin-left 0.3s ease-in-out",
-                    marginLeft: `${sidebarWidth}px`}}
+                }}
             >
                 <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 5 }}>
                     <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
@@ -114,6 +158,7 @@ function ClientsPage() {
                         <Button
                             variant="outlined"
                             startIcon={<FilterListIcon />}
+                            onClick={handleFilterClick}
                             sx={{
                                 borderColor: 'grey.300',
                                 color: 'grey.700',
@@ -121,14 +166,32 @@ function ClientsPage() {
                                 width: { xs: '100%', sm: 'auto' }
                             }}
                         >
-                            Filters
+                            Filter
                         </Button>
+                        <Menu
+                            anchorEl={filterAnchorEl}
+                            open={Boolean(filterAnchorEl)}
+                            onClose={handleFilterClose}
+                        >
+                            <MenuItem onClick={() => handleFilterSelect('id')}>ID</MenuItem>
+                            <MenuItem onClick={() => handleFilterSelect('name')}>Name</MenuItem>
+                            <MenuItem onClick={() => handleFilterSelect('age')}>Age</MenuItem>
+                            <MenuItem onClick={() => handleFilterSelect('gender')}>Gender</MenuItem>
+                            <MenuItem onClick={() => handleFilterSelect('skillLevel')}>Skill Level</MenuItem>
+                        </Menu>
 
                         <TextField
                             placeholder="Search"
                             size="small"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                const query = e.target.value.toLowerCase().trim();
+                                setSearchQuery(query);
+                                const filtered = mockClients.filter(client =>
+                                    client.name.toLowerCase().includes(query)
+                                );
+                                setFilteredClients(filtered);
+                            }}
                             sx={{
                                 width: { xs: '100%', sm: '300px' }
                             }}
@@ -139,7 +202,7 @@ function ClientsPage() {
                     </Box>
 
                     {/* Table */}
-                    <TableContainer sx={{ overflowX: 'auto' }}>
+                    <TableContainer sx={{ overflowX: 'auto', height: '70vh' }}>
                         <Table sx={{ minWidth: 800 }}>
                             <TableHead>
                                 <TableRow>
@@ -155,7 +218,7 @@ function ClientsPage() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {mockClients.map((client) => (
+                                {sortedClients.map((client) => (
                                     <TableRow
                                         key={client.id}
                                         hover
@@ -179,7 +242,9 @@ function ClientsPage() {
                                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
                                             <IconButton
                                                 size="small"
-                                                onClick={handleMenuClick}
+                                                onClick={(e) => {
+                                                    setAnchorEl({ anchor: e.currentTarget, client });
+                                                }}
                                             >
                                                 <MoreVertIcon />
                                             </IconButton>
@@ -192,14 +257,34 @@ function ClientsPage() {
 
                     {/* Actions Menu */}
                     <Menu
-                        anchorEl={anchorEl}
+                        anchorEl={anchorEl?.anchor}
                         open={Boolean(anchorEl)}
                         onClose={handleMenuClose}
                     >
-                        <MenuItem onClick={handleMenuClose}>View Details</MenuItem>
-                        <MenuItem onClick={handleMenuClose}>Edit</MenuItem>
-                        <MenuItem onClick={handleMenuClose}>Delete</MenuItem>
+                        <MenuItem onClick={() => { handleEdit(anchorEl.client); handleMenuClose(); }}>Edit</MenuItem>
+                        <MenuItem onClick={() => { handleDelete(anchorEl.client.id); handleMenuClose(); }}>Delete</MenuItem>
                     </Menu>
+
+                    {/* Edit Client Modal */}
+                    <Dialog open={Boolean(editClient)} onClose={() => setEditClient(null)}>
+                        <DialogTitle>Edit Client</DialogTitle>
+                        <DialogContent>
+                            <TextField label="Name" fullWidth margin="dense" value={editClient?.name || ''} onChange={(e) => setEditClient({ ...editClient, name: e.target.value })} />
+                            <TextField label="Age" type="number" fullWidth margin="dense" value={editClient?.age || ''} onChange={(e) => setEditClient({ ...editClient, age: parseInt(e.target.value) })} />
+                            <TextField label="Gender" fullWidth margin="dense" value={editClient?.gender || ''} onChange={(e) => setEditClient({ ...editClient, gender: e.target.value })} />
+                            <TextField label="Contact" fullWidth margin="dense" value={editClient?.contact || ''} onChange={(e) => setEditClient({ ...editClient, contact: e.target.value })} />
+                            <TextField label="Skill Level" fullWidth margin="dense" value={editClient?.skillLevel || ''} onChange={(e) => setEditClient({ ...editClient, skillLevel: e.target.value })} />
+                            <TextField label="Last Training Date" type="date" fullWidth margin="dense" value={editClient?.lastTrainingDate || ''} onChange={(e) => setEditClient({ ...editClient, lastTrainingDate: e.target.value })} InputLabelProps={{ shrink: true }} />
+                            <TextField label="Subscription" fullWidth margin="dense" value={editClient?.subscription || ''} onChange={(e) => setEditClient({ ...editClient, subscription: e.target.value })} />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setEditClient(null)}>Cancel</Button>
+                            <Button onClick={() => {
+                                console.log('Updated client:', editClient);
+                                setEditClient(null);
+                            }} color="primary">Save</Button>
+                        </DialogActions>
+                    </Dialog>
                 </Paper>
             </Box>
         </Box>

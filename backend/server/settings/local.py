@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-vf1ql$l*ln)wabh$4g#!&9&3v6-j#w+-8r!$ci9948i7wx^(fr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.2.1"]
 
 
 # Application definition
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'server.GymOwner'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -52,14 +53,19 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://18.117.9.192"]  # ✅ Add this to allow frontend requests
-CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://192.168.2.1:3000"]  # TODO: CHANGE THIS TO RUN LOCALLY
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://18.117.9.192",
+    "http://192.168.2.1:3000",   # TODO: CHANGE THIS TO RUN LOCALLY
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "X-CSRFToken",
 ]
 
 ROOT_URLCONF = "server.urls"

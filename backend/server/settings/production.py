@@ -59,7 +59,7 @@ MIDDLEWARE = [
 CORS_ALLOW_CREDENTIALS = True  # ✅ Allow cookies and authentication
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # ✅ Allow frontend to call backend
-    "http://18.117.9.192",
+    "http://3.133.113.101",
 ]
 
 ROOT_URLCONF = "server.urls"

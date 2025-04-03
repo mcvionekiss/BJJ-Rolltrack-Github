@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -6,15 +6,22 @@ import TextField from '@mui/material/TextField';
 import dayjs from "dayjs";
 import "./Register.css";
 
-const ScheduleDetails = ({ onContinue, onBack, setScheduleData }) => {
-  const [schedule, setSchedule] = useState(
-    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(day => ({
-      day,
-      openTime: "12:00 PM",
-      closeTime: "12:00 PM",
-      closed: day === "SUN", // Default Sunday as closed
-    }))
-  );
+const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule }) => {
+  const defaultSchedule =
+  ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(day => ({
+    day,
+    openTime: "12:00 PM",
+    closeTime: "12:00 PM",
+    closed: day === "SUN", // Default Sunday as closed
+  }))
+
+  const [schedule, setSchedule] = useState(initialSchedule.length ? initialSchedule : defaultSchedule);
+
+  useEffect(() => {
+    if (initialSchedule.length) {
+      setSchedule(initialSchedule);
+    }
+  }, [initialSchedule]); 
 
   const handleTimeChange = (index, field, value) => {
     setSchedule(prev => {

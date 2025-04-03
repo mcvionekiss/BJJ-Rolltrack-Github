@@ -54,6 +54,16 @@ This document outlines the fixes made to resolve deployment issues on Amazon EC2
 
 These global directives should only be in the main nginx.conf file, not in configuration files placed in the conf.d directory.
 
+### 7. Nginx Boolean Condition Error
+
+**Problem:** The nginx container was failing to start with the error: `invalid condition "True" in /etc/nginx/conf.d/default.conf:25`.
+
+**Fix:** Updated the USE_HTTPS conditions in nginx/nginx.conf:
+- Changed `if ($USE_HTTPS = "True")` to `if ($USE_HTTPS = true)`
+- Changed `if ($USE_HTTPS != "True")` to `if ($USE_HTTPS != true)`
+
+**Explanation:** In Nginx, conditions should use values without quotes for boolean comparisons. The string "True" was being treated as a literal string rather than a boolean value, causing the error. Using `true` without quotes is the correct way to handle boolean conditions in Nginx.
+
 ## Deployment Instructions
 
 ### 1. Set Up Environment Variables

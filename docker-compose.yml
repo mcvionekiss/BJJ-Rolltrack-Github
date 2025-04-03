@@ -20,11 +20,8 @@ services:
       dockerfile: backend/Dockerfile
       args:
         - PIPELINE=${PIPELINE:-development}
-    deploy:
-      replicas: ${BACKEND_REPLICAS:-1}
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
+    restart: unless-stopped
+    # Note: For redundancy, you can manually scale with docker-compose up --scale backend=2
     environment:
       - PIPELINE=${PIPELINE:-development}
       - DEBUG=${DEBUG:-False}

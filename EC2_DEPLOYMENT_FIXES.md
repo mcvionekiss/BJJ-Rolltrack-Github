@@ -29,6 +29,18 @@ This document outlines the fixes made to resolve deployment issues on Amazon EC2
 - Correctly copy the Nginx configuration file to the templates directory
 - Improve logging and startup commands
 
+### 4. React Build Path Issue
+
+**Problem:** The React application was built assuming it is hosted at the root path (`/`), but this wasn't explicitly configured in the package.json file.
+
+**Fix:** Added the `"homepage": "/"` field to the frontend/package.json file to explicitly set the base URL path for the application.
+
+### 5. Docker Compose Container Configuration Error
+
+**Problem:** Docker Compose was failing with `KeyError: 'ContainerConfig'` when trying to create backend containers, particularly when using the `deploy` section with `replicas`.
+
+**Fix:** Removed the `deploy` section from the docker-compose.yml file and replaced it with a standard `restart: unless-stopped` policy. Added a comment explaining how to manually scale the backend service for redundancy using `docker-compose up --scale backend=2`.
+
 ## Deployment Instructions
 
 ### 1. Set Up Environment Variables
@@ -45,7 +57,20 @@ This document outlines the fixes made to resolve deployment issues on Amazon EC2
    - Update database credentials if needed
    - Set `USE_HTTPS` to `True` if you want to use HTTPS
 
-### 2. SSL Certificate Setup (for HTTPS)
+### 2. Update Package.json (if needed)
+
+Ensure the frontend/package.json file has the "homepage" field set correctly:
+```json
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "/",
+  ...
+}
+```
+
+### 3. SSL Certificate Setup (for HTTPS)
 
 If you're using HTTPS (`USE_HTTPS=True`):
 
@@ -56,7 +81,7 @@ If you're using HTTPS (`USE_HTTPS=True`):
    SSL_KEY=/path/to/key.pem
    ```
 
-### 3. Deploy with Docker Compose
+### 4. Deploy with Docker Compose
 
 1. Build and start the containers:
    ```bash
@@ -68,12 +93,17 @@ If you're using HTTPS (`USE_HTTPS=True`):
    docker-compose logs
    ```
 
-### 4. Domain Configuration
+3. For redundancy, you can manually scale the backend service:
+   ```bash
+   docker-compose up -d --scale backend=2
+   ```
+
+### 5. Domain Configuration
 
 1. Configure your domain's DNS to point to your EC2 instance's public IP address
 2. If using HTTPS, ensure your SSL certificates are valid for your domain
 
-### 5. Troubleshooting
+### 6. Troubleshooting
 
 If you encounter issues:
 
@@ -93,6 +123,8 @@ If you encounter issues:
    ```bash
    docker-compose exec nginx cat /var/log/nginx/error.log
    ```
+
+4. If you encounter the `KeyError: 'ContainerConfig'` error again, make sure you're not using the `deploy` section in your docker-compose.yml file, as this is only supported in Docker Swarm mode.
 
 ## Environment Configuration
 

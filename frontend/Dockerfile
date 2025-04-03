@@ -20,6 +20,8 @@ WORKDIR /app/frontend
 # Copy package files first
 COPY frontend/package*.json ./
 
+# Adjust memory limit for npm install
+ENV NODE_OPTIONS="--max_old_space_size=4096"
 # Install dependencies before copying the rest of the files
 RUN npm install
 

@@ -64,6 +64,16 @@ These global directives should only be in the main nginx.conf file, not in confi
 
 **Explanation:** In Nginx, conditions should use values without quotes for boolean comparisons. The string "True" was being treated as a literal string rather than a boolean value, causing the error. Using `true` without quotes is the correct way to handle boolean conditions in Nginx.
 
+### 8. Environment Variable Case Sensitivity
+
+**Problem:** Even after fixing the Nginx configuration, the error persisted because the environment variables in the .env files were using uppercase boolean values (`True` and `False`).
+
+**Fix:** Updated all environment files to use lowercase boolean values:
+- Changed `USE_HTTPS=True` to `USE_HTTPS=true` in .env.production and .env.staging
+- Changed `USE_HTTPS=False` to `USE_HTTPS=false` in .env.development
+
+**Explanation:** Nginx is case-sensitive when it comes to boolean values and expects `true` or `false` (lowercase). When environment variables are substituted in the Nginx configuration, they need to match the expected format. Using lowercase boolean values ensures compatibility with Nginx's condition syntax.
+
 ## Deployment Instructions
 
 ### 1. Set Up Environment Variables

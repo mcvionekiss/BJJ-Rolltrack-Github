@@ -74,6 +74,16 @@ These global directives should only be in the main nginx.conf file, not in confi
 
 **Explanation:** Nginx is case-sensitive when it comes to boolean values and expects `true` or `false` (lowercase). When environment variables are substituted in the Nginx configuration, they need to match the expected format. Using lowercase boolean values ensures compatibility with Nginx's condition syntax.
 
+### 9. Frontend Nginx Configuration Issue
+
+**Problem:** The frontend Nginx configuration had a comment indicating conditional HTTPS support, but no actual condition to check if HTTPS was enabled.
+
+**Fix:** Updated the frontend/nginx/nginx.conf file to conditionally include the HTTPS server block:
+- Added `if ($USE_HTTPS != true) { return 404; }` to the HTTPS server block
+- Updated the comment to clarify that the server block is only included if USE_HTTPS is true
+
+**Explanation:** Without the conditional check, the HTTPS server block would always be included, which could cause issues if SSL certificates weren't available or if HTTPS was disabled. Adding the condition ensures that the HTTPS server block is only active when USE_HTTPS is set to true.
+
 ## Deployment Instructions
 
 ### 1. Set Up Environment Variables

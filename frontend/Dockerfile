@@ -46,23 +46,33 @@ RUN if [ "$REACT_APP_ENV" = "production" ] || [ "$REACT_APP_ENV" = "staging" ]; 
         }' > /etc/nginx/http.d/default.conf; \
     fi
 
-# Use node user for development, root for production (nginx needs it)
-USER node
+# Set user based on environment
 RUN if [ "$REACT_APP_ENV" = "production" ] || [ "$REACT_APP_ENV" = "staging" ]; then \
         echo "Running as root for production/staging"; \
     else \
-        echo "Running as node for development"; \
+        echo "Running as node for development" && \
+        # Only switch to node user in development
+        chown -R node:node /app/frontend && \
+        USER node; \
     fi
 
 # Set PATH for development
 ENV PATH /app/frontend/node_modules/.bin:$PATH
+
+# Copy nginx configuration for production/staging
+RUN if [ "$REACT_APP_ENV" = "production" ] || [ "$REACT_APP_ENV" = "staging" ]; then \
+        mkdir -p /etc/nginx/templates && \
+        cp nginx/nginx.conf /etc/nginx/templates/default.conf.template; \
+    fi
 
 # Expose port 3000 for development, 80 for production
 EXPOSE 3000 80
 
 # Start the appropriate server based on environment
 CMD if [ "$REACT_APP_ENV" = "production" ] || [ "$REACT_APP_ENV" = "staging" ]; then \
+        echo "Starting Nginx server..." && \
         nginx -g 'daemon off;'; \
     else \
+        echo "Starting React development server..." && \
         npm start; \
     fi

@@ -11,6 +11,7 @@ volumes:
   media-data:
   nginx-certs:
   nginx-conf:
+  frontend-build:  # New volume for frontend build files
 
 services:
   # Backend service with multiple replicas for redundancy
@@ -64,6 +65,8 @@ services:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
       - REACT_APP_PUBLIC_URL=${REACT_APP_PUBLIC_URL:-http://localhost:3000}
       - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
+    volumes:
+      - frontend-build:/app/frontend/build
     depends_on:
       - backend
     networks:
@@ -90,6 +93,7 @@ services:
       - static-data:/usr/share/nginx/static
       - media-data:/usr/share/nginx/media
       - ./certbot/www:/var/www/certbot  # For Let's Encrypt challenges
+      - frontend-build:/usr/share/nginx/html  # Mount frontend build files
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
       - FRONTEND_HOST=${FRONTEND_HOST:-bjj-rolltrack-github_frontend_1}

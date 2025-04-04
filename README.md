@@ -181,6 +181,34 @@ See the [DEPLOYMENT.md](DEPLOYMENT.md) file for detailed deployment instructions
 docker-compose up -d --build
 ```
 
+### Nginx Configuration
+
+The application uses a dynamic Nginx configuration system that:
+
+1. Uses template files with environment variable placeholders
+2. Processes these templates at container startup using an entrypoint script
+3. Generates the final Nginx configuration based on your environment variables
+
+Key environment variables for Nginx configuration:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| DOMAIN_NAME | Your domain name | localhost |
+| FRONTEND_HOST | Frontend service hostname | bjj-rolltrack-github_frontend_1 |
+| FRONTEND_PORT | Frontend service port | 3000 |
+| BACKEND_HOST | Backend service hostname | bjj-rolltrack-github_backend_1 |
+| BACKEND_PORT | Backend service port | 8000 |
+| USE_HTTPS | Enable HTTPS | false |
+
+When `USE_HTTPS` is set to `true` and SSL certificates are present, the system will:
+- Redirect HTTP traffic to HTTPS
+- Configure SSL settings
+- Set up HSTS headers
+
+For SSL certificates, place them at:
+- Certificate: `/etc/nginx/ssl/cert.pem`
+- Key: `/etc/nginx/ssl/key.pem`
+
 ## Development Workflow
 
 ### Local Development

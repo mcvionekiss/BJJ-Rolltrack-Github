@@ -75,7 +75,42 @@ cp .env.development .env
 
 ### 3. SSL Certificate Setup (for Production/Staging)
 
-For HTTPS support, you need SSL certificates. You can use Let's Encrypt:
+For HTTPS support, you need SSL certificates. You can either use existing certificates or obtain new ones with Let's Encrypt.
+
+#### Using Existing SSL Certificates
+
+If you already have SSL certificates:
+
+1. Create the SSL directory:
+
+```bash
+mkdir -p nginx/ssl
+```
+
+2. Copy your certificates to the nginx/ssl directory:
+
+```bash
+cp path/to/your/certificate.pem nginx/ssl/cert.pem
+cp path/to/your/private-key.pem nginx/ssl/key.pem
+```
+
+3. Set the appropriate permissions:
+
+```bash
+chmod 644 nginx/ssl/cert.pem
+chmod 600 nginx/ssl/key.pem
+```
+
+4. Enable HTTPS in your environment file:
+
+```bash
+# Edit your .env file
+USE_HTTPS=true
+```
+
+#### Using Let's Encrypt for New Certificates
+
+If you need to obtain new certificates:
 
 1. Install Certbot:
 
@@ -103,7 +138,63 @@ sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem nginx/ssl/key.pem
 sudo chown -R $(whoami) nginx/ssl
 ```
 
-### 4. Deploy with Docker Compose
+4. Enable HTTPS in your environment file:
+
+```bash
+# Edit your .env file
+USE_HTTPS=true
+```
+
+### 4. Nginx Configuration
+
+The application uses a dynamic Nginx configuration system that generates the final configuration at container startup based on environment variables.
+
+#### How It Works
+
+1. Template files with placeholders are stored in `nginx/templates/`
+2. An entrypoint script processes these templates at container startup
+3. The final configuration is generated at `/etc/nginx/conf.d/default.conf`
+
+#### Key Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| DOMAIN_NAME | Your domain name | localhost |
+| FRONTEND_HOST | Frontend service hostname | bjj-rolltrack-github_frontend_1 |
+| FRONTEND_PORT | Frontend service port | 3000 |
+| BACKEND_HOST | Backend service hostname | bjj-rolltrack-github_backend_1 |
+| BACKEND_PORT | Backend service port | 8000 |
+| USE_HTTPS | Enable HTTPS | false |
+
+#### Customizing the Configuration
+
+If you need to customize the Nginx configuration:
+
+1. Modify the template files:
+   - `nginx/templates/default.conf.template` - Main configuration
+   - `nginx/templates/https_server_block.template` - HTTPS server block
+
+2. Rebuild the Nginx container:
+
+```bash
+docker-compose up -d --build nginx
+```
+
+#### Verifying the Configuration
+
+To check if the Nginx configuration is valid:
+
+```bash
+docker-compose exec nginx nginx -t
+```
+
+To view the generated configuration:
+
+```bash
+docker-compose exec nginx cat /etc/nginx/conf.d/default.conf
+```
+
+### 5. Deploy with Docker Compose
 
 1. Build and start the containers:
 
@@ -117,7 +208,7 @@ docker-compose up -d --build
 docker-compose ps
 ```
 
-### 5. Domain Configuration
+### 6. Domain Configuration
 
 1. Configure your domain's DNS to point to your EC2 instance's public IP
 2. For production, set up A records for:
@@ -126,7 +217,7 @@ docker-compose ps
 3. For staging, set up an A record for:
    - staging.your-domain.com
 
-### 6. Redundancy and High Availability
+### 7. Redundancy and High Availability
 
 The application is configured for redundancy with multiple backend instances. To further enhance availability:
 
@@ -134,7 +225,7 @@ The application is configured for redundancy with multiple backend instances. To
 2. Use an Elastic Load Balancer to distribute traffic
 3. Configure health checks to automatically replace failed instances
 
-### 7. Monitoring and Maintenance
+### 8. Monitoring and Maintenance
 
 1. Set up CloudWatch for monitoring:
 
@@ -146,7 +237,7 @@ sudo amazon-linux-extras install -y amazon-cloudwatch-agent
 2. Configure log forwarding to CloudWatch
 3. Set up alarms for high CPU usage, memory usage, etc.
 
-### 8. Backup Strategy
+### 9. Backup Strategy
 
 1. Set up automated database backups:
    - RDS automated backups

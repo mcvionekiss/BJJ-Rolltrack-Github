@@ -56,23 +56,23 @@ These global directives should only be in the main nginx.conf file, not in confi
 
 ### 7. Nginx Boolean Condition Error
 
-**Problem:** The nginx container was failing to start with the error: `invalid condition "True" in /etc/nginx/conf.d/default.conf:25`.
+**Problem:** The nginx container was failing to start with the error: `invalid condition "true" in /etc/nginx/conf.d/default.conf:26`.
 
 **Fix:** Updated the USE_HTTPS conditions in nginx/nginx.conf:
-- Changed `if ($USE_HTTPS = "True")` to `if ($USE_HTTPS = true)`
-- Changed `if ($USE_HTTPS != "True")` to `if ($USE_HTTPS != true)`
+- Changed `if ($USE_HTTPS = true)` to `if ($USE_HTTPS = "true")`
+- Changed `if ($USE_HTTPS != true)` to `if ($USE_HTTPS != "true")`
 
-**Explanation:** In Nginx, conditions should use values without quotes for boolean comparisons. The string "True" was being treated as a literal string rather than a boolean value, causing the error. Using `true` without quotes is the correct way to handle boolean conditions in Nginx.
+**Explanation:** In Nginx, conditions should use string comparisons rather than unquoted boolean literals. The unquoted value "true" was causing an error because Nginx doesn't recognize it as a valid condition value. Using quoted strings is the correct way to handle these conditions in Nginx.
 
 ### 8. Environment Variable Case Sensitivity
 
-**Problem:** Even after fixing the Nginx configuration, the error persisted because the environment variables in the .env files were using uppercase boolean values (`True` and `False`).
+**Problem:** The environment variables in the .env files were using lowercase boolean values (`true` and `false`), which is correct.
 
-**Fix:** Updated all environment files to use lowercase boolean values:
-- Changed `USE_HTTPS=True` to `USE_HTTPS=true` in .env.production and .env.staging
-- Changed `USE_HTTPS=False` to `USE_HTTPS=false` in .env.development
+**Fix:** No changes were needed to the environment variables, as they were already using the correct lowercase values:
+- `USE_HTTPS=true` in .env.production and .env.staging
+- `USE_HTTPS=false` in .env.development
 
-**Explanation:** Nginx is case-sensitive when it comes to boolean values and expects `true` or `false` (lowercase). When environment variables are substituted in the Nginx configuration, they need to match the expected format. Using lowercase boolean values ensures compatibility with Nginx's condition syntax.
+**Explanation:** Nginx is case-sensitive when it comes to string comparisons. When environment variables are substituted in the Nginx configuration, they need to match the expected format. Using lowercase values in the environment files and quoted strings in the Nginx configuration ensures compatibility.
 
 ### 9. Frontend Nginx Configuration Issue
 

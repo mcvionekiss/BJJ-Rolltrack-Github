@@ -160,13 +160,17 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Security settings for production
+# Make SSL redirect conditional based on USE_HTTPS environment variable
+USE_HTTPS = get_secret('USE_HTTPS', 'false').lower() == 'true'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = USE_HTTPS
+SESSION_COOKIE_SECURE = USE_HTTPS
+CSRF_COOKIE_SECURE = USE_HTTPS
+# Only apply HSTS settings if HTTPS is enabled
+if USE_HTTPS:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Logging configuration for production
@@ -182,8 +186,10 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django/error.log',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(BASE_DIR / 'logs' / 'django-error.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
             'formatter': 'verbose',
         },
         'console': {
@@ -205,3 +211,20 @@ LOGGING = {
         },
     },
 }
+
+# Ensure the logs directory exists
+import os
+os.makedirs(str(BASE_DIR / 'logs'), exist_ok=True)
+
+# Recommended: For a production environment with multiple instances,
+# consider using a more robust caching solution like Redis or Memcached
+# Example Redis configuration (requires django-redis):
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': get_secret('REDIS_URL', 'redis://redis:6379/1'),
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         }
+#     }
+# }

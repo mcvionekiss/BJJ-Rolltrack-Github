@@ -1,0 +1,18 @@
+# Define upstream for backend servers
+upstream backend_servers {
+    server ${BACKEND_HOST}:${BACKEND_PORT};
+}
+
+# HTTP server
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+
+    # For Let's Encrypt verification
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Include common settings
+    include /etc/nginx/templates/common_settings.inc;
+}

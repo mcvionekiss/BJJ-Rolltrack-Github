@@ -19,6 +19,8 @@ ENV FRONTEND_PORT=3000
 ENV BACKEND_HOST=bjj-rolltrack-github_backend_1
 ENV BACKEND_PORT=8000
 ENV USE_HTTPS=false
+ENV SSL_CERT_PATH=/etc/nginx/ssl/cert.pem
+ENV SSL_KEY_PATH=/etc/nginx/ssl/key.pem
 
 # Use our custom entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]

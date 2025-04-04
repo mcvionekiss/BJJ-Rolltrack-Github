@@ -22,8 +22,8 @@ urlpatterns = [
     # Health check endpoint for monitoring and load balancing
     path("health/", health_check, name="health_check"),
     
-    # Redirect root to login
-    path('', RedirectView.as_view(url='/auth/login/')),
+    # Redirect root to register
+    path('', RedirectView.as_view(url='/auth/register/')),
     
     # Handle all other routes for SPA
     re_path(r'^(?!api/|auth/|admin/|health/).*$', RedirectView.as_view(url='/'))

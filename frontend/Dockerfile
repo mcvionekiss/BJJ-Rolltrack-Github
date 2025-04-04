@@ -61,9 +61,20 @@ ENV PATH /app/frontend/node_modules/.bin:$PATH
 
 # Copy nginx configuration for production/staging
 RUN if [ "$REACT_APP_ENV" = "production" ] || [ "$REACT_APP_ENV" = "staging" ]; then \
-        mkdir -p /etc/nginx/templates && \
-        cp nginx/nginx.conf /etc/nginx/templates/default.conf.template; \
+        mkdir -p /etc/nginx/templates /etc/nginx/conf.d && \
+        cp nginx/nginx.conf /etc/nginx/templates/default.conf.template && \
+        cp nginx/common_locations.inc /etc/nginx/conf.d/; \
     fi
+
+# Set default environment variables for Nginx
+ENV DOMAIN_NAME=localhost
+ENV FRONTEND_HOST=localhost
+ENV FRONTEND_PORT=80
+ENV BACKEND_HOST=backend
+ENV BACKEND_PORT=8000
+ENV USE_HTTPS=false
+ENV SSL_CERT_PATH=/etc/nginx/ssl/cert.pem
+ENV SSL_KEY_PATH=/etc/nginx/ssl/key.pem
 
 # Expose port 3000 for development, 80 for production
 EXPOSE 3000 80

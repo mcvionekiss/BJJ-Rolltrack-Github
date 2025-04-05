@@ -10,9 +10,9 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
   const defaultSchedule =
   ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(day => ({
     day,
-    openTime: "12:00 PM",
-    closeTime: "12:00 PM",
-    closed: day === "SUN", // Default Sunday as closed
+    openTime: dayjs().hour(12).minute(0),
+    closeTime: dayjs().hour(12).minute(0),
+    closed: day === "SUN",
   }))
 
   const [schedule, setSchedule] = useState(initialSchedule.length ? initialSchedule : defaultSchedule);
@@ -23,12 +23,31 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
     }
   }, [initialSchedule]); 
 
+  useEffect(() => {
+    if (initialSchedule.length) {
+      const parsedSchedule = initialSchedule.map(entry => ({
+        ...entry,
+        openTime: typeof entry.openTime === "string" ? dayjs(entry.openTime, "h:mm A") : entry.openTime,
+        closeTime: typeof entry.closeTime === "string" ? dayjs(entry.closeTime, "h:mm A") : entry.closeTime,
+      }));
+      setSchedule(parsedSchedule);
+    }
+  }, [initialSchedule]);
+
   const handleTimeChange = (index, field, value) => {
+    if (!value || !value.isValid || !value.isValid()) return; // safety check
+
     setSchedule(prev => {
       const updatedSchedule = prev.map((item, i) => 
         i === index ? { ...item, [field]: value } : item
       );
-      setScheduleData(updatedSchedule); // Update form data in parent
+      // When storing or sending, convert to string:
+      const scheduleForParent = updatedSchedule.map(s => ({
+        ...s,
+        openTime: s.openTime.format("h:mm A"),
+        closeTime: s.closeTime.format("h:mm A"),
+      }));
+      setScheduleData(scheduleForParent); // Update form data in parent
       return updatedSchedule;
     });
   };
@@ -38,7 +57,12 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
       const updatedSchedule = prev.map((item, i) => 
         i === index ? { ...item, closed: !item.closed } : item
       );
-      setScheduleData(updatedSchedule); // Update form data in parent
+      const scheduleForParent = updatedSchedule.map(s => ({
+        ...s,
+        openTime: s.openTime.format("h:mm A"),
+        closeTime: s.closeTime.format("h:mm A"),
+      }));
+      setScheduleData(scheduleForParent); // Update form data in parent
       return updatedSchedule;
     });
   };
@@ -63,8 +87,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
                 <td>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <TimePicker
-                            value={dayjs(entry.openTime, "h:mm A")}
-                            onChange={(newTime) => handleTimeChange(index, "openTime", newTime.format("h:mm A"))}
+                            value={dayjs.isDayjs(entry.openTime) ? entry.openTime : dayjs(entry.openTime, "h:mm A")}
+                            onChange={(newTime) => handleTimeChange(index, "openTime", newTime)}
                             disabled={entry.closed}
                             renderInput={(params) => <TextField {...params} size="small" />}
                         />
@@ -73,8 +97,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
                 <td>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <TimePicker
-                            value={dayjs(entry.closeTime, "h:mm A")}
-                            onChange={(newTime) => handleTimeChange(index, "closeTime", newTime.format("h:mm A"))}
+                            value={dayjs.isDayjs(entry.closeTime) ? entry.closeTime : dayjs(entry.closeTime, "h:mm A")}
+                            onChange={(newTime) => handleTimeChange(index, "closeTime", newTime)}
                             disabled={entry.closed}
                             renderInput={(params) => <TextField {...params} size="small" />}
                         />

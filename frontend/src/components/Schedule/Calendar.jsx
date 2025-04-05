@@ -7,7 +7,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
 import { Box, Modal, Typography, Button, TextField, Select, MenuItem, Switch, FormControlLabel } from '@mui/material';
-
+import AddClassInformation from './AddClassInformation';
 
 export default function Calendar() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function Calendar() {
   const handleChange = (event) => {
     setAge(event.target.value);
   };
-  const [repeat, setRepeat] = useState(false); 
+  const [repeat, setRepeat] = useState(false);
 
 
   // State to control the modal visibility
@@ -40,6 +40,51 @@ export default function Calendar() {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+  // Event Render Function To Get Event Info and Display it
+  function renderEventContent(eventInfo) {
+    const { title, start, end, extendedProps } = eventInfo.event;
+    const formatTime = (dateStr) => {
+      return new Date(dateStr).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    };
+
+    return (
+      <div style={{ borderRadius: '5px' }}>
+        <strong style={{ fontSize: '12px' }}>{title}</strong>
+        {start && end && <p style={{ fontSize: '10px', margin: '2px 0' }}>{formatTime(start)} - {formatTime(end)}</p>}
+        {extendedProps.instructor && <p style={{ fontSize: '12px', margin: '2px 0' }}>{extendedProps.instructor}</p>}
+      </div>
+    );
+  }
+
+  const handleSubmit = (e) => {
+      e.preventDefault();
+      const title = e.target.elements.title.value;
+      const date = e.target.elements.date.value;
+      const start = `${date}T${e.target.elements.start.value}:00`;
+      const end = `${date}T${e.target.elements.end.value}:00`;
+      const instructor = e.target.elements.instructor.value;
+      const duration = "01:00:00"; // You can calculate this dynamically
+
+      const newEvent = {
+        title,
+        start,
+        end,
+        color: '#E0E0E0',
+        textColor: 'black',
+        borderColor: 'black',
+        extendedProps: {
+          instructor,
+          duration,
+        },
+      };
+
+      setEvents([...events, newEvent]);
+      handleCloseModal();
+  }
 
   return (
     <div>
@@ -51,7 +96,11 @@ export default function Calendar() {
           center: 'prev title next',
           end: 'addClassButton',
         }}
+        allDaySlot={false}
         events={events}
+        eventContent={renderEventContent}
+        eventClick={(info) => { console.log("bao", info) }}
+        editable={true}
         selectable={true}
         select={() => {
           handleOpenModal();
@@ -75,76 +124,7 @@ export default function Calendar() {
           <Typography id="modal-modal-title" variant="h6" component="h2" style={{ marginBottom: '20px' }}>
             Add Class
           </Typography>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const title = e.target.elements.title.value;
-              const date = e.target.elements.date.value;
-              const start = `${date}T${e.target.elements.start.value}:00`;
-              const end = `${date}T${e.target.elements.end.value}:00`;
-
-
-              setEvents([
-                ...events,
-                {
-                  title,
-                  start,
-                  end,
-                  color: '#E0E0E0',
-                  textColor: 'black',
-                  borderColor: 'black',
-                },
-              ]);
-              handleCloseModal();
-            }}
-          >
-            <div>
-              <label>Class Name</label>
-              <TextField fullWidth label="Class Name" name="title" required margin="normal" />
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box sx={{ flex: 1 }}>
-                  <label style={{ marginBottom: '4px' }}>Time Start</label>
-                  <TextField type="time" name="start" required fullWidth />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <label style={{ marginBottom: '4px' }}>Time End</label>
-                  <TextField type="time" name="end" required fullWidth />
-                </Box>
-              </Box>
-              <label>Date</label>
-              <TextField fullWidth type="date" name="date" required margin="normal" />
-              <label>Instructor</label>
-              <TextField fullWidth label="Instructor" name="instructor" required margin="normal" />
-              <label>Class Level</label>
-              <TextField fullWidth label="Class Level" name="classLevel" required margin="normal" />
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box>
-                  <label>Age</label>
-                  <Select
-                    labelId="age-label"
-                    name="age"
-                    value={age}  // Controlled component needs value
-                    onChange={handleChange}
-                    fullWidth
-                  >
-                    <MenuItem value=""><em>None</em></MenuItem>
-                    <MenuItem value="Adult">Adult</MenuItem>
-                    <MenuItem value="Teen">Teen</MenuItem>
-                    <MenuItem value="Child">Child</MenuItem>
-                  </Select>
-                </Box>
-                {/* <Box>
-                <FormControlLabel control={<Switch />} label="Repeat" />
-                </Box> */}
-              </Box>
-            </div>
-            <Button type="submit" variant="contained" sx={{ mt: 2, backgroundColor: "black" }}>
-              Save
-            </Button>
-            <Button onClick={handleCloseModal} sx={{ mt: 2 }}>
-              Cancel
-            </Button>
-          </form>
+          <AddClassInformation handleSubmit={handleSubmit} handleCancelButton={handleCloseModal} />
         </Box>
       </Modal>
     </div>

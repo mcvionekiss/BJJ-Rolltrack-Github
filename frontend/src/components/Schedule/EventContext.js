@@ -15,6 +15,7 @@ export const EventProvider = ({ children }) => {
               dtstart: "2025-03-12T08:00:00Z",
             },
             duration: "01:00:00",
+            instructor: "John Doe",
           },
           {
             title: "Adult Advanced",

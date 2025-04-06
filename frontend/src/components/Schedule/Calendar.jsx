@@ -24,6 +24,7 @@ export default function Calendar() {
   };
 
   const { events, setEvents } = useEvents();
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const [age, setAge] = React.useState('');
   const handleChange = (event) => {
@@ -61,29 +62,32 @@ export default function Calendar() {
   }
 
   const handleSubmit = (e) => {
-      e.preventDefault();
-      const title = e.target.elements.title.value;
-      const date = e.target.elements.date.value;
-      const start = `${date}T${e.target.elements.start.value}:00`;
-      const end = `${date}T${e.target.elements.end.value}:00`;
-      const instructor = e.target.elements.instructor.value;
-      const duration = "01:00:00"; // You can calculate this dynamically
+    e.preventDefault();
+    const title = e.target.elements.title.value;
+    const date = e.target.elements.date.value;
+    const start = `${date}T${e.target.elements.start.value}:00`;
+    const end = `${date}T${e.target.elements.end.value}:00`;
+    const instructor = e.target.elements.instructor.value;
+    const duration = "01:00:00"; // might not be needed
+    const classLevel = e.target.elements.classLevel.value;
 
-      const newEvent = {
-        title,
-        start,
-        end,
-        color: '#E0E0E0',
-        textColor: 'black',
-        borderColor: 'black',
-        extendedProps: {
-          instructor,
-          duration,
-        },
-      };
 
-      setEvents([...events, newEvent]);
-      handleCloseModal();
+    const newEvent = {
+      title,
+      start,
+      end,
+      color: '#E0E0E0',
+      textColor: 'black',
+      borderColor: 'black',
+      extendedProps: {
+        instructor,
+        classLevel,
+        duration
+      },
+    };
+
+    setEvents([...events, newEvent]);
+    handleCloseModal();
   }
 
   return (
@@ -99,7 +103,10 @@ export default function Calendar() {
         allDaySlot={false}
         events={events}
         eventContent={renderEventContent}
-        eventClick={(info) => { console.log("bao", info) }}
+        eventClick={(info) => {
+          setSelectedEvent(info.event); // save clicked event
+          setIsModalOpen(true);         // open the modal
+        }}
         editable={true}
         selectable={true}
         select={() => {
@@ -121,10 +128,40 @@ export default function Calendar() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2" style={{ marginBottom: '20px' }}>
-            Add Class
-          </Typography>
-          <AddClassInformation handleSubmit={handleSubmit} handleCancelButton={handleCloseModal} />
+          {selectedEvent ? (
+            <>
+              <Typography variant="body2" gutterBottom sx={{ marginBottom: "5%" }}>
+                CLASS DETAILS
+              </Typography>
+              <Typography variant="h6" gutterBottom>
+                <strong>{selectedEvent.title}</strong>
+              </Typography>
+              <Typography variant="body2">
+                <strong>Time:</strong> {new Date(selectedEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(selectedEvent.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Date:</strong> {new Date(selectedEvent.start).toLocaleDateString(undefined, {year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Instructor:</strong> {selectedEvent.extendedProps.instructor}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Total Students:</strong> 20
+              </Typography>
+              <Typography variant="body2">
+                <strong>Level:</strong> {selectedEvent.extendedProps.classLevel}
+              </Typography>
+              <Button onClick={handleCloseModal} sx={{ mt: 2 }}>Close</Button>
+            </>
+          ) : (
+            <>
+              <Typography variant="h6" gutterBottom>
+                Add Class
+              </Typography>
+              <AddClassInformation handleSubmit={handleSubmit} handleCancelButton={handleCloseModal} />
+            </>
+          )}
         </Box>
       </Modal>
     </div>

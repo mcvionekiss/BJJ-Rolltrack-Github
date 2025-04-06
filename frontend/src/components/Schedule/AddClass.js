@@ -26,7 +26,8 @@ export default function AddClass() {
     const start = `${date}T${e.target.elements.start.value}:00`;
     const end = `${date}T${e.target.elements.end.value}:00`;
     const instructor = e.target.elements.instructor.value;
-    const duration = "01:00:00"; // You can calculate this dynamically
+    const duration = "01:00:00"; // might not be needed
+    const classLevel = e.target.elements.classLevel.value;
 
     const newEvent = {
       title,
@@ -37,7 +38,8 @@ export default function AddClass() {
       borderColor: 'black',
       extendedProps: {
         instructor,
-        duration,
+        classLevel,
+        duration
       },
     };
 

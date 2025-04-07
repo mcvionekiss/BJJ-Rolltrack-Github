@@ -1,7 +1,7 @@
 """
-Django settings for server project - Development Environment.
+Django settings for server project - Staging Environment.
 
-This file contains settings specific to the local development environment.
+This file contains settings specific to the staging environment.
 """
 
 from pathlib import Path
@@ -15,13 +15,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 from server.settings import get_secret
-SECRET_KEY = get_secret('DJANGO_SECRET_KEY', "django-insecure-vf1ql$l*ln)wabh$4g#!&9&3v6-j#w+-8r!$ci9948i7wx^(fr")
+SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_secret('DEBUG', 'True').lower() == 'true'
+DEBUG = get_secret('DEBUG', 'False').lower() == 'true'
 
-# ALLOWED_HOSTS will be overridden by environment variables in __init__.py
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.2.1"]
+ALLOWED_HOSTS = ['*']  # Will be overridden by environment variables
+
 
 # Application definition
 
@@ -35,13 +35,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',  # Allow frontend requests
     'server',
-    'django_extensions',  # Helpful development tools
 ]
 
 AUTH_USER_MODEL = 'server.GymOwner'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -49,22 +47,16 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
-# CSRF_TRUSTED_ORIGINS will be overridden by environment variables in __init__.py
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://192.168.2.1:3000"]
-
-# CORS_ALLOWED_ORIGINS will be overridden by environment variables in __init__.py
+CORS_ALLOW_CREDENTIALS = True  # ✅ Allow cookies and authentication
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://192.168.2.1:3000",
+    "http://localhost:3000",  # Will be overridden by environment variables
 ]
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "X-CSRFToken",
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",  # Will be overridden by environment variables
 ]
 
 ROOT_URLCONF = "server.urls"
@@ -91,12 +83,11 @@ WSGI_APPLICATION = "server.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DB_NAME = get_secret("DB_NAME", 'test')
-DB_USER = get_secret("DB_USER", 'admin')
-DB_PASSWORD = get_secret("DB_PASSWORD", 'RollTrackTeam495080')
-DB_HOST = get_secret("DB_HOST", 'rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com')
-DB_PORT = get_secret("DB_PORT", '3306')
-
+DB_NAME = get_secret("DB_NAME")
+DB_USER = get_secret("DB_USER")
+DB_PASSWORD = get_secret("DB_PASSWORD")
+DB_HOST = get_secret("DB_HOST")
+DB_PORT = get_secret("DB_PORT")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -107,6 +98,7 @@ DATABASES = {
         "PORT": DB_PORT,
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -143,29 +135,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Development-specific logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'server': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-}
+# Security settings
+if get_secret('USE_HTTPS', 'False').lower() == 'true':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

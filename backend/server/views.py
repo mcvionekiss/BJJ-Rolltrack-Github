@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.utils.timezone import localdate
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
@@ -8,17 +9,44 @@ from django.views import View
 import json
 import logging
 import time
-from .models import GymOwner, Student, Class, Checkin
+from .models import Users, Student, Class, Checkin
 from django.utils.timezone import now
-import datetime
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
-
+from django.db import connection
 
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
     return JsonResponse({"csrfToken": get_token(request)})
+
+@api_view(['GET'])
+def health_check(request):
+    """
+    Health check endpoint for monitoring and load balancing.
+    Checks database connection and returns service status.
+    """
+    status = {
+        "status": "healthy",
+        "timestamp": now().isoformat(),
+        "service": "BJJ RollTrack API",
+        "checks": {
+            "database": "ok"
+        }
+    }
+    
+    # Check database connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception as e:
+        status["status"] = "unhealthy"
+        status["checks"]["database"] = str(e)
+    
+    # Return 200 if healthy, 503 if unhealthy
+    status_code = 200 if status["status"] == "healthy" else 503
+    return JsonResponse(status, status=status_code)
 
 @method_decorator(csrf_exempt, name="dispatch")
 class LoginView(View):
@@ -30,8 +58,8 @@ class LoginView(View):
 
             # Find user by email
             try:
-                user = GymOwner.objects.get(email=email)
-            except GymOwner.DoesNotExist:
+                user = Users.objects.get(email=email)
+            except Users.DoesNotExist:
                 return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
             # Authenticate user with their email and password
@@ -60,7 +88,7 @@ class LoginView(View):
 class LogoutView(View):
     def post(self, request):
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
-        response["Access-Control-Allow-Credentials"] = "true"  # ✅ Ensure session cookies are sent
+        response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -68,21 +96,21 @@ class RegisterView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            username = data.get('username')
+            username = data.get('email')
             email = data.get('email')
             password = data.get('password')
             first_name = data.get('firstName', '')
             last_name = data.get('lastName', '')
 
             # Check if email already exists
-            if GymOwner.objects.filter(email=email).exists():
+            if Users.objects.filter(email=email).exists():
                 return JsonResponse({
                     'success': False,
                     'message': 'Email already registered'
                 }, status=400)
 
             # Create new gym owner
-            user = GymOwner.objects.create_user(
+            user = Users.objects.create_user(
                 username=username,
                 email=email,
                 password=password,
@@ -120,28 +148,28 @@ class CheckinView(View):
 def check_student(request):
     logger = logging.getLogger(__name__)
     request_id = f"req_{int(time.time() * 1000)}"  # Generate a unique request ID
-    
+
     logger.info(f"[{request_id}] check_student endpoint called with method: {request.method}")
-    
+
     if request.method == "POST":
         logger.info(f"[{request_id}] Processing POST request to check_student")
         try:
             # Log request headers for debugging
             logger.debug(f"[{request_id}] Request headers: {dict(request.headers)}")
-            
+
             # Parse request body
             start_time = time.time()
             data = json.loads(request.body)
             email = data.get("email")
             logger.info(f"[{request_id}] Parsed request body. Email to check: {email}")
-            
+
             # Check if student exists
             logger.debug(f"[{request_id}] Querying database for student with email: {email}")
             query_start_time = time.time()
             student_exists = Student.objects.filter(email=email).exists()
             query_time = time.time() - query_start_time
             logger.debug(f"[{request_id}] Database query completed in {query_time:.4f}s")
-            
+
             # Prepare response
             if student_exists:
                 logger.info(f"[{request_id}] Student found with email: {email}")
@@ -151,11 +179,11 @@ def check_student(request):
                 logger.warning(f"[{request_id}] Student not found with email: {email}")
                 response = {"exists": False, "message": "Student not found"}
                 status_code = 404
-            
+
             # Log response details
             total_time = time.time() - start_time
             logger.info(f"[{request_id}] Returning response with status: {status_code}, exists: {student_exists}, total processing time: {total_time:.4f}s")
-            
+
             return JsonResponse(response, status=status_code)
 
         except json.JSONDecodeError as e:
@@ -169,31 +197,36 @@ def check_student(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @api_view(['GET'])
-def available_classes(request):
-    """Fetch available classes for check-in."""
-    if request.method == "GET":
-        # Try to get cached data first
-        cached_classes = cache.get("available_classes")
-        if cached_classes:
-            return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+def available_classes_today(request):
+    """Fetch only today's available classes for check-in."""
+    today = localdate()  # Get today's date
 
-        classes = Class.objects.all().order_by("startTime")  # Optimize query
+    # Try to get cached data first
+    cached_classes = cache.get(f"available_classes_{today}")
+    if cached_classes:
+        return JsonResponse({"success": True, "classes": cached_classes}, status=200)
 
-        data = [
-            {
-                "classID": cls.classID,
-                "name": cls.name,
-                "startTime": cls.startTime.strftime("%H:%M"),
-                "endTime": cls.endTime.strftime("%H:%M"),
-                "recurring": cls.recurring
-            }
-            for cls in classes
-        ]
+    # Query only classes for today
+    # classes = Class.objects.filter(date=today).order_by("startTime")
 
-        # Store in cache for 30 seconds
-        cache.set("available_classes", data, timeout=30)
+    # Query for ALL classes
+    classes = Class.objects.all().order_by("startTime")
 
-        return JsonResponse({"success": True, "classes": data}, status=200)
+    data = [
+        {
+            "classID": cls.classID,
+            "name": cls.name,
+            "startTime": cls.startTime.strftime("%H:%M"),
+            "endTime": cls.endTime.strftime("%H:%M"),
+            "recurring": cls.recurring
+        }
+        for cls in classes
+    ]
+
+    # Store in cache for 30 seconds
+    cache.set(f"available_classes_{today}", data, timeout=30)
+
+    return JsonResponse({"success": True, "classes": data}, status=200)
 
 def class_details(request, classID):
     """Returns details of a specific class."""
@@ -208,7 +241,7 @@ def class_details(request, classID):
         })
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
-    
+
 
 @csrf_exempt
 def checkin(request):
@@ -236,3 +269,41 @@ def checkin(request):
 
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=400)
+
+@csrf_exempt
+def add_class(request):
+    """API endpoint to add a new class to the database."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            name = data.get("name")
+            start_time = data.get("startTime")
+            end_time = data.get("endTime")
+            recurring = data.get("recurring", False)
+
+            if not all([name, start_time, end_time]):
+                return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
+
+            new_class = Class.objects.create(
+                name=name,
+                startTime=start_time,
+                endTime=end_time,
+                recurring=recurring
+            )
+
+            return JsonResponse({
+                "success": True,
+                "message": "Class added successfully",
+                "class": {
+                    "classID": new_class.classID,
+                    "name": new_class.name,
+                    "startTime": str(new_class.startTime),
+                    "endTime": str(new_class.endTime),
+                    "recurring": new_class.recurring
+                }
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=400)
+    else:
+        return JsonResponse({"error": "Method not allowed"}, status=405)

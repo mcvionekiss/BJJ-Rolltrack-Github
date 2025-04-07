@@ -1,6 +1,9 @@
+// src/components/Login.js
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_ENDPOINTS } from "../config";
 import {
     TextField,
     Button,
@@ -13,13 +16,13 @@ import {
     Link,
     CircularProgress,
     AppBar,
-    Toolbar,
+    Toolbar
 } from "@mui/material";
 import logo from '../assets/logo.jpeg';
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
-        const response = await axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true });
+        const response = await axios.get(API_ENDPOINTS.AUTH.CSRF, { withCredentials: true });
         setCsrfToken(response.data.csrfToken);
     } catch (error) {
         console.error("Failed to fetch CSRF token", error);
@@ -28,7 +31,7 @@ const fetchCsrfToken = async (setCsrfToken) => {
 
 const loginUser = async (credentials, csrfToken) => {
     return axios.post(
-        "http://localhost:8000/auth/login/",
+        API_ENDPOINTS.AUTH.LOGIN,
         credentials,
         {
             withCredentials: true, // Required for session authentication
@@ -38,13 +41,23 @@ const loginUser = async (credentials, csrfToken) => {
 };
 
 function Login() {
-    const [formData, setFormData] = useState({ email: "", password: "" }); // ✅ One state for form
+    const [formData, setFormData] = useState({ email: "", password: "" });
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(""); // ✅ Error state
+    const [error, setError] = useState("");
+    const [rememberMe, setRememberMe] = useState(false);
     const navigate = useNavigate();
 
-    // Fetch CSRF token when the component mounts
+    // ✅ Load email from localStorage if "Remember Me" was checked
+    useEffect(() => {
+        const rememberedEmail = localStorage.getItem("rememberedEmail");
+        if (rememberedEmail) {
+            setFormData((prev) => ({ ...prev, email: rememberedEmail }));
+            setRememberMe(true);
+        }
+    }, []);
+
+    // ✅ Fetch CSRF token when the component mounts
     useEffect(() => {
         fetchCsrfToken(setCsrfToken);
     }, []);
@@ -55,15 +68,29 @@ function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(""); // Clear previous errors
+
         if (loading) return;
         setLoading(true);
 
         try {
-            const response = await loginUser({ email: formData.email, password: formData.password }, csrfToken);
+            const response = await loginUser(
+                { email: formData.email, password: formData.password },
+                csrfToken
+            );
             console.log("🟢 Login successful", response.data);
+
+            // ✅ Store email in localStorage if "Remember Me" is checked
+            if (rememberMe) {
+                localStorage.setItem("rememberedEmail", formData.email);
+            } else {
+                localStorage.removeItem("rememberedEmail");
+            }
+
             navigate("/dashboard"); // ✅ Redirect to dashboard
         } catch (error) {
             console.error("🔴 Login failed", error.response?.data || error);
+            setError("Invalid email or password. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -82,7 +109,7 @@ function Login() {
                     <img
                         src={logo}
                         alt="RollTrack Logo"
-                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
+                        style={{ height: "40px", cursor: "pointer" }}
                         onClick={() => navigate("/")}
                     />
 
@@ -128,24 +155,30 @@ function Login() {
                             required
                         />
 
-            {/* Password Input */}
-            <TextField
-              fullWidth
-              label="Password"
-              // type="password"
-              variant="outlined"
-              margin="normal"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={loading}
-              required
-            />
+                        {/* Password Input */}
+                        <TextField
+                            fullWidth
+                            label="Password"
+                            type="password"
+                            variant="outlined"
+                            margin="normal"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            disabled={loading}
+                            required
+                        />
 
                         {/* Remember Me & Forgot Password */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
                             <FormControlLabel
-                                control={<Checkbox />}
+                                control={
+                                    <Checkbox
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        color="primary"
+                                    />
+                                }
                                 label="Remember me"
                             />
                             <Link href="/forgot" underline="hover">

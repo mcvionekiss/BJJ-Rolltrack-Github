@@ -8,7 +8,7 @@ from django.views import View
 import json
 import logging
 import time
-from .models import GymOwner, Student, Class, Checkin
+from .models import Users, Student, Class, Checkin
 from django.utils.timezone import now
 import datetime
 from rest_framework.decorators import api_view
@@ -30,8 +30,8 @@ class LoginView(View):
 
             # Find user by email
             try:
-                user = GymOwner.objects.get(email=email)
-            except GymOwner.DoesNotExist:
+                user = Users.objects.get(email=email)
+            except Users.DoesNotExist:
                 return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
             # Authenticate user with their email and password
@@ -75,14 +75,14 @@ class RegisterView(View):
             last_name = data.get('lastName', '')
 
             # Check if email already exists
-            if GymOwner.objects.filter(email=email).exists():
+            if Users.objects.filter(email=email).exists():
                 return JsonResponse({
                     'success': False,
                     'message': 'Email already registered'
                 }, status=400)
 
             # Create new gym owner
-            user = GymOwner.objects.create_user(
+            user = Users.objects.create_user(
                 username=username,
                 email=email,
                 password=password,
@@ -120,28 +120,28 @@ class CheckinView(View):
 def check_student(request):
     logger = logging.getLogger(__name__)
     request_id = f"req_{int(time.time() * 1000)}"  # Generate a unique request ID
-    
+
     logger.info(f"[{request_id}] check_student endpoint called with method: {request.method}")
-    
+
     if request.method == "POST":
         logger.info(f"[{request_id}] Processing POST request to check_student")
         try:
             # Log request headers for debugging
             logger.debug(f"[{request_id}] Request headers: {dict(request.headers)}")
-            
+
             # Parse request body
             start_time = time.time()
             data = json.loads(request.body)
             email = data.get("email")
             logger.info(f"[{request_id}] Parsed request body. Email to check: {email}")
-            
+
             # Check if student exists
             logger.debug(f"[{request_id}] Querying database for student with email: {email}")
             query_start_time = time.time()
             student_exists = Student.objects.filter(email=email).exists()
             query_time = time.time() - query_start_time
             logger.debug(f"[{request_id}] Database query completed in {query_time:.4f}s")
-            
+
             # Prepare response
             if student_exists:
                 logger.info(f"[{request_id}] Student found with email: {email}")
@@ -151,11 +151,11 @@ def check_student(request):
                 logger.warning(f"[{request_id}] Student not found with email: {email}")
                 response = {"exists": False, "message": "Student not found"}
                 status_code = 404
-            
+
             # Log response details
             total_time = time.time() - start_time
             logger.info(f"[{request_id}] Returning response with status: {status_code}, exists: {student_exists}, total processing time: {total_time:.4f}s")
-            
+
             return JsonResponse(response, status=status_code)
 
         except json.JSONDecodeError as e:
@@ -208,7 +208,7 @@ def class_details(request, classID):
         })
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
-    
+
 
 @csrf_exempt
 def checkin(request):

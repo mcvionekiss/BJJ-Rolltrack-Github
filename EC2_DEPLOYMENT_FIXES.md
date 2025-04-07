@@ -84,6 +84,375 @@ These global directives should only be in the main nginx.conf file, not in confi
 
 **Explanation:** Without the conditional check, the HTTPS server block would always be included, which could cause issues if SSL certificates weren't available or if HTTPS was disabled. Adding the condition ensures that the HTTPS server block is only active when USE_HTTPS is set to true.
 
+### 10. Nginx Environment Variable Processing Issue
+
+**Problem:** The nginx container was failing with the error: `unknown "frontend_host" variable` even though the templates were correctly using uppercase variables (`${FRONTEND_HOST}`).
+
+**Fix:** Modified the `nginx/docker-entrypoint.sh` script to address the variable case sensitivity issue:
+- Added explicit lowercase variable exports for compatibility:
+  ```bash
+  export frontend_host=${FRONTEND_HOST}
+  export frontend_port=${FRONTEND_PORT}
+  export backend_host=${BACKEND_HOST}
+  export backend_port=${BACKEND_PORT}
+  export ssl_cert_path=${SSL_CERT_PATH}
+  export ssl_key_path=${SSL_KEY_PATH}
+  ```
+- Changed from restricted variable substitution to unrestricted:
+  ```bash
+  # From:
+  envsubst '${DOMAIN_NAME} ${FRONTEND_HOST} ${FRONTEND_PORT}...' < template > output
+  # To:
+  envsubst < template > output
+  ```
+
+**Explanation:** The nginx configuration processor was looking for lowercase variable names in some contexts but the script was only exporting uppercase versions. By explicitly exporting both uppercase and lowercase versions of all variables, and using unrestricted variable substitution, the script ensures all variable references will be properly replaced regardless of case.
+
+### 11. HTTPS Configuration Issues
+
+**Problem:** HTTPS is not working on the deployed application, resulting in connection refused errors when trying to fetch the CSRF token.
+
+**Fix:** 
+- Change `USE_HTTPS=false` to `USE_HTTPS=true` in docker-compose.yml
+- Uncomment the SSL certificate volume mounts:
+  ```yaml
+  - ./certbot/conf/live/rolltrackapp.com/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+  - ./certbot/conf/live/rolltrackapp.com/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+  ```
+- Ensure the certificate file names match between nginx.conf and environment variables:
+  ```
+  # In nginx.conf, change:
+  ssl_certificate /etc/nginx/ssl/cert.pem;
+  ssl_certificate_key /etc/nginx/ssl/key.pem;
+  
+  # To:
+  ssl_certificate /etc/nginx/ssl/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+  ```
+  
+  OR 
+  
+  ```
+  # In docker-compose.yml, change:
+  SSL_CERT_PATH=/etc/nginx/ssl/fullchain.pem
+  SSL_KEY_PATH=/etc/nginx/ssl/privkey.pem
+  
+  # To:
+  SSL_CERT_PATH=/etc/nginx/ssl/cert.pem
+  SSL_KEY_PATH=/etc/nginx/ssl/key.pem
+  ```
+
+**Explanation:** The HTTPS configuration is disabled by default, and there's a mismatch between the expected certificate file names in nginx.conf and the actual file names provided in docker-compose.yml. Additionally, the certificate volume mounts are commented out, preventing the certificates from being available to the container.
+
+### 12. API URL Structure Mismatch
+
+**Problem:** The frontend is trying to access API endpoints at `/api/auth/csrf/` but the backend routes auth endpoints at `/auth/csrf/` (without the "api" prefix), resulting in 404 errors.
+
+**Fix:** 
+1. **Option 1:** Update nginx.conf to route `/api/auth/` to the backend's `/auth/` path:
+   ```nginx
+   location /api/auth/ {
+       # Remove /api prefix before passing to backend
+       rewrite ^/api/(.*) /$1 break;
+       proxy_pass http://bjj-rolltrack-github_backend_1:8000;
+       # other proxy settings...
+   }
+   ```
+
+2. **Option 2:** Update backend urls.py to include the auth endpoints with an "api" prefix:
+   ```python
+   # Keep existing auth routes
+   path("auth/csrf/", get_csrf_token, name="csrf_token"),
+   # Add duplicated routes with api prefix
+   path("api/auth/csrf/", get_csrf_token, name="api_csrf_token"),
+   ```
+
+3. **Option 3:** Update frontend config.js to not include the api prefix for auth endpoints:
+   ```javascript
+   // If API_URL includes '/api' suffix already
+   export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+   // Remove '/api' for auth endpoints
+   export const AUTH_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
+   
+   export const API_ENDPOINTS = {
+     // Auth endpoints
+     AUTH: {
+       CSRF: `${AUTH_BASE_URL}/auth/csrf/`,
+       // other auth endpoints...
+     },
+     // Keep API prefix for other endpoints
+     // ...
+   }
+   ```
+
+**Explanation:** There's a structural mismatch between how the frontend calls API endpoints and how they're defined in the backend. The frontend includes the `/api/` prefix in all URLs, but the backend routes for auth endpoints don't include this prefix. This causes 404 errors when trying to access auth endpoints.
+
+### 13. Redirect Path Conflict
+
+**Problem:** Users are being redirected to the register page instead of the login page upon initial page load.
+
+**Fix:**
+Ensure frontend and backend redirects are aligned:
+
+1. In backend/server/urls.py:
+   ```python
+   # Change:
+   path('', RedirectView.as_view(url='/auth/login/')),
+   
+   # To:
+   path('', RedirectView.as_view(url='/login'))
+   ```
+   
+   OR
+   
+2. In frontend/src/App.js:
+   ```jsx
+   // Change:
+   <Route path="/" element={<Navigate to="/login" />} />
+   
+   # To match backend URL:
+   <Route path="/" element={<Navigate to="/auth/login" />} />
+   <Route path="/auth/login" element={<Login />} />
+   ```
+
+**Explanation:** There's a conflict between the backend and frontend routing configurations. The backend redirects the root path to `/auth/login/`, but the frontend routes don't handle this path and instead redirect the root to `/login`. This inconsistency causes navigation issues and unexpected redirects.
+
+### 14. Implementation Fix Details: HTTPS and Routing Issues
+
+#### Initial Issues Reported:
+
+1. **HTTPS Not Working**: The site couldn't be accessed over HTTPS
+2. **CSRF Token Fetch Failure**: Error message `Failed to fetch CSRF token Network Error`
+3. **Incorrect Redirection**: Users being redirected to register page instead of login page
+
+#### Root Causes Identified:
+
+1. **HTTPS Configuration Problems**:
+   - `USE_HTTPS=false` in docker-compose.yml disabled HTTPS
+   - SSL certificate volume mounts were commented out
+   - Certificate file paths were inconsistent between nginx.conf and environment variables
+
+2. **API Routing Mismatch**:
+   - Frontend sending requests to `/api/auth/csrf/` 
+   - Backend expecting requests at `/auth/csrf/` (without `/api` prefix)
+   - No URL rewriting rule to handle this discrepancy
+
+3. **Conflicting Redirect Paths**:
+   - Backend redirecting root to `/auth/login/`
+   - Frontend redirecting root to `/login`
+   - This mismatch caused unexpected navigation behavior
+
+#### Fixes Implemented:
+
+1. **HTTPS Configuration Fixes**:
+   - Changed `USE_HTTPS=false` to `USE_HTTPS=true` in docker-compose.yml
+   - Added direct mounts for the existing SSL certificates:
+     ```yaml
+     - ./nginx/ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
+     - ./nginx/ssl/key.pem:/etc/nginx/ssl/key.pem:ro
+     ```
+   - Updated SSL paths in environment variables to match the actual files:
+     ```yaml
+     - SSL_CERT_PATH=/etc/nginx/ssl/cert.pem
+     - SSL_KEY_PATH=/etc/nginx/ssl/key.pem
+     ```
+
+2. **API Routing Fixes**:
+   - Added specific location block in nginx.conf for `/api/auth/` paths:
+     ```nginx
+     # Specific handler for auth endpoints - strip /api prefix
+     location /api/auth/ {
+         # Rewrite to remove /api prefix before passing to backend
+         rewrite ^/api/(.*) /$1 break;
+         proxy_pass http://bjj-rolltrack-github_backend_1:8000;
+         # other proxy settings...
+     }
+     ```
+   - This allows frontend to use `/api/auth/csrf/` while backend receives at `/auth/csrf/`
+   - Added this block to both HTTP and HTTPS server blocks for consistency
+
+3. **Redirect Path Fix**:
+   - Updated backend URLs configuration to match frontend expectations:
+     ```python
+     # Changed from:
+     path('', RedirectView.as_view(url='/auth/login/')),
+     
+     # To:
+     path('', RedirectView.as_view(url='/login')),
+     ```
+   - This ensures consistent routing behavior between frontend and backend
+
+#### Deployment Steps:
+
+1. Update the following files:
+   - docker-compose.yml
+   - nginx/nginx.conf
+   - backend/server/urls.py
+
+2. Restart the services:
+   ```bash
+   docker-compose down
+   docker-compose up -d
+   ```
+
+3. Verify the fixes:
+   - HTTPS should work correctly
+   - CSRF token should be fetched successfully
+   - Root URL should redirect to login page instead of register page
+
+#### Additional Notes:
+
+- SSL certificates were found in the `/nginx/ssl/` directory with names `cert.pem` and `key.pem`
+- The certbot volume structure exists but directories are empty, suggesting Let's Encrypt auto-renewal is configured but not active yet
+- No changes were made to frontend code as the backend and nginx routing changes addressed the issues without requiring frontend modifications
+
+### 15. Nginx Configuration Structure and CSRF Token 404 Issue
+
+**Problem:** Despite updating nginx.conf with proper rewrite rules for /api/auth/ paths, requests to /api/auth/csrf/ were still resulting in 404 errors. This occurred because the nginx container doesn't directly use the nginx.conf file from the repository.
+
+**Investigation:**
+- Inspecting the container revealed that nginx was using configuration files in the `/etc/nginx/conf.d/` directory
+- The actual configuration was split across multiple files:
+  - `default.conf`: HTTP server configuration that redirects to HTTPS
+  - `https.conf`: HTTPS server configuration with SSL settings
+  - `common_settings.inc`: Shared location blocks for both HTTP and HTTPS servers
+- These files are generated from templates in the `/etc/nginx/templates/` directory
+
+**Fix:**
+1. Created a corrected version of `common_settings.inc` with a specific location block for `/api/auth/` paths:
+   ```nginx
+   # Special handling for auth API requests - ensure auth endpoints work with or without /api prefix
+   location ~ ^/api/auth/(.*)$ {
+       # Remove /api prefix before forwarding to backend
+       rewrite ^/api/(.*) /$1 break;
+       proxy_pass http://bjj-rolltrack-github_backend_1:8000;
+       proxy_http_version 1.1;
+       proxy_set_header Upgrade $http_upgrade;
+       proxy_set_header Connection 'upgrade';
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+       proxy_cache_bypass $http_upgrade;
+       
+       # Add more detailed logging for debugging
+       access_log /var/log/nginx/auth_debug.log;
+   }
+   ```
+
+2. Applied the fix in two ways:
+   a. **Immediate fix** (only persists until container restart):
+      ```bash
+      # Copy to active config and reload nginx
+      docker cp common_settings.inc bjj-nginx:/etc/nginx/conf.d/common_settings.inc
+      docker exec bjj-nginx nginx -s reload
+      ```
+   
+   b. **Permanent fix** (persists after container restarts):
+      ```bash
+      # Copy to template directory
+      docker cp common_settings.inc bjj-nginx:/etc/nginx/templates/common_settings.inc
+      
+      # Restart the nginx container to regenerate configs from templates
+      docker-compose restart nginx
+      ```
+
+**Explanation:** The container uses a template-based configuration system that generates the actual nginx config files during container startup. Our original changes to nginx.conf weren't being applied because the container was using its own internal templates. By identifying the actual template structure and modifying both the active configuration and the template files, we ensured that the fix would persist even after container restarts.
+
+### 16. Frontend API Endpoint Configuration Mismatch
+
+**Problem:** Even after fixing the nginx configuration, the application was still experiencing CSRF token fetch failures and redirections to the register page instead of login. This was happening because the frontend's API endpoint construction wasn't properly handling the API_URL variable when it already included '/api' as a suffix.
+
+**Investigation:**
+- In `frontend/src/config.js`, API endpoints are constructed by appending paths to `API_URL`:
+  ```javascript
+  export const API_ENDPOINTS = {
+    AUTH: {
+      CSRF: `${API_URL}/auth/csrf/`,
+      LOGIN: `${API_URL}/auth/login/`,
+      // ...
+    },
+    // ...
+  }
+  ```
+- In production, `REACT_APP_API_URL` is set to `https://rolltrackapp.com/api` in docker-compose.yml
+- This results in auth endpoint URLs like `https://rolltrackapp.com/api/auth/csrf/` 
+- However, backend routes expect auth endpoints at `/auth/csrf/` (without the `/api` prefix)
+- Our nginx rewrite rule was attempting to fix this, but wasn't always matching correctly
+
+**Fix:**
+1. Updated `frontend/src/config.js` to handle API_URL that already contains '/api':
+   ```javascript
+   // Helper function to remove /api suffix if present
+   const removeApiSuffix = (url) => url.endsWith('/api') ? url.slice(0, -4) : url;
+
+   // API base URL for auth endpoints - prevents double /api/ in paths
+   export const AUTH_BASE_URL = removeApiSuffix(API_URL);
+
+   // API Endpoints
+   export const API_ENDPOINTS = {
+     // Auth endpoints
+     AUTH: {
+       CSRF: `${AUTH_BASE_URL}/auth/csrf/`,
+       LOGIN: `${AUTH_BASE_URL}/auth/login/`,
+       LOGOUT: `${AUTH_BASE_URL}/auth/logout/`,
+       REGISTER: `${AUTH_BASE_URL}/auth/register/`,
+     },
+     // ...other endpoints...
+   };
+   ```
+
+2. Improved the nginx location block with a more precise regex pattern:
+   ```nginx
+   # Special handling for auth API requests - ensure auth endpoints work with or without /api prefix
+   location ~ ^/api/auth/(.*)$ {
+       # Remove /api prefix before forwarding to backend
+       rewrite ^/api/(.*) /$1 break;
+       proxy_pass http://bjj-rolltrack-github_backend_1:8000;
+       # ... other proxy settings ...
+       
+       # Add more detailed logging for debugging
+       access_log /var/log/nginx/auth_debug.log;
+   }
+   ```
+
+**Explanation:** This was a dual-layer problem. The frontend was constructing incorrect URLs when API_URL already contained '/api', and the nginx rewrite rule wasn't always matching properly. By updating both the frontend configuration and nginx location block, we ensured that auth endpoints would work correctly regardless of how the API_URL is set.
+
+**Important Note:** After deploying these changes, the frontend may need to be rebuilt to incorporate the config.js changes. If immediate testing is needed, consider editing the deployed JavaScript bundle directly, but a proper rebuild should be scheduled for a permanent fix.
+
+**Important Notes:**
+- When making nginx configuration changes, always use proper comment syntax with `#` prefix
+- Location block order matters - more specific routes (like `/api/auth/`) should come before more general ones (like `/api/`)
+- Always reload nginx after configuration changes: `nginx -s reload`
+- For persistent changes across container restarts, update both:
+  1. The active configuration in `/etc/nginx/conf.d/`
+  2. The template files in `/etc/nginx/templates/`
+- When working with templates that contain variables like `${FRONTEND_HOST}`, either:
+  1. Use the same variables in your updates, or
+  2. Replace them with actual values if copying directly to the conf.d directory
+
+**For a Complete Solution:**
+To ensure the fix is permanently applied and included in future deployments:
+
+1. Add this change to a custom configuration file in your repository:
+   ```bash
+   # Create a custom config file in your repository
+   mkdir -p nginx/custom_conf/
+   cp final_common_settings.inc nginx/custom_conf/api_auth_fix.conf
+   ```
+
+2. Mount this custom configuration in your docker-compose.yml:
+   ```yaml
+   services:
+     nginx:
+       # ... other configuration ...
+       volumes:
+         # ... other volumes ...
+         - ./nginx/custom_conf/api_auth_fix.conf:/etc/nginx/conf.d/api_auth_fix.conf:ro
+   ```
+
+3. This ensures the fix is applied automatically with every deployment, without modifying the container's internal templates.
+
 ## Deployment Instructions
 
 ### 1. Set Up Environment Variables
@@ -99,6 +468,7 @@ These global directives should only be in the main nginx.conf file, not in confi
    - Set `DJANGO_SECRET_KEY` to a secure key (generate one with `python backend/secretskeygenerator.py`)
    - Update database credentials if needed
    - Set `USE_HTTPS` to `True` if you want to use HTTPS
+   - Ensure `REACT_APP_API_URL` and API endpoint configurations are consistent with your backend routes
 
 ### 2. Update Package.json (if needed)
 

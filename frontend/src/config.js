@@ -14,14 +14,20 @@ export const PUBLIC_URL = process.env.REACT_APP_PUBLIC_URL || 'http://localhost:
 // Environment (development, staging, production)
 export const ENV = process.env.REACT_APP_ENV || 'development';
 
+// Helper function to remove /api suffix if present
+const removeApiSuffix = (url) => url.endsWith('/api') ? url.slice(0, -4) : url;
+
+// API base URL for auth endpoints - prevents double /api/ in paths
+export const AUTH_BASE_URL = removeApiSuffix(API_URL);
+
 // API Endpoints
 export const API_ENDPOINTS = {
   // Auth endpoints
   AUTH: {
-    CSRF: `${API_URL}/auth/csrf/`,
-    LOGIN: `${API_URL}/auth/login/`,
-    LOGOUT: `${API_URL}/auth/logout/`,
-    REGISTER: `${API_URL}/auth/register/`,
+    CSRF: `${AUTH_BASE_URL}/auth/csrf/`,
+    LOGIN: `${AUTH_BASE_URL}/auth/login/`,
+    LOGOUT: `${AUTH_BASE_URL}/auth/logout/`,
+    REGISTER: `${AUTH_BASE_URL}/auth/register/`,
   },
   // Student endpoints
   STUDENT: {

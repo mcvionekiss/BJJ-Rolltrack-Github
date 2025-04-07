@@ -16,7 +16,7 @@ function App() {
         <Router>
             <EventProvider>
                 <Routes>
-                    <Route path="/" element={<Navigate to="/register" />} />  {/* 👈 Redirect / to /register */}
+                    <Route path="/" element={<Navigate to="/login" />} />  {/* 👈 Redirect / to /login */}
 
 
                     {/* Registration Pages */}

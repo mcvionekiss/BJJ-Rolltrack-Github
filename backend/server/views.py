@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.utils.timezone import localdate
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
@@ -10,15 +11,42 @@ import logging
 import time
 from .models import Users, Student, Class, Checkin
 from django.utils.timezone import now
-import datetime
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
-
+from django.db import connection
 
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
     return JsonResponse({"csrfToken": get_token(request)})
+
+@api_view(['GET'])
+def health_check(request):
+    """
+    Health check endpoint for monitoring and load balancing.
+    Checks database connection and returns service status.
+    """
+    status = {
+        "status": "healthy",
+        "timestamp": now().isoformat(),
+        "service": "BJJ RollTrack API",
+        "checks": {
+            "database": "ok"
+        }
+    }
+    
+    # Check database connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception as e:
+        status["status"] = "unhealthy"
+        status["checks"]["database"] = str(e)
+    
+    # Return 200 if healthy, 503 if unhealthy
+    status_code = 200 if status["status"] == "healthy" else 503
+    return JsonResponse(status, status=status_code)
 
 @method_decorator(csrf_exempt, name="dispatch")
 class LoginView(View):
@@ -60,7 +88,7 @@ class LoginView(View):
 class LogoutView(View):
     def post(self, request):
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
-        response["Access-Control-Allow-Credentials"] = "true"  # ✅ Ensure session cookies are sent
+        response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -68,7 +96,7 @@ class RegisterView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            username = data.get('username')
+            username = data.get('email')
             email = data.get('email')
             password = data.get('password')
             first_name = data.get('firstName', '')
@@ -169,31 +197,36 @@ def check_student(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @api_view(['GET'])
-def available_classes(request):
-    """Fetch available classes for check-in."""
-    if request.method == "GET":
-        # Try to get cached data first
-        cached_classes = cache.get("available_classes")
-        if cached_classes:
-            return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+def available_classes_today(request):
+    """Fetch only today's available classes for check-in."""
+    today = localdate()  # Get today's date
 
-        classes = Class.objects.all().order_by("startTime")  # Optimize query
+    # Try to get cached data first
+    cached_classes = cache.get(f"available_classes_{today}")
+    if cached_classes:
+        return JsonResponse({"success": True, "classes": cached_classes}, status=200)
 
-        data = [
-            {
-                "classID": cls.classID,
-                "name": cls.name,
-                "startTime": cls.startTime.strftime("%H:%M"),
-                "endTime": cls.endTime.strftime("%H:%M"),
-                "recurring": cls.recurring
-            }
-            for cls in classes
-        ]
+    # Query only classes for today
+    # classes = Class.objects.filter(date=today).order_by("startTime")
 
-        # Store in cache for 30 seconds
-        cache.set("available_classes", data, timeout=30)
+    # Query for ALL classes
+    classes = Class.objects.all().order_by("startTime")
 
-        return JsonResponse({"success": True, "classes": data}, status=200)
+    data = [
+        {
+            "classID": cls.classID,
+            "name": cls.name,
+            "startTime": cls.startTime.strftime("%H:%M"),
+            "endTime": cls.endTime.strftime("%H:%M"),
+            "recurring": cls.recurring
+        }
+        for cls in classes
+    ]
+
+    # Store in cache for 30 seconds
+    cache.set(f"available_classes_{today}", data, timeout=30)
+
+    return JsonResponse({"success": True, "classes": data}, status=200)
 
 def class_details(request, classID):
     """Returns details of a specific class."""
@@ -236,3 +269,41 @@ def checkin(request):
 
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=400)
+
+@csrf_exempt
+def add_class(request):
+    """API endpoint to add a new class to the database."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            name = data.get("name")
+            start_time = data.get("startTime")
+            end_time = data.get("endTime")
+            recurring = data.get("recurring", False)
+
+            if not all([name, start_time, end_time]):
+                return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
+
+            new_class = Class.objects.create(
+                name=name,
+                startTime=start_time,
+                endTime=end_time,
+                recurring=recurring
+            )
+
+            return JsonResponse({
+                "success": True,
+                "message": "Class added successfully",
+                "class": {
+                    "classID": new_class.classID,
+                    "name": new_class.name,
+                    "startTime": str(new_class.startTime),
+                    "endTime": str(new_class.endTime),
+                    "recurring": new_class.recurring
+                }
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=400)
+    else:
+        return JsonResponse({"error": "Method not allowed"}, status=405)

@@ -8,6 +8,13 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
 import { Box, Modal, Typography, Button, TextField, Select, MenuItem, Switch, FormControlLabel } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import GradeIcon from '@mui/icons-material/Grade';
+import GroupsIcon from '@mui/icons-material/Groups';
+import Groups from '@mui/icons-material/Groups';
 
 
 export default function Calendar() {
@@ -40,7 +47,7 @@ export default function Calendar() {
 
   // Handlers for opening and closing the modal
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => {setIsModalOpen(false); setSelectedEvent(null);};
+  const handleCloseModal = () => { setIsModalOpen(false); setSelectedEvent(null); };
 
   // Event Render Function To Get Event Info and Display it
   function renderEventContent(eventInfo) {
@@ -70,6 +77,7 @@ export default function Calendar() {
     const end = `${date}T${e.target.elements.end.value}:00`;
     const instructor = e.target.elements.instructor.value;
     const duration = "01:00:00"; // might not be needed
+    const age = e.target.elements.age.value;
     const classLevel = e.target.elements.classLevel.value;
 
 
@@ -139,20 +147,24 @@ export default function Calendar() {
                 <strong>{selectedEvent.title}</strong>
               </Typography>
               <Typography variant="body2">
-                <strong>Time:</strong> {new Date(selectedEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(selectedEvent.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                <AccessAlarmIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> {new Date(selectedEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(selectedEvent.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
               </Typography>
               <Typography variant="body2">
-                <strong>Date:</strong> {new Date(selectedEvent.start).toLocaleDateString(undefined, {year: 'numeric', month: 'long', day: 'numeric'
+                <CalendarMonthIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {new Date(selectedEvent.start).toLocaleDateString(undefined, {
+                  year: 'numeric', month: 'long', day: 'numeric'
                 })}
               </Typography>
               <Typography variant="body2">
-                <strong>Instructor:</strong> {selectedEvent.extendedProps.instructor}
+                <PersonOutlineIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> {selectedEvent.extendedProps.instructor}
               </Typography>
               <Typography variant="body2">
-                <strong>Total Students:</strong> 20
+                <PeopleAltIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> 20
               </Typography>
               <Typography variant="body2">
-                <strong>Level:</strong> {selectedEvent.extendedProps.classLevel}
+                <GradeIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> {selectedEvent.extendedProps.classLevel}
+              </Typography>
+              <Typography variant="body2">
+                <GroupsIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> {selectedEvent.extendedProps.age}
               </Typography>
               <Button onClick={handleCloseModal} sx={{ mt: 2 }}>Close</Button>
             </>

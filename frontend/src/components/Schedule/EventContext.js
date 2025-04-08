@@ -19,6 +19,7 @@ export const EventProvider = ({ children }) => {
           extendedProps: {
             instructor: "John Doe",
             classLevel: "Beginner",
+            age: "Adult"
           }
         },
         {
@@ -35,6 +36,7 @@ export const EventProvider = ({ children }) => {
           extendedProps: {
             instructor: "Jane Smith",
             classLevel: "Advanced",
+            age: "Adult"
           }
         },
         {
@@ -51,10 +53,11 @@ export const EventProvider = ({ children }) => {
           extendedProps: {
             instructor: "Coach Ellie",
             classLevel: "Kids",
+            age: "Child"
           }
         },
         {
-          title: "Advanced Teams",
+          title: "Teens Advanced",
           color: "#E0E0E0",
           textColor: "black",
           borderColor: "black",
@@ -67,6 +70,7 @@ export const EventProvider = ({ children }) => {
           extendedProps: {
             instructor: "Coach Mike",
             classLevel: "Elite",
+            age: "Teen"
           }
         },
         {
@@ -83,6 +87,7 @@ export const EventProvider = ({ children }) => {
           extendedProps: {
             instructor: "Jane Smith",
             classLevel: "Advanced",
+            age: "Adult"
           }
         }     
       ]);

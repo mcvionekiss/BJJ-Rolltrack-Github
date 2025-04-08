@@ -28,6 +28,7 @@ export default function AddClass() {
     const instructor = e.target.elements.instructor.value;
     const duration = "01:00:00"; // might not be needed
     const classLevel = e.target.elements.classLevel.value;
+    const selectedAge = age;
 
     const newEvent = {
       title,
@@ -39,6 +40,7 @@ export default function AddClass() {
       extendedProps: {
         instructor,
         classLevel,
+        age: selectedAge,
         duration
       },
     };

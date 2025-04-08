@@ -9,6 +9,7 @@ import { useEvents } from './EventContext';
 import { Box, Modal, Typography, Button, TextField, Select, MenuItem, Switch, FormControlLabel } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
 
+
 export default function Calendar() {
   const navigate = useNavigate();
   const style = {
@@ -39,7 +40,7 @@ export default function Calendar() {
 
   // Handlers for opening and closing the modal
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  const handleCloseModal = () => {setIsModalOpen(false); setSelectedEvent(null);};
 
   // Event Render Function To Get Event Info and Display it
   function renderEventContent(eventInfo) {
@@ -110,6 +111,7 @@ export default function Calendar() {
         editable={true}
         selectable={true}
         select={() => {
+          setSelectedEvent(null);
           handleOpenModal();
         }}
         customButtons={{

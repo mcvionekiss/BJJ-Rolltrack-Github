@@ -33,20 +33,27 @@ location / {
     proxy_cache_bypass $http_upgrade;
 }
 
-# Cache static assets
+# Cache static assets with reduced caching period
 location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
     proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
     proxy_set_header Host $host;
-    expires 30d;
-    add_header Cache-Control "public, no-transform";
+    # Reduced caching time to 5 minutes instead of 30 days
+    expires 5m;
+    add_header Cache-Control "public, max-age=300, must-revalidate";
+    # Add timestamp in header for debugging
+    add_header X-Asset-Served-Time $date_gmt;
 }
 
-# Don't cache HTML
+# Don't cache HTML with stronger no-cache directives
 location ~* \.html$ {
     proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
     proxy_set_header Host $host;
     expires -1;
     add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+    add_header Pragma "no-cache";
+    add_header Expires "0";
+    # Add timestamp in header for debugging
+    add_header X-HTML-Served-Time $date_gmt;
 }
 
 # Proxy API requests to the backend

@@ -84,12 +84,18 @@ These global directives should only be in the main nginx.conf file, not in confi
 
 **Explanation:** Without the conditional check, the HTTPS server block would always be included, which could cause issues if SSL certificates weren't available or if HTTPS was disabled. Adding the condition ensures that the HTTPS server block is only active when USE_HTTPS is set to true.
 
-### 10a. Caching and Static Asset Loading Issues
+### 10a. Caching and Static Asset Loading Issues - Multi-Server Architecture
 
 **Problem:** After deployment, the React app is not formatted correctly, and users are still being redirected to the register page instead of the login page despite correct configuration in both frontend and backend code.
 
-**Fix:**
-1. Modified the Nginx configuration to reduce aggressive caching:
+**Investigation:** The application uses a dual-nginx architecture:
+1. Main nginx container (acting as a reverse proxy)
+2. Frontend container with its own nginx server for serving static assets
+
+Both needed caching configuration fixes to fully resolve the issue.
+
+**Fix Part 1 - Main Nginx Container:**
+1. Modified the main nginx.conf configuration to reduce aggressive caching:
    ```nginx
    # For static assets like JS, CSS, and images
    expires 5m;
@@ -106,35 +112,66 @@ These global directives should only be in the main nginx.conf file, not in confi
    add_header X-Asset-Served-Time $date_gmt;
    ```
 
-3. Ensured consistent configuration between HTTP and HTTPS server blocks
+**Fix Part 2 - Frontend Nginx Container:**
+1. Modified the frontend/nginx/common_locations.inc file to reduce caching for static assets:
+   ```nginx
+   # Cache static assets with reduced caching period
+   location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+       proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
+       proxy_set_header Host $host;
+       # Reduced caching time to 5 minutes instead of 30 days
+       expires 5m;
+       add_header Cache-Control "public, max-age=300, must-revalidate";
+       # Add timestamp in header for debugging
+       add_header X-Asset-Served-Time $date_gmt;
+   }
+   ```
 
-**Deployment Steps:**
-1. Update the nginx.conf file in the repository
-2. Apply the changes to the running container:
+2. Strengthened the no-cache directives for HTML files:
+   ```nginx
+   # Don't cache HTML with stronger no-cache directives
+   location ~* \.html$ {
+       proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
+       proxy_set_header Host $host;
+       expires -1;
+       add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+       add_header Pragma "no-cache";
+       add_header Expires "0";
+       # Add timestamp in header for debugging
+       add_header X-HTML-Served-Time $date_gmt;
+   }
+   ```
+
+**Complete Deployment Steps:**
+1. Update both nginx configuration files in the repository:
+   - nginx/nginx.conf (main proxy)
+   - frontend/nginx/common_locations.inc (frontend server)
+
+2. For immediate testing on the running containers:
    ```bash
-   # Copy updated nginx.conf to the container
+   # Step 1: Apply changes to the main nginx container
    docker cp nginx/nginx.conf bjj-nginx:/etc/nginx/nginx.conf
-   
-   # Reload Nginx without restarting the container
    docker exec bjj-nginx nginx -s reload
-   ```
-
-3. If problems persist, rebuild the frontend container and restart nginx:
-   ```bash
-   # Rebuild the frontend container
-   docker-compose build --no-cache frontend
    
-   # Restart only the frontend and nginx containers
-   docker-compose up -d --no-deps frontend
-   docker-compose up -d --no-deps nginx
+   # Step 2: For frontend nginx changes, you MUST rebuild the frontend container
+   docker-compose build --no-cache frontend
+   docker-compose up -d --force-recreate frontend
    ```
 
-4. Instruct users to clear their browser caches:
+3. For a complete production deployment:
+   ```bash
+   # Full rebuild with updated configurations
+   docker-compose down
+   docker-compose build --no-cache
+   docker-compose up -d
+   ```
+
+4. Clear browser caches (critical step):
    - Chrome: Settings → Privacy and Security → Clear browsing data
    - Firefox: Options → Privacy & Security → Cookies and Site Data → Clear Data
-   - Or use Ctrl+F5 or Cmd+Shift+R for a hard refresh
+   - Or use Ctrl+F5 (Windows) or Cmd+Shift+R (Mac) for a hard refresh
 
-**Explanation:** This issue was caused by aggressive caching (30 days for static assets) that prevented updated versions of CSS and JavaScript from loading. By reducing cache times and ensuring proper cache control headers, we ensure that browsers will fetch fresh content instead of using stale cached versions. The deployment steps ensure these changes are applied to the running system.
+**Explanation:** This issue was caused by aggressive caching (30 days for static assets) in both nginx servers. The frontend's nginx server was still using 30-day caching even after the main nginx.conf was updated. By updating both configurations and rebuilding the frontend container, we ensure that all static assets are served with appropriate caching headers.
 
 ### 10b. Nginx Environment Variable Processing Issue
 

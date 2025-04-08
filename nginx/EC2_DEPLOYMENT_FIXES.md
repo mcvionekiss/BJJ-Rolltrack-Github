@@ -84,59 +84,7 @@ These global directives should only be in the main nginx.conf file, not in confi
 
 **Explanation:** Without the conditional check, the HTTPS server block would always be included, which could cause issues if SSL certificates weren't available or if HTTPS was disabled. Adding the condition ensures that the HTTPS server block is only active when USE_HTTPS is set to true.
 
-### 10a. Caching and Static Asset Loading Issues
-
-**Problem:** After deployment, the React app is not formatted correctly, and users are still being redirected to the register page instead of the login page despite correct configuration in both frontend and backend code.
-
-**Fix:**
-1. Modified the Nginx configuration to reduce aggressive caching:
-   ```nginx
-   # For static assets like JS, CSS, and images
-   expires 5m;
-   add_header Cache-Control "public, max-age=300, must-revalidate";
-   
-   # For HTML content
-   add_header Cache-Control "no-cache, no-store, must-revalidate";
-   add_header Pragma "no-cache";
-   add_header Expires "0";
-   ```
-
-2. Added additional debug headers to track when assets are served:
-   ```nginx
-   add_header X-Asset-Served-Time $date_gmt;
-   ```
-
-3. Ensured consistent configuration between HTTP and HTTPS server blocks
-
-**Deployment Steps:**
-1. Update the nginx.conf file in the repository
-2. Apply the changes to the running container:
-   ```bash
-   # Copy updated nginx.conf to the container
-   docker cp nginx/nginx.conf bjj-nginx:/etc/nginx/nginx.conf
-   
-   # Reload Nginx without restarting the container
-   docker exec bjj-nginx nginx -s reload
-   ```
-
-3. If problems persist, rebuild the frontend container and restart nginx:
-   ```bash
-   # Rebuild the frontend container
-   docker-compose build --no-cache frontend
-   
-   # Restart only the frontend and nginx containers
-   docker-compose up -d --no-deps frontend
-   docker-compose up -d --no-deps nginx
-   ```
-
-4. Instruct users to clear their browser caches:
-   - Chrome: Settings → Privacy and Security → Clear browsing data
-   - Firefox: Options → Privacy & Security → Cookies and Site Data → Clear Data
-   - Or use Ctrl+F5 or Cmd+Shift+R for a hard refresh
-
-**Explanation:** This issue was caused by aggressive caching (30 days for static assets) that prevented updated versions of CSS and JavaScript from loading. By reducing cache times and ensuring proper cache control headers, we ensure that browsers will fetch fresh content instead of using stale cached versions. The deployment steps ensure these changes are applied to the running system.
-
-### 10b. Nginx Environment Variable Processing Issue
+### 10. Nginx Environment Variable Processing Issue
 
 **Problem:** The nginx container was failing with the error: `unknown "frontend_host" variable` even though the templates were correctly using uppercase variables (`${FRONTEND_HOST}`).
 
@@ -545,113 +493,27 @@ Starting Nginx...
 
 **Note:** There may still be a harmless warning about the deprecated `listen ... http2` directive. This is not an error but a recommendation to use the newer `http2` directive syntax instead.
 
-**Additional Issue:** After fixing the above errors, you might encounter the following issue:
-```
-nginx: [emerg] host not found in upstream "bjj-rolltrack-github_frontend_1" in /etc/nginx/nginx.conf:38
-```
-
-**Fix:**
-1. In nginx.conf, replace all instances of full container names with service names as defined in docker-compose.yml:
-   ```nginx
-   # Change from:
-   proxy_pass http://bjj-rolltrack-github_frontend_1:80;
-   proxy_pass http://bjj-rolltrack-github_backend_1:8000;
-   
-   # To:
-   proxy_pass http://frontend:80;
-   proxy_pass http://backend:8000;
-   ```
-
-2. This change should be made for all proxy_pass directives in both HTTP and HTTPS server blocks.
-
-**Explanation:** 
-- Docker Compose uses DNS for service discovery based on service names, not container names
-- Container names may change or be dynamically assigned with prefixes based on the project name
-- Using the service names directly (frontend, backend) as defined in docker-compose.yml is more reliable
-- This ensures proper DNS resolution within the Docker network regardless of container name changes
-
-### 18. Static Asset 404 Errors with SPA Routes
-
-**Problem:** The login page was unable to load its static assets (JS and CSS files), resulting in 404 errors:
-```
-GET https://rolltrackapp.com/static/js/main.2aedc46c.js net::ERR_ABORTED 404 (Not Found)
-GET https://rolltrackapp.com/static/css/main.e75da00a.css net::ERR_ABORTED 404 (Not Found)
-```
-While the register page worked correctly, the login page specifically had issues loading its assets.
-
-**Fix:** Updated the nginx configuration to better handle Single Page Application (SPA) routing and static file serving:
-1. Added a more specific location block for static files with reduced caching:
-   ```nginx
-   # Handle static asset requests
-   location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-       root /usr/share/nginx/html;
-       expires 5m;
-       add_header Cache-Control "public, max-age=300, must-revalidate";
-       add_header X-Asset-Served-Time $date_gmt;
-       try_files $uri =404;
-   }
-   ```
-
-2. Improved the main location block to properly handle SPA routing and prevent HTML caching:
-   ```nginx
-   # Handle SPA routing - serve index.html for all non-file routes
-   location / {
-       root /usr/share/nginx/html;
-       index index.html;
-       try_files $uri $uri/ /index.html;
-       
-       # Disable caching for HTML to ensure fresh content
-       add_header Cache-Control "no-cache, no-store, must-revalidate";
-       add_header Pragma "no-cache";
-       add_header Expires "0";
-   }
-   ```
-
-3. Ensured all location blocks were properly ordered from most specific to least specific
-
-**Explanation:** 
-- Single Page Applications (SPAs) like React require special nginx configuration to handle direct URL access
-- When a user directly navigates to a route like /login, the server needs to serve index.html, not try to find a /login file
-- Static assets need to be properly handled with their own location block
-- Aggressive caching (30 days) was preventing updated files from being loaded by returning browsers
-- Reducing cache times to 5 minutes and adding proper cache control headers ensures that clients get fresh content
-- The try_files directive is critical for SPA routing, ensuring all non-file routes serve the main index.html
-- Location block order matters - more specific patterns should be listed before more general ones
-
 **For a Complete Solution:**
 To ensure the fix is permanently applied and included in future deployments:
 
-1. Apply the fixes to the running containers:
+1. Add this change to a custom configuration file in your repository:
    ```bash
-   # Copy updated nginx.conf to the container
-   docker cp nginx/nginx.conf bjj-nginx:/etc/nginx/nginx.conf
-   
-   # Reload Nginx configuration
-   docker exec bjj-nginx nginx -s reload
+   # Create a custom config file in your repository
+   mkdir -p nginx/custom_conf/
+   cp final_common_settings.inc nginx/custom_conf/api_auth_fix.conf
    ```
 
-2. If issues persist, perform a more thorough update:
-   ```bash
-   # Rebuild the frontend container completely
-   docker-compose build --no-cache frontend
-   
-   # Restart containers
-   docker-compose up -d --force-recreate nginx frontend
-   ```
-
-3. Clear browser cache:
-   - Use hard refresh: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
-   - Or clear browser cache through browser settings
-
-4. To ensure the fix is applied automatically with every deployment, update your docker-compose.yml to mount the updated nginx.conf:
+2. Mount this custom configuration in your docker-compose.yml:
    ```yaml
    services:
      nginx:
        # ... other configuration ...
        volumes:
          # ... other volumes ...
-         - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+         - ./nginx/custom_conf/api_auth_fix.conf:/etc/nginx/conf.d/api_auth_fix.conf:ro
    ```
+
+3. This ensures the fix is applied automatically with every deployment, without modifying the container's internal templates.
 
 ## Deployment Instructions
 

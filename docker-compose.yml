@@ -108,7 +108,8 @@ services:
       # Direct mount of existing certificate files
       - ./nginx/ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
       - ./nginx/ssl/key.pem:/etc/nginx/ssl/key.pem:ro
-      - ./nginx/custom_conf/api_auth_fix.conf:/etc/nginx/conf.d/api_auth_fix.conf:ro
+      # Mount nginx.conf to the proper location without read-only flag
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
       - FRONTEND_HOST=${FRONTEND_HOST:-bjj-rolltrack-github_frontend_1}

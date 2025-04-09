@@ -62,7 +62,7 @@ class LogoutView(View):
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
         response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
-
+    
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(View):
     def post(self, request):
@@ -115,6 +115,17 @@ class CheckinView(View):
     def post(self, request):
         return JsonResponse({"success": True, "message": "Checkin successful"})
 
+class CheckinSelectionView(View):
+    def post(self, request):
+        return JsonResponse({"success": True, "message": "Checkin selection successful"})
+
+class GuestCheckinView(View):
+    def post(self, request):
+        return JsonResponse({"success": True, "message": "Guest checkin successful"})
+    
+class MemberSignupView(View):
+    def post(self, request):
+        return JsonResponse({"success": True, "message": "Member signup successful"})
 
 @csrf_exempt
 def check_student(request):

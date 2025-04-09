@@ -5,8 +5,8 @@ import {
     Button,
     TextField,
     Container,
-    Paper,
-    Typography
+    Typography,
+    Box
 } from "@mui/material";
 
 function Checkin() {
@@ -69,42 +69,112 @@ function Checkin() {
     };
 
     return (
-        <Container maxWidth="sm">
-            <Paper elevation={3} sx={{ p: 4, textAlign: "center", mt: 5 }}>
-                <Typography variant="h5" fontWeight="bold">
-                    Check-In
-                </Typography>
-                <Typography variant="body2" color="gray" sx={{ mb: 3 }}>
-                    Enter your email to check in.
-                </Typography>
+        <Container 
+            maxWidth="sm" 
+            sx={{ 
+                py: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                minHeight: '100vh'
+            }}
+        >
+            <Typography 
+                variant="h4" 
+                sx={{ 
+                    mb: 3, 
+                    fontWeight: "bold",
+                    color: "#333"
+                }}
+            >
+                Member Check-In
+            </Typography>
+            
+            <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ mb: 5 }}
+            >
+                Enter your email to check in
+            </Typography>
 
-                {error && (
-                    <Typography color="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Typography>
-                )}
+            {error && (
+                <Typography 
+                    color="error" 
+                    sx={{ 
+                        mb: 3,
+                        py: 1,
+                        px: 2,
+                        bgcolor: 'rgba(211, 47, 47, 0.1)',
+                        borderRadius: 1,
+                        width: '100%',
+                        maxWidth: '400px'
+                    }}
+                >
+                    {error}
+                </Typography>
+            )}
 
-                <form onSubmit={handleSubmit}>
-                    <TextField
-                        fullWidth
-                        label="Email"
-                        variant="outlined"
-                        margin="normal"
-                        name="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        fullWidth
-                        sx={{ mt: 2, backgroundColor: "black", color: "white" }}
-                    >
-                        Continue
-                    </Button>
-                </form>
-            </Paper>
+            <Box
+                component="form"
+                onSubmit={handleSubmit}
+                sx={{
+                    width: '100%',
+                    maxWidth: '400px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3
+                }}
+            >
+                <TextField
+                    fullWidth
+                    label="Email"
+                    variant="outlined"
+                    name="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                        }
+                    }}
+                />
+                
+                <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    sx={{ 
+                        py: 1.5,
+                        backgroundColor: "black", 
+                        color: "white",
+                        borderRadius: 2,
+                        "&:hover": { 
+                            backgroundColor: "#333"
+                        }
+                    }}
+                >
+                    Continue
+                </Button>
+                
+                <Button
+                    variant="text"
+                    onClick={() => navigate("/checkin-selection")}
+                    sx={{ 
+                        mt: 1,
+                        color: "text.secondary",
+                        "&:hover": { 
+                            backgroundColor: "transparent",
+                            color: "black"
+                        }
+                    }}
+                >
+                    Back
+                </Button>
+            </Box>
         </Container>
     );
 }

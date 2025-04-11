@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import path, re_path, include
 from django.views.generic import RedirectView
 from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, check_student, available_classes_today, class_details, checkin
 
@@ -14,6 +14,11 @@ urlpatterns = [
     path("api/available_classes_today/", available_classes_today, name="available_classes_today"),
     path("api/class_details/<int:classID>/", class_details, name="class_details"),
     path("api/checkin/", checkin, name="checkin"),
+
+    # Enable Google OAuth
+    path("auth/", include("dj_rest_auth.urls")),
+    path("auth/registration/", include("dj_rest_auth.registration.urls")),
+    path("accounts/", include("allauth.urls")),
     
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),

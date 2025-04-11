@@ -15,3 +15,7 @@ pytest==8.0.0
 pytest-django==4.8.0
 pytest-cov==4.1.0
 factory-boy==3.3.0
+
+#for Google Oauth
+django-allauth==0.58.1
+dj-rest-auth==3.0.0

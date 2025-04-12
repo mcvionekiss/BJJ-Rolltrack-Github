@@ -1,13 +1,10 @@
-// frontend/src/config.js - Configuration for API endpoints
-// This file centralizes all API endpoint configurations to make environment switching easier
+// frontend/src/config.js - Simplified configuration for testing
+// This file provides hardcoded URLs instead of environment variables
 
-// The environment determines which API base URL to use
-// In a production build, this would use the deployed API URL
-// For staging and local development, it uses the appropriate servers
-
-// Read from environment variables with fallbacks
-// REACT_APP_API_URL should be set in your .env files or deployment environment
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use hardcoded localhost URL for simplified testing
+const API_URL = 'http://localhost:8000';
+// If testing from other devices on your network, uncomment and use your machine's IP:
+// const API_URL = 'http://YOUR_IP_ADDRESS:8000';
 
 // Export configuration with all API endpoints
 const config = {
@@ -25,6 +22,13 @@ const config = {
       classDetails: (classID) => `${API_URL}/api/class_details/${classID}/`,
       checkin: `${API_URL}/api/checkin/`
     }
+  },
+  
+  // Testing-specific settings
+  testing: {
+    bypassAuth: false,  // Set to true to bypass authentication in frontend for testing
+    mockData: false,    // Set to true to use mock data instead of API calls
+    debugMode: true     // Enable detailed console logging
   }
 };
 

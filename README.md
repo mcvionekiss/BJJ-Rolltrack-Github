@@ -2,23 +2,22 @@
 
 A web application for Brazilian Jiu Jitsu gym management, allowing student check-ins, class scheduling, and attendance tracking.
 
-## Production-Ready Configuration
+## Simplified Testing Setup
 
-This application has been configured for deployment to multiple environments:
+This application has been configured with a simplified setup for easier testing and development:
 
-- **Development** - Local development environment
-- **Testing** - Production-like testing without HTTPS
-- **Staging** - Pre-production environment
-- **Production** - Full production environment on Amazon EC2
+- **Hardcoded URLs**: No environment variables needed
+- **Development Mode**: Easier debugging with source maps and hot reloading
+- **Built-in Testing Tools**: Debugging helpers included
+- **Cross-Platform Scripts**: Run on Windows, Mac, or Linux
 
 ## Key Features
 
-- React frontend with dynamic API configuration
+- React frontend with hardcoded API configuration
 - Django backend with REST API
 - Docker-based deployment
 - MySQL database support
-- Environment-specific configuration
-- HTTPS support
+- Built-in testing configuration
 - Production-ready security measures
 
 ## Project Structure
@@ -39,123 +38,81 @@ This application has been configured for deployment to multiple environments:
 ├── frontend/                # React frontend application
 │   ├── src/                 # React source code
 │   │   ├── components/      # React components
-│   │   └── config.js        # API configuration
-│   ├── Dockerfile           # Frontend Docker configuration
-│   └── nginx/               # Frontend nginx configuration
+│   │   └── config.js        # API configuration with hardcoded URLs
+│   └── Dockerfile           # Frontend Docker configuration
 │
-├── docker-compose.yml             # Development compose file
-├── docker-compose.staging.yml     # Staging compose file
-├── .env.development               # Development environment variables
-├── .env.testing                   # Testing environment variables
-├── .env.staging                   # Staging environment variables
-└── .env.production                # Production environment variables
+├── docker-compose.yml             # Main compose file
+├── docker-compose.staging.yml     # Staging compose file (optional)
+├── run-test.sh                    # Helper script for testing (Linux/Mac)
+├── run-test.bat                   # Helper script for testing (Windows cmd)
+├── run-test.ps1                   # Helper script for testing (Windows PowerShell)
 ```
 
-## Environment Variables
-
-To configure different environments, use the appropriate .env file:
-
-### Development (.env.development)
-
-```
-# Frontend Configuration
-REACT_APP_API_URL=http://localhost:8000
-
-# Backend Configuration
-PIPELINE=local
-DJANGO_SECRET_KEY=dev_secret_key
-DB_NAME=bjj_rolltrack_dev
-DB_USER=dev_user
-DB_PASSWORD=dev_password
-DB_HOST=localhost
-DB_PORT=3306
-```
-
-### Staging (.env.staging)
-
-```
-# Frontend Configuration
-REACT_APP_API_URL=http://staging.your-domain.com
-
-# Backend Configuration
-PIPELINE=staging
-DJANGO_SECRET_KEY=staging_secret_key
-ALLOWED_HOSTS=staging.your-domain.com
-CORS_ALLOWED_ORIGINS=http://staging.your-domain.com
-DB_NAME=bjj_rolltrack_staging
-DB_USER=staging_user
-DB_PASSWORD=staging_password
-DB_HOST=your-staging-db-host
-DB_PORT=3306
-BYPASS_HTTPS=false
-```
-
-### Production (.env.production)
-
-```
-# Frontend Configuration
-REACT_APP_API_URL=https://your-domain.com
-
-# Backend Configuration
-PIPELINE=production
-DJANGO_SECRET_KEY=production_secret_key
-ALLOWED_HOSTS=your-domain.com,www.your-domain.com
-CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
-DB_NAME=bjj_rolltrack_prod
-DB_USER=production_user
-DB_PASSWORD=production_password
-DB_HOST=your-mysql-endpoint.rds.amazonaws.com
-DB_PORT=3306
-BYPASS_HTTPS=false
-```
-
-## Deployment Instructions
-
-### Local Development
+## Quick Start
 
 ```bash
-# Start with development configuration
+# Start the application with a single command
 docker-compose up -d
 ```
 
-### Staging Deployment
+That's it! The application uses hardcoded configurations for simplicity.
 
+## Accessing the Application
+
+Once running, you can access the application at:
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **Health Check**: http://localhost:8000/health/
+
+If testing from other devices on your network, use your machine's IP address instead of localhost.
+
+## Helper Scripts
+
+For even easier testing, use the included script for your platform:
+
+### Linux/Mac
 ```bash
-# Deploy to staging
-docker-compose -f docker-compose.staging.yml --env-file .env.staging up -d
+# Make the script executable
+chmod +x run-test.sh
+
+# Run the test environment
+./run-test.sh
 ```
 
-### Production Deployment on EC2
-
-1. Launch an EC2 instance with sufficient resources
-2. Install Docker and Docker Compose
-3. Set up an RDS MySQL database
-4. Clone the repository
-5. Create SSL certificates (if using HTTPS)
-6. Create or update `.env.production` with your configuration
-7. Deploy using:
-
-```bash
-docker-compose -f docker-compose.staging.yml --env-file .env.production up -d
+### Windows - Command Prompt
+```cmd
+# Simply double-click the run-test.bat file, or run:
+run-test.bat
 ```
 
-## Security Features
+### Windows - PowerShell
+```powershell
+# You may need to adjust execution policy first
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 
-- CSRF protection on all endpoints
-- Authentication required for sensitive operations
-- Rate limiting for login attempts
-- Proper error handling to avoid information leakage
-- HTTPS configuration
-- Database connection pooling
-- Cache configuration for performance
+# Run the test script
+.\run-test.ps1
+```
 
-## Testing Without HTTPS
+## Testing From Other Devices
 
-For local testing without SSL certificates:
+If you need to test from another device on your network:
 
-1. Set `BYPASS_HTTPS=true` in your environment file
-2. Use the `.env.testing` file for local testing
-3. Access using your local IP address
+1. Find your machine's IP address (e.g., 192.168.1.100)
+2. Edit `frontend/src/config.js` to use your IP instead of localhost
+3. Restart the containers: `docker-compose down && docker-compose up -d`
+4. Access from the other device using http://YOUR_IP_ADDRESS:3000
+
+## Staging and Production
+
+For staging and production deployment:
+
+1. Create appropriate environment files (.env.staging, .env.production)
+2. Deploy using the docker-compose.staging.yml file:
+   ```bash
+   docker-compose -f docker-compose.staging.yml --env-file .env.staging up -d
+   ```
 
 ## Additional Documentation
 
@@ -163,4 +120,4 @@ For more detailed information, see:
 
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Detailed deployment instructions
 - [TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md) - Technical details and architecture
-- [PRODUCTION_README.md](PRODUCTION_README.md) - Production deployment summary
+- [TEST_README.md](TEST_README.md) - Detailed testing guide

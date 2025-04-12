@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, re_path, include
 from django.views.generic import RedirectView
 from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, check_student, available_classes_today, class_details, checkin
+from dj_rest_auth.registration.views import SocialLoginView
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -25,4 +27,11 @@ urlpatterns = [
     
     # Handle all other routes for SPA
     re_path(r'^(?!api/|auth/|admin/).*$', RedirectView.as_view(url='/'))
+]
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+
+urlpatterns += [
+    path('auth/google/', GoogleLogin.as_view(), name='google_login'),
 ]

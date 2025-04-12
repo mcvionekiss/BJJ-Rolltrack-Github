@@ -18,6 +18,7 @@ import {
     Toolbar
 } from "@mui/material";
 import logo from '../assets/logo.jpeg';
+import GoogleSignIn from "../components/GoogleSignIn";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -195,6 +196,11 @@ function Login() {
                         >
                             {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign in"}
                         </Button>
+
+                        {/* 🔹 Google Sign-In Button */}
+                        <Box sx={{ mt: 2 }}>
+                            <GoogleSignIn />
+                        </Box>
                     </form>
 
                     {/* Sign Up Link */}

@@ -10,16 +10,22 @@ RUN apt-get update && \
 
 COPY backend/requirements.txt .
 
-# Show pip version and verbose installation
+# Install dependencies and Gunicorn for production
 RUN pip --version && \
-    pip install --no-cache-dir -v -r requirements.txt
+    pip install --no-cache-dir -v -r requirements.txt && \
+    pip install gunicorn
 
 # Copy the entire project
 COPY /backend .
 
-# Debug: List contents of the current directory
-RUN ls -R
+# Create directory for static files
+RUN mkdir -p staticfiles && \
+    chmod +x ./docker-entrypoint.sh
+
+# Default to production, can be overridden at runtime
+ENV PIPELINE=production
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Use entrypoint script for startup tasks (migrations, collectstatic)
+ENTRYPOINT ["/app/backend/docker-entrypoint.sh"]

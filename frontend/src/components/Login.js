@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import config from "../config";
 import {
     TextField,
     Button,
@@ -21,7 +22,7 @@ import logo from '../assets/logo.jpeg';
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
-        const response = await axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true });
+        const response = await axios.get(config.endpoints.auth.csrf, { withCredentials: true });
         setCsrfToken(response.data.csrfToken);
     } catch (error) {
         console.error("Failed to fetch CSRF token", error);
@@ -30,7 +31,7 @@ const fetchCsrfToken = async (setCsrfToken) => {
 
 const loginUser = async (credentials, csrfToken) => {
     return axios.post(
-        "http://localhost:8000/auth/login/",
+        config.endpoints.auth.login,
         credentials,
         {
             withCredentials: true, // Required for session authentication

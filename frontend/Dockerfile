@@ -1,10 +1,11 @@
-# Use Node.js
-FROM node:20-alpine
+# Multi-stage build for production-ready frontend
+# Stage 1: Build the application
+FROM node:20-alpine as build
 
 # Add build dependencies
 RUN apk add --no-cache python3 make g++ git
 
-# Set working directory explicitly to frontend
+# Set working directory
 WORKDIR /app/frontend
 
 # Copy package files first
@@ -17,15 +18,22 @@ RUN npm install
 COPY frontend/ .
 
 # Create logs directory
-RUN mkdir -p logs && \
-    chown -R node:node .
+RUN mkdir -p logs
 
-# Use node user instead of root
-USER node
+# Build the application for production
+RUN npm run build
 
-ENV NODE_ENV=development
-ENV PATH /app/frontend/node_modules/.bin:$PATH
+# Stage 2: Serve the application using nginx
+FROM nginx:alpine
 
-EXPOSE 3000
+# Copy the build files from the build stage
+COPY --from=build /app/frontend/build /usr/share/nginx/html
 
-CMD ["npm", "start"]
+# Copy custom nginx configuration if needed
+COPY frontend/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

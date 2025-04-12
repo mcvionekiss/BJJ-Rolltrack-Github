@@ -6,21 +6,41 @@ from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.contrib.auth.decorators import login_required
 import json
 import logging
 import time
 from .models import GymOwner, Student, Class, Checkin
 from django.utils.timezone import now
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache  # Add caching for faster load times
+from django.core.cache import cache
+from django.conf import settings
 
-
+# CSRF token endpoint (non-exempt - safe for XHR requests)
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
     return JsonResponse({"csrfToken": get_token(request)})
 
-@method_decorator(csrf_exempt, name="dispatch")
+# Rate limiting for login attempts
+def throttle_login(view_func):
+    def wrapped_view(request, *args, **kwargs):
+        ip = request.META.get('REMOTE_ADDR')
+        key = f"login_attempt:{ip}"
+        attempts = cache.get(key, 0)
+        
+        # Allow 5 attempts per 5 minutes
+        if attempts >= 5:
+            return JsonResponse({"success": False, "message": "Too many login attempts. Please try again later."}, status=429)
+        
+        cache.set(key, attempts + 1, 300)  # 5 minutes
+        return view_func(request, *args, **kwargs)
+    
+    return wrapped_view
+
+@method_decorator(csrf_protect, name="dispatch")
+@method_decorator(throttle_login, name="dispatch")
 class LoginView(View):
     def post(self, request):
         try:
@@ -54,16 +74,19 @@ class LoginView(View):
                 return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
         except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=400)
+            logger = logging.getLogger('django.security')
+            logger.error(f"Login error: {str(e)}")
+            return JsonResponse({"success": False, "message": "Authentication error"}, status=400)
 
-@method_decorator(csrf_protect, name="dispatch")  # ✅ Protects against CSRF attacks but allows valid tokens
+@method_decorator(csrf_protect, name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class LogoutView(View):
     def post(self, request):
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
         response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
     
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_protect, name='dispatch')
 class RegisterView(View):
     def post(self, request):
         try:
@@ -106,28 +129,39 @@ class RegisterView(View):
             })
 
         except Exception as e:
+            logger = logging.getLogger('django.security')
+            logger.error(f"Registration error: {str(e)}")
             return JsonResponse({
                 'success': False,
-                'message': str(e)
+                'message': 'Registration failed. Please try again.'
             }, status=400)
 
+@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class CheckinView(View):
     def post(self, request):
         return JsonResponse({"success": True, "message": "Checkin successful"})
 
+@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class CheckinSelectionView(View):
     def post(self, request):
         return JsonResponse({"success": True, "message": "Checkin selection successful"})
 
+@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class GuestCheckinView(View):
     def post(self, request):
         return JsonResponse({"success": True, "message": "Guest checkin successful"})
     
+@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class MemberSignupView(View):
     def post(self, request):
         return JsonResponse({"success": True, "message": "Member signup successful"})
 
-@csrf_exempt
+@csrf_protect
+@login_required
 def check_student(request):
     logger = logging.getLogger(__name__)
     request_id = f"req_{int(time.time() * 1000)}"  # Generate a unique request ID
@@ -174,12 +208,13 @@ def check_student(request):
             return JsonResponse({"exists": False, "message": f"Invalid JSON: {str(e)}"}, status=400)
         except Exception as e:
             logger.error(f"[{request_id}] Unexpected error in check_student: {str(e)}", exc_info=True)
-            return JsonResponse({"exists": False, "message": str(e)}, status=400)
+            return JsonResponse({"exists": False, "message": "An error occurred while processing your request"}, status=400)
     else:
         logger.warning(f"[{request_id}] Method not allowed: {request.method}")
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def available_classes_today(request):
     """Fetch only today's available classes for check-in."""
     today = localdate()  # Get today's date
@@ -211,6 +246,7 @@ def available_classes_today(request):
 
     return JsonResponse({"success": True, "classes": data}, status=200)
 
+@login_required
 def class_details(request, classID):
     """Returns details of a specific class."""
     try:
@@ -223,10 +259,12 @@ def class_details(request, classID):
             "recurring": class_instance.recurring,
         })
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+        logger = logging.getLogger('django.request')
+        logger.error(f"Error retrieving class details: {str(e)}")
+        return JsonResponse({"error": "An error occurred retrieving class details"}, status=400)
     
-
-@csrf_exempt
+@csrf_protect
+@login_required
 def checkin(request):
     """Handles student check-ins for a class."""
     if request.method == "POST":
@@ -251,9 +289,12 @@ def checkin(request):
             return JsonResponse({"success": True, "message": "Check-in successful!"}, status=200)
 
         except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=400)
+            logger = logging.getLogger('django.request')
+            logger.error(f"Checkin error: {str(e)}")
+            return JsonResponse({"success": False, "message": "An error occurred during check-in"}, status=400)
 
-@csrf_exempt
+@csrf_protect
+@login_required
 def add_class(request):
     """API endpoint to add a new class to the database."""
     if request.method == "POST":
@@ -287,6 +328,8 @@ def add_class(request):
             }, status=201)
 
         except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=400)
+            logger = logging.getLogger('django.request')
+            logger.error(f"Add class error: {str(e)}")
+            return JsonResponse({"success": False, "message": "An error occurred while adding the class"}, status=400)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)

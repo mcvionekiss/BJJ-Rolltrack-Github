@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import config from "../config";
 import {
     TextField,
     Button,
@@ -27,7 +28,7 @@ import AddressAutocomplete from "./AddressAutocomplete";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
-        const response = await axios.get("http://localhost:8000/auth/csrf/", {
+        const response = await axios.get(config.endpoints.auth.csrf, {
             withCredentials: true,
         });
         setCsrfToken(response.data.csrfToken);
@@ -37,7 +38,7 @@ const fetchCsrfToken = async (setCsrfToken) => {
 };
 
 const registerUser = async (userData, csrfToken) => {
-    return axios.post("http://localhost:8000/auth/register/", userData, {
+    return axios.post(config.endpoints.auth.register, userData, {
         withCredentials: true,
         headers: { "X-CSRFToken": csrfToken },
     });

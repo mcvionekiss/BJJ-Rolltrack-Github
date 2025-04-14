@@ -72,6 +72,7 @@ function Checkin() {
         <Container 
             maxWidth="sm" 
             sx={{ 
+                px: 4,
                 py: 8,
                 display: 'flex',
                 flexDirection: 'column',

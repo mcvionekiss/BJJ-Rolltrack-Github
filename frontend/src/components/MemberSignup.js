@@ -66,6 +66,7 @@ function MemberSignup() {
         <Container 
             maxWidth="sm" 
             sx={{ 
+                px: 4,
                 py: 8,
                 display: 'flex',
                 flexDirection: 'column',
@@ -293,10 +294,6 @@ function MemberSignup() {
                 >
                     Sign Up
                 </Button>
-
-                <Divider sx={{ my: 1 }}>
-                    <Typography variant="body2" color="text.secondary">OR</Typography>
-                </Divider>
                 
                 <Button
                     variant="text"

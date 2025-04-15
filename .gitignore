@@ -113,3 +113,5 @@ restartDocker.sh
 /backend/server/__pycache__
 /my-venv
 frontend/bjj_rolltrack_qr.png
+/backend/server/staticfiles
+/backend/server/staticfiles

@@ -11,6 +11,7 @@ import ClientsPage from './components/ClientsPage';
 import CheckinSuccess from './components/CheckinSuccess';
 import AddClass from "./components/Schedule/AddClass";
 import { EventProvider } from "./components/Schedule/EventContext";
+import SignUpChoice from "./components/SignUpChoice";
 function App() {
     return (
         <Router>
@@ -21,7 +22,9 @@ function App() {
 
                     {/* Registration Pages */}
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/signup" element={<SignUpChoice />} />
+                    <Route path="/register/email" element={<Register />} />
+                    <Route path="/register/google" element={<Register />} />
 
                     {/* Gym Owner Pages */}
                     <Route path="/dashboard" element={<Dashboard />} />

@@ -97,7 +97,7 @@ function Login() {
     };
 
     const handleSignUp = () => {
-        navigate("/register"); // ✅ Redirects to the Register page
+        navigate("/signup"); // ✅ Redirects to the Register page
     };
 
     return (
@@ -198,9 +198,11 @@ function Login() {
                         </Button>
 
                         {/* 🔹 Google Sign-In Button */}
+                        <form>
                         <Box sx={{ mt: 2 }}>
                             <GoogleSignIn />
                         </Box>
+                        </form>
                     </form>
 
                     {/* Sign Up Link */}

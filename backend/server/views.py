@@ -9,11 +9,21 @@ from django.views import View
 import json
 import logging
 import time
+import requests
 from .models import GymOwner, Student, Class, Checkin
 from django.utils.timezone import now
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
+#googleOauth
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
+import os
 
 
 def get_csrf_token(request):
@@ -279,3 +289,53 @@ def add_class(request):
             return JsonResponse({"success": False, "message": str(e)}, status=400)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
+    
+
+User = get_user_model()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")  # ✅ optional but more secure
+@api_view(["POST"])
+def google_auth(request):
+    token_str = request.data.get("id_token")
+    if not token_str:
+        return Response({"error": "ID token required"}, status=400)
+
+    try:
+        # 👇 Secure local verification
+        idinfo = id_token.verify_oauth2_token(token_str, google_requests.Request(), audience=GOOGLE_CLIENT_ID)
+
+        email = idinfo.get("email")
+        first_name = idinfo.get("given_name", "")
+        last_name = idinfo.get("family_name", "")
+        phone = idinfo.get("phone_number", "")  # Optional if returned
+
+        if not email:
+            return Response({"error": "Email not in token"}, status=400)
+
+        User = get_user_model()
+        user, created = User.objects.get_or_create(email=email, defaults={
+            "username": email,
+            "first_name": first_name,
+            "last_name": last_name,
+        })
+
+        # You can update missing fields
+        if not user.first_name or not user.last_name:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save()
+
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({
+            "token": token.key,
+            "user": {
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "phone": phone,
+            },
+            "created": created,
+        })
+
+    except ValueError as e:
+        return Response({"error": "Invalid token", "details": str(e)}, status=401)

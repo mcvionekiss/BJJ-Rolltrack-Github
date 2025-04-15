@@ -1,29 +1,28 @@
-// frontend/src/components/GoogleSignIn.js
 import React from "react";
 import { GoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 const GoogleSignIn = () => {
   const handleSuccess = async (credentialResponse) => {
-    const accessToken = credentialResponse.credential;
+    const id_token = credentialResponse.credential;
 
-    const res = await fetch("http://localhost:8000/auth/google/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ access_token: credentialResponse.credential }),
-      credentials: "include"
-    });
+    try {
+      const response = await axios.post("http://localhost:8000/auth/google/", {
+        id_token,
+      }, { withCredentials: true });
 
-    const data = await res.json();
-    console.log("✅ Google login successful:", data);
-
-    // TODO: Handle session/JWT & redirect user
+      console.log("✅ Logged in:", response.data);
+      localStorage.setItem("authToken", response.data.token);
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("❌ Google login error:", err.response?.data || err);
+    }
   };
 
   return (
     <GoogleLogin
       onSuccess={handleSuccess}
-      onError={() => console.log("❌ Google Login Failed")}
-      width="100%"
+      onError={() => console.error("Google login failed")}
     />
   );
 };

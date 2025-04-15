@@ -62,14 +62,23 @@ Key features of the testing environment:
 The staging environment mirrors production but uses separate infrastructure:
 
 ```bash
+# Initialize SSL certificates for staging (do this once)
+chmod +x init-staging-certs.sh
+./init-staging-certs.sh
+
 # Deploy to staging
-docker-compose --env-file .env.staging up -d
+docker-compose up -d
 ```
 
 Before deploying to staging:
 1. Update `.env.staging` with your actual staging domain and credentials
 2. Ensure your DNS is properly configured for the staging domain
-3. Obtain SSL certificates for your staging domain
+3. Run the initialization script to set up automated SSL certificates
+
+The staging environment features automated SSL certificate management:
+- Initial certificate setup with interactive prompts
+- Automatic certificate renewal (runs daily via cron)
+- Self-healing configuration (generates self-signed certs if needed)
 
 ## Production Environment
 
@@ -134,6 +143,23 @@ cd BJJ-Rolltrack
 
 ### 5. Set Up SSL Certificates
 
+For staging environments, use the automated certificate management:
+
+```bash
+# Initialize certificates for staging
+chmod +x ssl-cert-manager.sh init-staging-certs.sh
+./init-staging-certs.sh
+```
+
+For production environments, you can either:
+
+a) Use the same automated system (recommended):
+```bash
+# Get production certificates
+./ssl-cert-manager.sh --domain your-domain.com --email your-email@example.com
+```
+
+b) Or use the manual approach:
 ```bash
 # Get certificates using Let's Encrypt
 sudo certbot certonly --standalone -d your-domain.com -d www.your-domain.com
@@ -192,10 +218,45 @@ DB_PORT=3306
 
 For production and staging environments, SSL certificates are required:
 
-1. **Let's Encrypt**: Free certificates, renewable every 90 days
-2. **AWS Certificate Manager**: If using AWS services like CloudFront or ALB
+1. **Automated Let's Encrypt (Recommended)**:
+   - Uses `ssl-cert-manager.sh` script for certificate management
+   - Automatically handles renewal (via daily cron job)
+   - Certificates stored in `nginx/ssl/` directory
+   - Supports both staging and production certificates
+
+2. **Let's Encrypt Manual**: Free certificates, renewable every 90 days
+   - Requires manual renewal or separate cron job
+
+3. **AWS Certificate Manager**: If using AWS services like CloudFront or ALB
+   - Managed by AWS, no manual renewal needed
+   - Requires DNS validation or email validation
 
 For the testing environment, SSL is disabled via the `BYPASS_HTTPS=true` setting.
+
+### Using the SSL Certificate Manager
+
+The `ssl-cert-manager.sh` script provides powerful options for certificate management:
+
+```bash
+# Basic usage
+./ssl-cert-manager.sh
+
+# With specific domain and email
+./ssl-cert-manager.sh --domain staging.your-domain.com --email your-email@example.com
+
+# Test mode (doesn't count against rate limits)
+./ssl-cert-manager.sh --staging
+
+# Force renewal
+./ssl-cert-manager.sh --force-renewal
+```
+
+The script will:
+1. Stop nginx temporarily to free up port 80
+2. Obtain or renew certificates using certbot
+3. Install the certificates in nginx/ssl/
+4. Restart nginx with the new certificates
+5. Set up automatic renewal via cron
 
 ## Troubleshooting
 

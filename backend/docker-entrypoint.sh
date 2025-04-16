@@ -3,9 +3,15 @@ set -e
 
 echo "Running entrypoint script..."
 
-# Apply database migrations
-echo "Applying database migrations..."
-python manage.py migrate --noinput
+# Explicitly set Django settings module to staging
+export DJANGO_SETTINGS_MODULE=server.settings.staging
+echo "Using Django settings module: $DJANGO_SETTINGS_MODULE"
+
+# Create staticfiles directory if it doesn't exist
+mkdir -p /app/backend/staticfiles
+
+# Ensure proper permissions
+chmod -R 755 /app/backend/staticfiles
 
 # Collect static files
 echo "Collecting static files..."

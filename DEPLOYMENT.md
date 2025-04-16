@@ -70,6 +70,10 @@ chmod +x init-staging-certs.sh
 docker-compose up -d
 ```
 
+> **Note:** The Nginx container is configured to use alternative ports (8080 for HTTP and 8443 for HTTPS) to avoid conflicts with the host Nginx server that may be handling certificate renewal. Access the application at:
+> - HTTP: http://your-domain:8080
+> - HTTPS: https://your-domain:8443
+
 Before deploying to staging:
 1. Update `.env.staging` with your actual staging domain and credentials
 2. Ensure your DNS is properly configured for the staging domain
@@ -266,7 +270,12 @@ The script will:
    - Check that the backend container is running
    - Verify the API URL in the frontend configuration
 
-2. **CORS errors**:
+2. **Port conflicts**:
+   - If you get an "address already in use" error for ports 80/443, your host machine already has a process using those ports
+   - The docker-compose.yml uses alternative ports (8080/8443) to avoid conflicts with host Nginx
+   - You can access the application via these alternative ports or modify the port mapping in docker-compose.yml
+
+3. **CORS errors**:
    - Ensure `CORS_ALLOWED_ORIGINS` includes your frontend domain
    - Check that the protocol (http/https) matches
 

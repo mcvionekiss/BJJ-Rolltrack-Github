@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../utils/axiosConfig";
 import { useState } from "react";
 import {
     Button,
@@ -51,7 +51,7 @@ function MemberSignup() {
 
         try {
             // TODO: Add backend API call
-            const response = await axios.post("/auth/member-signup/", formData);
+            const response = await axios.post("http://localhost:8000/auth/member-signup/", formData);
             
             setSuccess("Account created successfully! You can now log in.");
             setTimeout(() => {
@@ -243,6 +243,7 @@ function MemberSignup() {
                 <FormControl 
                     variant="outlined" 
                     fullWidth
+                    error={formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -269,7 +270,6 @@ function MemberSignup() {
                             </InputAdornment>
                         }
                         label="Confirm Password"
-                        error={formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword}
                     />
                     {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
                         <FormHelperText error>

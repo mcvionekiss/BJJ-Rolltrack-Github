@@ -252,16 +252,15 @@ const AddClassInformation = ({
     return (
         <Box>
             <form onSubmit={handleFormSubmit}>
-                <Grid container spacing={3}>
+                <Grid container spacing={2}>
                     <Grid item xs={12}>
-                        <Box sx={{ mb: 2, display: 'flex', alignItems: 'flex-end' }}>
-                            <FitnessCenterIcon sx={{ mr: 1, mb: 0.5, color: 'text.secondary' }} />
+                        <Box sx={{ mb: 1, display: 'flex', alignItems: 'flex-end' }}>
                             <TextField 
                                 fullWidth 
                                 label="Class Name" 
                                 name="title" 
                                 required 
-                                variant="standard"
+                                variant="outlined"
                                 placeholder="e.g. Adult Fundamentals"
                             />
                         </Box>
@@ -271,14 +270,14 @@ const AddClassInformation = ({
                         <Typography 
                             variant="caption" 
                             color="text.secondary" 
-                            sx={{ display: 'block', mb: 1 }}
+                            sx={{ display: 'block', mb: 0.5 }}
                         >
                             Time & Date
                         </Typography>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 1 }} />
                     </Grid>
 
-                    <Grid item xs={6}>
+                    <Grid item xs={6} sm={6}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
                             <AccessTimeIcon sx={{ mr: 1, mb: 0.5, color: 'text.secondary' }} />
                             <TextField 
@@ -295,7 +294,7 @@ const AddClassInformation = ({
                         </Box>
                     </Grid>
 
-                    <Grid item xs={6}>
+                    <Grid item xs={6} sm={6}>
                         <TextField 
                             type="time" 
                             name="end" 
@@ -344,12 +343,12 @@ const AddClassInformation = ({
                     
                     <Grid item xs={12}>
                         <Collapse in={isRecurring}>
-                            <Box sx={{ pl: 4, pr: 2, pb: 2, pt: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
+                            <Box sx={{ pl: 2, pr: 2, pb: 2, pt: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                                     Recurrence Pattern
                                 </Typography>
                                 
-                                <FormControl component="fieldset" sx={{ mb: 2 }}>
+                                <FormControl component="fieldset" sx={{ mb: 1 }}>
                                     <RadioGroup
                                         row
                                         name="recurrenceType"
@@ -363,54 +362,54 @@ const AddClassInformation = ({
                                 </FormControl>
                                 
                                 <Collapse in={recurrenceType === 'weekly'}>
-                                    <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         Repeat on:
                                     </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                    <Box sx={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        mb: 1,
+                                        maxWidth: '280px'
+                                    }}>
                                         {[
-                                            { key: 'monday', label: 'Mon' },
-                                            { key: 'tuesday', label: 'Tue' },
-                                            { key: 'wednesday', label: 'Wed' },
-                                            { key: 'thursday', label: 'Thu' },
-                                            { key: 'friday', label: 'Fri' },
-                                            { key: 'saturday', label: 'Sat' },
-                                            { key: 'sunday', label: 'Sun' }
+                                            { key: 'sunday', label: 'S' },
+                                            { key: 'monday', label: 'M' },
+                                            { key: 'tuesday', label: 'T' },
+                                            { key: 'wednesday', label: 'W' },
+                                            { key: 'thursday', label: 'T' },
+                                            { key: 'friday', label: 'F' },
+                                            { key: 'saturday', label: 'S' }
                                         ].map(({ key, label }) => (
                                             <Box 
                                                 key={key}
                                                 sx={{
+                                                    width: label.length > 1 ? '32px' : '28px',
+                                                    height: '28px',
                                                     border: '1px solid',
                                                     borderColor: recurrenceDays[key] ? 'primary.main' : 'grey.300',
-                                                    borderRadius: '4px',
-                                                    padding: '4px 8px',
-                                                    backgroundColor: recurrenceDays[key] ? 'primary.light' : 'transparent',
-                                                    color: recurrenceDays[key] ? 'primary.contrastText' : 'text.primary',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: recurrenceDays[key] ? 'primary.main' : 'transparent',
+                                                    color: recurrenceDays[key] ? 'white' : 'text.primary',
                                                     cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    transition: 'all 0.2s ease'
+                                                    justifyContent: 'center',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: recurrenceDays[key] ? 'bold' : 'normal',
+                                                    transition: 'all 0.2s ease',
+                                                    '&:hover': {
+                                                        backgroundColor: recurrenceDays[key] ? 'primary.dark' : 'rgba(0,0,0,0.04)'
+                                                    }
                                                 }}
                                                 onClick={() => handleDayToggle(key)}
                                             >
-                                                <Checkbox 
-                                                    checked={recurrenceDays[key]}
-                                                    onChange={() => handleDayToggle(key)}
-                                                    size="small"
-                                                    sx={{ 
-                                                        padding: '2px',
-                                                        color: recurrenceDays[key] ? 'white' : undefined,
-                                                        '&.Mui-checked': {
-                                                            color: recurrenceDays[key] ? 'white' : undefined,
-                                                        }
-                                                    }}
-                                                />
                                                 {label}
                                             </Box>
                                         ))}
                                     </Box>
                                 </Collapse>
                                 
-                                <Box sx={{ mt: 2 }}>
+                                <Box sx={{ mt: 1 }}>
                                     <FormControlLabel
                                         control={
                                             <Checkbox 
@@ -424,7 +423,7 @@ const AddClassInformation = ({
                                     />
                                     <Collapse in={hasEndDate}>
                                         <TextField 
-                                            sx={{ mt: 1 }}
+                                            sx={{ mt: 0.5 }}
                                             fullWidth 
                                             type="date" 
                                             name="recurrenceEndDate" 
@@ -445,11 +444,11 @@ const AddClassInformation = ({
                         <Typography 
                             variant="caption" 
                             color="text.secondary" 
-                            sx={{ display: 'block', mt: 2, mb: 1 }}
+                            sx={{ display: 'block', mt: 1, mb: 0.5 }}
                         >
                             Class Details
                         </Typography>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 1 }} />
                     </Grid>
 
                     <Grid item xs={12}>
@@ -505,7 +504,7 @@ const AddClassInformation = ({
                         </Box>
                     </Grid>
                     
-                    <Grid item xs={12} sx={{ mt: 2 }}>
+                    <Grid item xs={12} sx={{ mt: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Button 
                                 onClick={handleCancelButton} 

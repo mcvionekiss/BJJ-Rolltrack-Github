@@ -55,9 +55,14 @@ function AvailableClasses() {
 
     useEffect(() => {
         // Fetch available classes for the current week
-        axios.get("http://192.168.2.1:8000/api/available_classes_today/")
+        axios.get("http://localhost:8000/api/available_classes_today/")
             .then(response => {
-                setClasses(response.data.classes);
+                console.log("API Response:", response.data);
+                if (response.data.success && response.data.classes) {
+                    setClasses(response.data.classes);
+                } else {
+                    setClasses([]);
+                }
                 setLoading(false);
             })
             .catch(error => {
@@ -67,9 +72,9 @@ function AvailableClasses() {
             });
     }, []);
 
-    const handleClassSelect = (classID) => {
-        console.log(studentEmail);
-        navigate(`/class-details/${classID}`, { state: { email: studentEmail } });
+    const handleClassSelect = (classId) => {
+        console.log("Selected class ID:", classId);
+        navigate(`/class-details/${classId}`, { state: { email: studentEmail } });
     };
 
     // Get today's date formatted
@@ -139,9 +144,9 @@ function AvailableClasses() {
             {Array.isArray(classes) && classes.length > 0 ? (
                 <Grid2 container direction="column" spacing={2}>
                     {classes.map((cls) => (
-                        <Grid2 item xs={12} key={cls.classID}>
+                        <Grid2 item xs={12} key={cls.id}>
                             <Card
-                                onClick={() => handleClassSelect(cls.classID)}
+                                onClick={() => handleClassSelect(cls.id)}
                                 sx={{
                                     borderRadius: "15px",
                                     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
@@ -158,19 +163,18 @@ function AvailableClasses() {
                             >
                                 <Box>
                                     <Typography variant="subtitle2" color="text.secondary" mb={1}>
-                                        {formatTime(cls.startTime)}
+                                        {formatTime(cls.startTime)} - {formatTime(cls.endTime)}
                                     </Typography>
                                     <Typography variant="h6" fontWeight="bold">
                                         {cls.name}
                                     </Typography>
                                     <Box display="flex" alignItems="center" mt={1}>
                                         <Typography variant="body2" color="text.secondary">
-                                            {/* cls.trainer */}
-                                            Alex Martinez
+                                            {cls.level || "All Levels"}
                                         </Typography>
                                         <GroupIcon sx={{ fontSize: "16px", ml: 1, mr: 0.5, color: "#757575" }} />
                                         <Typography variant="body2" color="text.secondary">
-                                            {cls.capacity}
+                                            {cls.currentAttendance || 0}/{cls.maxCapacity || "∞"}
                                         </Typography>
                                     </Box>
                                 </Box>

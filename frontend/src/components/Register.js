@@ -38,7 +38,7 @@ const fetchCsrfToken = async (setCsrfToken) => {
 };
 
 const registerUser = async (userData, csrfToken) => {
-    return axios.post(API_ENDPOINTS.AUTH.REGISTER, userData, {
+    return axios.post(API_ENDPOINTS.AUTH.GYM_OWNER_REGISTER, userData, {
         withCredentials: true,
         headers: { "X-CSRFToken": csrfToken },
     });
@@ -106,7 +106,7 @@ export default function Register() {
             setConfirmPasswordError("Passwords do not match.");
             return;
         }
-    
+
         setConfirmPasswordError(""); // Clear error if passwords match
 
     if (
@@ -117,7 +117,7 @@ export default function Register() {
         setPhoneErrors({ personal: "Please enter a valid US phone number.", gym: "" });
         return;
         }
-        
+
         if (
         activeStep === 1 &&
         (!matchIsValidTel(formData.gymPhoneNumber) || !formData.gymPhoneNumber.startsWith("+1"))
@@ -125,7 +125,7 @@ export default function Register() {
         setPhoneErrors({ personal: "", gym: "Please enter a valid US gym phone number." });
         return;
         }
-        
+
         // Clear both if no error
         setPhoneErrors({ personal: "", gym: "" });
 
@@ -140,9 +140,10 @@ export default function Register() {
         if (loading) return;
         setLoading(true);
         setError("");
-    
+
         console.log("Submitting with data:", formData, "and CSRF:", csrfToken);
-    
+
+
         try {
             const response = await registerUser(formData, csrfToken);
             console.log("🟢 Registration successful", response.data);
@@ -153,6 +154,7 @@ export default function Register() {
         } finally {
             setLoading(false);
         }
+
     };
 
     const handleEdit = (stepName) => {
@@ -180,9 +182,9 @@ export default function Register() {
             {/* Left Sidebar - Stepper */}
             <div className="sidebar">
                 <div className="logo-container">
-                    <img 
-                        src={logo} 
-                        alt="RollTrack Logo" 
+                    <img
+                        src={logo}
+                        alt="RollTrack Logo"
                         className="logo-img"
                         onClick={(e) => {
                             console.log("Navigating to login...");
@@ -192,7 +194,7 @@ export default function Register() {
                 </div>
                 <Typography variant="h5" className="signup-title">Sign Up</Typography>
 
-                <Stepper 
+                <Stepper
                     activeStep={activeStep < stepperSteps.length ? activeStep : stepperSteps.length}
                     orientation="vertical"
                     sx={{
@@ -229,7 +231,7 @@ export default function Register() {
                     )}
                     {activeStep === 2 && (
                             <button onClick={() => handleSkip("schedule")}>Skip</button>
-                        
+
                     )}
                     </Box>
 
@@ -239,7 +241,7 @@ export default function Register() {
                                 <TextField label="First Name" placeholder="Enter your first name" name="firstName" value={formData.firstName} onChange={handleChange} fullWidth margin="normal" required/>
                                 <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
                                 <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required 
+                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required
                                     error={formData.password.length > 0 && unmetCriteria.length > 0} // Show red border only if password is entered and invalid
                                     helperText={
                                         formData.password.length > 0 && unmetCriteria.length > 0
@@ -248,7 +250,7 @@ export default function Register() {
                                     }
                                 />
                                 <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
-                                
+
                                 {/* Hidden Password Checklist for Validation */}
                                 {formData.password.length > 0 && (
                                     <PasswordChecklist
@@ -261,7 +263,7 @@ export default function Register() {
                                         style={{ display: "none" }} // Hide checklist UI
                                     />
                                 )}
-                                
+
                                 {/* Updated MuiTelInput for Personal Phone */}
                                 <MuiTelInput
                                     defaultCountry="US"
@@ -282,62 +284,62 @@ export default function Register() {
 
                         {activeStep === 1 && (
                             <>
-                                <TextField 
-                                    label="Gym Name" 
-                                    placeholder="Enter gym name" 
-                                    name="gymName" 
-                                    value={formData.gymName} 
-                                    onChange={handleChange} 
-                                    fullWidth 
-                                    margin="normal" 
-                                    required 
-                                />
-                                
-                                {/* Address Autocomplete Component */}
-                                <AddressAutocomplete 
-                                    addressValue={formData.address} 
-                                    cityValue={formData.city} 
-                                    stateValue={formData.state}
-                                    onAddressSelect={(address, city, state) => 
-                                        setFormData((prev) => ({
-                                            ...prev, 
-                                            address, 
-                                            city, 
-                                            state
-                                        }))
-                                    } 
+                                <TextField
+                                    label="Gym Name"
+                                    placeholder="Enter gym name"
+                                    name="gymName"
+                                    value={formData.gymName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    margin="normal"
+                                    required
                                 />
 
-                                <TextField 
-                                    label="City" 
-                                    placeholder="City" 
-                                    name="city" 
-                                    value={formData.city} 
-                                    onChange={handleChange} 
-                                    fullWidth 
-                                    margin="normal" 
-                                    required 
+                                {/* Address Autocomplete Component */}
+                                <AddressAutocomplete
+                                    addressValue={formData.address}
+                                    cityValue={formData.city}
+                                    stateValue={formData.state}
+                                    onAddressSelect={(address, city, state) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            address,
+                                            city,
+                                            state
+                                        }))
+                                    }
                                 />
-                                <TextField 
-                                    label="State" 
-                                    placeholder="State" 
-                                    name="state" 
-                                    value={formData.state} 
-                                    onChange={handleChange} 
-                                    fullWidth 
-                                    margin="normal" 
-                                    required 
+
+                                <TextField
+                                    label="City"
+                                    placeholder="City"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    margin="normal"
+                                    required
                                 />
-                                <TextField 
-                                    label="Gym Email" 
-                                    placeholder="Enter gym email" 
-                                    name="gymEmail" 
-                                    type="email" 
-                                    value={formData.gymEmail} 
-                                    onChange={handleChange} 
-                                    fullWidth 
-                                    margin="normal" 
-                                    required 
+                                <TextField
+                                    label="State"
+                                    placeholder="State"
+                                    name="state"
+                                    value={formData.state}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                />
+                                <TextField
+                                    label="Gym Email"
+                                    placeholder="Enter gym email"
+                                    name="gymEmail"
+                                    type="email"
+                                    value={formData.gymEmail}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    margin="normal"
+                                    required
                                 />
                                 {/* Updated MuiTelInput for Gym Phone */}
                                 <MuiTelInput
@@ -359,7 +361,7 @@ export default function Register() {
                         )}
 
                         {activeStep === 2 && (
-                            <ScheduleDetails 
+                            <ScheduleDetails
                                 onContinue={() => setActiveStep(activeStep + 1)}
                                 onBack={() => setActiveStep(activeStep - 1)}
                                 setScheduleData={handleScheduleUpdate}
@@ -388,9 +390,9 @@ export default function Register() {
                                 {activeStep > 0 && (
                                     <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
                                 )}
-                                <Button 
-                                    type="submit" 
-                                    variant="contained" 
+                                <Button
+                                    type="submit"
+                                    variant="contained"
                                     sx={{
                                         backgroundColor: "black",
                                         color: "white",
@@ -404,9 +406,9 @@ export default function Register() {
                         )}
                         {activeStep === 3 && (
                             <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
-                                <Button 
-                                    type="button" 
-                                    variant="contained" 
+                                <Button
+                                    type="button"
+                                    variant="contained"
                                     sx={{
                                         backgroundColor: "black",
                                         color: "white",
@@ -425,8 +427,8 @@ export default function Register() {
                     {activeStep === 0 && (
                         <Typography variant="body2" align="center" sx={{ marginTop: 2 }}>
                             Already have an account?{" "}
-                            <Link 
-                                component="button" 
+                            <Link
+                                component="button"
                                 onClick={(e) => {
                                     window.location.href = "/"; // Forces full page reload
                                 }}

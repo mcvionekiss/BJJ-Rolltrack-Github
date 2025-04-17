@@ -1,6 +1,6 @@
 /**
  * Application Configuration
- * 
+ *
  * This file centralizes all configuration settings for the application.
  * It uses environment variables with fallbacks for development.
  */
@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
     LOGIN: `${API_URL}/auth/login/`,
     LOGOUT: `${API_URL}/auth/logout/`,
     REGISTER: `${API_URL}/auth/register/`,
+    GYM_OWNER_REGISTER: `${API_URL}/auth/gym_owner_registration/`,
   },
   // Student endpoints
   STUDENT: {

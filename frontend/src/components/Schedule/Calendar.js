@@ -24,22 +24,109 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function Calendar() {
   const navigate = useNavigate();
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 768);
+
   const style = {
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
     maxWidth: 440,
-    width: '90%',
+    width: typeof window !== 'undefined' && windowWidth < 768 ? '95%' : '90%',
     bgcolor: 'background.paper',
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     borderRadius: '12px',
-    overflow: 'hidden',
+    overflow: 'auto',
+    maxHeight: typeof window !== 'undefined' && windowWidth < 768 ? '95vh' : '90vh',
     p: 0,
   };
 
   // CSS for event styling
   const eventStyles = `
+    /* Global styles to prevent page scrolling and set fixed heights */
+    body {
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
+    #root {
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Fix for border display issues */
+    .fc {
+      border: none !important;
+      height: 100% !important;
+    }
+    
+    /* Fix for cut-off corners */
+    .fc-theme-standard td, .fc-theme-standard th {
+      border-radius: 0 !important;
+    }
+    
+    /* Fix for reducing bottom padding */
+    .fc-timegrid-slots tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* Reduce cell spacing */
+    .fc-timegrid-slot {
+      height: 1.8em !important;
+      padding: 0 !important;
+    }
+    
+    /* Fix scrollbars on edges */
+    .fc-scroller::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    /* Remove extra space at bottom of calendar */
+    .fc-timegrid-body {
+      margin-bottom: 0 !important;
+    }
+    
+    .fc-timegrid-body table {
+      margin-bottom: 0 !important;
+    }
+    
+    /* Fix corner borders */
+    .fc-scrollgrid-section > td {
+      border: 1px solid var(--fc-border-color) !important;
+    }
+    
+    .fc-view-harness {
+      min-height: 600px;
+    }
+    
+    .fc-scroller {
+      overflow: auto !important;
+      height: auto !important;
+    }
+    
+    .fc-scroller-liquid-absolute {
+      position: static !important;
+      overflow: visible !important;
+    }
+    
+    .fc-view-harness-active {
+      height: 100% !important;
+    }
+    
+    .calendar-container .fc-view {
+      overflow: auto !important;
+    }
+    
+    .fc-timegrid-body {
+      overflow: visible !important;
+    }
+    
+    .fc-timegrid-body-liquid {
+      overflow: visible !important;
+    }
+    
     .fc-event {
       transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
@@ -53,6 +140,52 @@ export default function Calendar() {
     }
     .fc .fc-timegrid-col.fc-day-today {
       background-color: rgba(236,246,255,0.6);
+    }
+    
+    /* Scrollbar styling for better appearance */
+    .calendar-container ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .calendar-container ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    .calendar-container ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    
+    .calendar-container ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .fc .fc-toolbar-title {
+        font-size: 1.25em;
+      }
+      .fc .fc-button {
+        padding: 0.25em 0.5em;
+        font-size: 0.85em;
+      }
+      .fc .fc-timegrid-slot {
+        height: 1.5em;
+      }
+      .fc .fc-timegrid-col.fc-day-today {
+        background-color: rgba(236,246,255,0.8);
+      }
+      .fc-direction-ltr .fc-timegrid-slot-label-frame {
+        text-align: left;
+      }
+      .fc .fc-timegrid-slot-label {
+        font-size: 0.7em;
+      }
+      .fc .fc-timegrid-slot-minor {
+        border-top-style: none;
+      }
     }
   `;
 
@@ -124,6 +257,19 @@ export default function Calendar() {
   // State to control the modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Effect to handle window resize events
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        setWindowWidth(window.innerWidth);
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, []);
 
   // Handlers for opening and closing the modal
   const handleOpenModal = () => setIsModalOpen(true);
@@ -579,15 +725,36 @@ export default function Calendar() {
   };
 
   return (
-    <div>
+    <div className="calendar-container" style={{ 
+      width: '100%', 
+      maxWidth: '100%', 
+      overflow: 'hidden',
+      height: 'calc(100vh - 120px)',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '0',
+      margin: '0'
+    }}>
       <style>{eventStyles}</style>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        flexWrap: 'wrap',
+        mb: 1,
+        mt: 0,
+        mr: 1,
+        gap: 1,
+        '@media (max-width: 768px)': {
+          justifyContent: 'center'
+        }
+      }}>
         <Button 
           variant="outlined" 
           color="error" 
           startIcon={<DeleteIcon />} 
           onClick={handleClearStorage}
-          sx={{ mr: 1 }}
+          size={typeof window !== 'undefined' && windowWidth < 768 ? "small" : "medium"}
+          sx={{ fontSize: typeof window !== 'undefined' && windowWidth < 768 ? '0.75rem' : 'inherit' }}
         >
           Clear All Events
         </Button>
@@ -595,58 +762,88 @@ export default function Calendar() {
           variant="outlined" 
           startIcon={<FitnessCenterIcon />} 
           onClick={handleResetToDefaults}
+          size={typeof window !== 'undefined' && windowWidth < 768 ? "small" : "medium"}
+          sx={{ fontSize: typeof window !== 'undefined' && windowWidth < 768 ? '0.75rem' : 'inherit' }}
         >
           Reset to Defaults
         </Button>
       </Box>
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
-        initialView="timeGridWeek"
-        editable="true"
-        headerToolbar={{
-          start: 'timeGridDay,timeGridWeek,dayGridMonth today',
-          center: 'prev title next',
-          end: 'addClassButton',
-        }}
-        allDaySlot={false}
-        events={events}
-        eventContent={renderEventContent}
-        eventClick={(info) => {
-          setSelectedEvent(info.event); // save clicked event
-          setIsModalOpen(true);         // open the modal
-        }}
-        selectable={true}
-        select={(info) => {
-          // Capture the selected date and time
-          setSelectedDate(info.start);
-          setSelectedStartTime(info.start);
-          setSelectedEndTime(calculateEndTime(info.start));
-          setSelectedEvent(null);
-          handleOpenModal();
-        }}
-        customButtons={{
-          addClassButton: {
-            text: 'Add Class',
-            click: () => navigate('/add-class'),
-          },
-        }}
-        titleFormat={{ year: 'numeric', month: 'long' }}
-        height={'95vh'}
-        slotLabelFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }}
-        eventTimeFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }}
-        datesSet={(info) => {
-          setCurrentView(info.view.type);
-        }}
-      />
+      <div style={{ 
+        flex: 1, 
+        overflow: 'auto', 
+        paddingRight: '1px',  // Minimal padding to prevent border cutoff
+        paddingBottom: '1px',  // Minimal padding to prevent border cutoff
+        marginBottom: '0'
+      }}>
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
+          initialView="timeGridWeek"
+          editable="true"
+          headerToolbar={{
+            start: typeof window !== 'undefined' && windowWidth < 768 ? 'prev,next' : 'timeGridDay,timeGridWeek,dayGridMonth today',
+            center: typeof window !== 'undefined' && windowWidth < 768 ? 'title' : 'prev title next',
+            end: 'addClassButton',
+          }}
+          footerToolbar={typeof window !== 'undefined' && windowWidth < 768 ? {
+            start: 'timeGridDay,timeGridWeek,dayGridMonth',
+            center: '',
+            end: 'today'
+          } : false}
+          allDaySlot={false}
+          events={events}
+          eventContent={renderEventContent}
+          eventClick={(info) => {
+            setSelectedEvent(info.event); // save clicked event
+            setIsModalOpen(true);         // open the modal
+          }}
+          selectable={true}
+          select={(info) => {
+            // Capture the selected date and time
+            setSelectedDate(info.start);
+            setSelectedStartTime(info.start);
+            setSelectedEndTime(calculateEndTime(info.start));
+            setSelectedEvent(null);
+            handleOpenModal();
+          }}
+          customButtons={{
+            addClassButton: {
+              text: 'Add Class',
+              click: () => navigate('/add-class'),
+            },
+          }}
+          titleFormat={{ year: 'numeric', month: 'long' }}
+          height="100%"
+          stickyHeaderDates={true}
+          slotLabelFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }}
+          eventTimeFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }}
+          datesSet={(info) => {
+            setCurrentView(info.view.type);
+          }}
+          // Responsive settings
+          windowResize={(view) => {
+            // Update our width state
+            if (typeof window !== 'undefined') {
+              setWindowWidth(window.innerWidth);
+            }
+            
+            // Automatically adjust to screen size
+            if (typeof window !== 'undefined' && windowWidth < 768 && view.view.type !== 'timeGridDay') {
+              view.calendar.changeView('timeGridDay');
+            } else if (typeof window !== 'undefined' && windowWidth >= 768 && windowWidth < 1024 && view.view.type !== 'timeGridWeek') {
+              view.calendar.changeView('timeGridWeek');
+            }
+          }}
+        />
+      </div>
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
@@ -700,7 +897,7 @@ export default function Calendar() {
                 </Box>
               </Box>
               
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   {selectedEvent.extendedProps?.classLevel && (
                     <Chip 
@@ -821,7 +1018,7 @@ export default function Calendar() {
                 )}
               </Box>
               
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
                 <AddClassInformation 
                   handleSubmit={handleSubmit} 
                   handleCancelButton={handleCloseModal}

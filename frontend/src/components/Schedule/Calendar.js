@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import FullCalendar from '@fullcalendar/react';
 import rrulePlugin from '@fullcalendar/rrule'
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
-import { Box, Modal, Typography, Button, TextField, Select, MenuItem, Switch, FormControlLabel, Divider, Paper, IconButton, Chip } from '@mui/material';
+import { Box, Modal, Typography, Button, IconButton, Chip } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
-import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
@@ -16,10 +15,10 @@ import GradeIcon from '@mui/icons-material/Grade';
 import GroupsIcon from '@mui/icons-material/Groups';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
-import EventIcon from '@mui/icons-material/Event';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeleteIcon from '@mui/icons-material/Delete';
+import './Dashboard.css';
 
 
 export default function Calendar() {
@@ -40,154 +39,6 @@ export default function Calendar() {
     maxHeight: typeof window !== 'undefined' && windowWidth < 768 ? '95vh' : '90vh',
     p: 0,
   };
-
-  // CSS for event styling
-  const eventStyles = `
-    /* Global styles to prevent page scrolling and set fixed heights */
-    body {
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-    }
-    
-    #root {
-      height: 100vh;
-      overflow: hidden;
-    }
-    
-    /* Fix for border display issues */
-    .fc {
-      border: none !important;
-      height: 100% !important;
-    }
-    
-    /* Fix for cut-off corners */
-    .fc-theme-standard td, .fc-theme-standard th {
-      border-radius: 0 !important;
-    }
-    
-    /* Fix for reducing bottom padding */
-    .fc-timegrid-slots tr:last-child td {
-      border-bottom: none;
-    }
-    
-    /* Reduce cell spacing */
-    .fc-timegrid-slot {
-      height: 1.8em !important;
-      padding: 0 !important;
-    }
-    
-    /* Fix scrollbars on edges */
-    .fc-scroller::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    
-    /* Remove extra space at bottom of calendar */
-    .fc-timegrid-body {
-      margin-bottom: 0 !important;
-    }
-    
-    .fc-timegrid-body table {
-      margin-bottom: 0 !important;
-    }
-    
-    /* Fix corner borders */
-    .fc-scrollgrid-section > td {
-      border: 1px solid var(--fc-border-color) !important;
-    }
-    
-    .fc-view-harness {
-      min-height: 600px;
-    }
-    
-    .fc-scroller {
-      overflow: auto !important;
-      height: auto !important;
-    }
-    
-    .fc-scroller-liquid-absolute {
-      position: static !important;
-      overflow: visible !important;
-    }
-    
-    .fc-view-harness-active {
-      height: 100% !important;
-    }
-    
-    .calendar-container .fc-view {
-      overflow: auto !important;
-    }
-    
-    .fc-timegrid-body {
-      overflow: visible !important;
-    }
-    
-    .fc-timegrid-body-liquid {
-      overflow: visible !important;
-    }
-    
-    .fc-event {
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .fc-event:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-      z-index: 100;
-    }
-    .fc-timegrid-event .fc-event-main {
-      padding: 0;
-    }
-    .fc .fc-timegrid-col.fc-day-today {
-      background-color: rgba(236,246,255,0.6);
-    }
-    
-    /* Scrollbar styling for better appearance */
-    .calendar-container ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    
-    .calendar-container ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 4px;
-    }
-    
-    .calendar-container ::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 4px;
-    }
-    
-    .calendar-container ::-webkit-scrollbar-thumb:hover {
-      background: #a8a8a8;
-    }
-    
-    /* Responsive styles */
-    @media (max-width: 768px) {
-      .fc .fc-toolbar-title {
-        font-size: 1.25em;
-      }
-      .fc .fc-button {
-        padding: 0.25em 0.5em;
-        font-size: 0.85em;
-      }
-      .fc .fc-timegrid-slot {
-        height: 1.5em;
-      }
-      .fc .fc-timegrid-col.fc-day-today {
-        background-color: rgba(236,246,255,0.8);
-      }
-      .fc-direction-ltr .fc-timegrid-slot-label-frame {
-        text-align: left;
-      }
-      .fc .fc-timegrid-slot-label {
-        font-size: 0.7em;
-      }
-      .fc .fc-timegrid-slot-minor {
-        border-top-style: none;
-      }
-    }
-  `;
 
   // Helper function to determine class level color - moved to component scope
   const getLevelColor = (level) => {
@@ -303,77 +154,167 @@ export default function Calendar() {
 
   // Event Render Function To Get Event Info and Display it
   function renderEventContent(eventInfo) {
-    const { title, start, end, extendedProps, backgroundColor } = eventInfo.event;
-    
-    // Calculate event duration in minutes
-    const durationMinutes = end && start ? 
-      Math.round((new Date(end) - new Date(start)) / 60000) : 0;
-    
-    // Categorize events by duration
-    const isSmallEvent = durationMinutes <= 60;
-    const isMediumEvent = durationMinutes > 60 && durationMinutes <= 90;
-    const isLargeEvent = durationMinutes > 90;
-    
-    // Get background color based on class properties
-    const bgColor = getLevelColor(extendedProps.classLevel);
-
-    // Always show more details in day view regardless of size
-    const viewAdjustedSize = currentView === 'timeGridDay' 
-      ? 'large' 
-      : isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
-
-    // SMALL EVENT: only show class name and time
-    if (viewAdjustedSize === 'small') {
-      return (
-        <div style={{
-          borderRadius: '6px',
-          border: '1px solid rgba(0,0,0,0.1)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          padding: '4px 6px',
-          height: '100%',
-          overflow: 'hidden',
-          backgroundColor: bgColor,
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          transition: 'transform 0.2s ease',
-          cursor: 'pointer',
-        }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            fontSize: '12px',
-            marginBottom: '2px',
+    try {
+      const { title, start, end, extendedProps, backgroundColor } = eventInfo.event;
+      
+      // Month view simplified rendering
+      if (currentView === 'dayGridMonth') {
+        const bgColor = getLevelColor(extendedProps?.classLevel);
+        return (
+          <div style={{
+            backgroundColor: bgColor,
+            color: 'white',
+            padding: '2px 4px',
+            borderRadius: '3px',
+            fontSize: '11px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
             {title}
           </div>
-          
-          {start && end && (
+        );
+      }
+    
+      // Calculate event duration in minutes
+      const durationMinutes = end && start ? 
+        Math.round((new Date(end) - new Date(start)) / 60000) : 0;
+      
+      // Categorize events by duration
+      const isSmallEvent = durationMinutes <= 60;
+      const isMediumEvent = durationMinutes > 60 && durationMinutes <= 90;
+      const isLargeEvent = durationMinutes > 90;
+      
+      // Get background color based on class properties
+      const bgColor = getLevelColor(extendedProps?.classLevel);
+
+      // Always show more details in day view regardless of size
+      const viewAdjustedSize = currentView === 'timeGridDay' 
+        ? 'large' 
+        : isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
+
+      // SMALL EVENT: only show class name and time
+      if (viewAdjustedSize === 'small') {
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '4px 6px',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: bgColor,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            transition: 'transform 0.2s ease',
+            cursor: 'pointer',
+          }}>
             <div style={{ 
-              fontSize: '10px', 
-              opacity: '0.9',
+              fontWeight: 'bold', 
+              fontSize: '12px',
+              marginBottom: '2px',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis'
             }}>
-              {formatTime(start)}
+              {title}
             </div>
-          )}
-        </div>
-      );
-    }
+            
+            {start && end && (
+              <div style={{ 
+                fontSize: '10px', 
+                opacity: '0.9',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {formatTime(start)}
+              </div>
+            )}
+          </div>
+        );
+      }
 
-    // MEDIUM EVENT: show class name, time, instructor and level
-    else if (viewAdjustedSize === 'medium') {
+      // MEDIUM EVENT: show class name, time, instructor and level
+      else if (viewAdjustedSize === 'medium') {
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '5px 7px',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: bgColor,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'transform 0.2s ease',
+            cursor: 'pointer',
+          }}>
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '13px',
+              marginBottom: '3px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              <FitnessCenterIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
+              {title}
+            </div>
+            
+            {start && end && (
+              <div style={{ 
+                fontSize: '11px', 
+                opacity: '0.9',
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '2px'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                <span>{formatTime(start)} - {formatTime(end)}</span>
+              </div>
+            )}
+            
+            {extendedProps?.instructor && (
+              <div style={{ 
+                fontSize: '11px', 
+                opacity: '0.9',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                <PersonOutlineIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                {extendedProps.instructor}
+              </div>
+            )}
+            
+            {extendedProps?.classLevel && (
+              <div style={{ 
+                fontSize: '11px', 
+                opacity: '0.9',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                <GradeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                {extendedProps.classLevel}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // LARGE EVENT: show all available information
       return (
         <div style={{
           borderRadius: '6px',
           border: '1px solid rgba(0,0,0,0.1)',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          padding: '5px 7px',
+          padding: '8px 10px',
           height: '100%',
           overflow: 'hidden',
           backgroundColor: bgColor,
@@ -385,13 +326,13 @@ export default function Calendar() {
         }}>
           <div style={{ 
             fontWeight: 'bold', 
-            fontSize: '13px',
-            marginBottom: '3px',
+            fontSize: '14px',
+            marginBottom: '5px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
-            <FitnessCenterIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
+            <FitnessCenterIcon sx={{ fontSize: 15, verticalAlign: 'middle', mr: 0.5 }} />
             {title}
           </div>
           
@@ -401,27 +342,44 @@ export default function Calendar() {
               opacity: '0.9',
               display: 'flex',
               alignItems: 'center',
-              marginBottom: '2px'
+              marginBottom: '4px'
             }}>
-              <AccessTimeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+              <AccessTimeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
               <span>{formatTime(start)} - {formatTime(end)}</span>
             </div>
           )}
           
-          {extendedProps.instructor && (
+          {extendedProps?.instructor && (
             <div style={{ 
               fontSize: '11px', 
               opacity: '0.9',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              textOverflow: 'ellipsis',
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '3px'
             }}>
-              <PersonOutlineIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+              <PersonOutlineIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
               {extendedProps.instructor}
             </div>
           )}
           
-          {extendedProps.classLevel && (
+          {extendedProps?.classLevel && (
+            <div style={{ 
+              fontSize: '11px', 
+              opacity: '0.9',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              marginBottom: '3px'
+            }}>
+              <GradeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
+              {extendedProps.classLevel}
+            </div>
+          )}
+          
+          {extendedProps?.age && (
             <div style={{ 
               fontSize: '11px', 
               opacity: '0.9',
@@ -429,99 +387,27 @@ export default function Calendar() {
               overflow: 'hidden',
               textOverflow: 'ellipsis'
             }}>
-              <GradeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.classLevel}
+              <GroupsIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
+              {extendedProps.age}
             </div>
           )}
         </div>
       );
-    }
-
-    // LARGE EVENT: show all available information
-    return (
-      <div style={{
-        borderRadius: '6px',
-        border: '1px solid rgba(0,0,0,0.1)',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        padding: '8px 10px',
-        height: '100%',
-        overflow: 'hidden',
-        backgroundColor: bgColor,
-        color: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.2s ease',
-        cursor: 'pointer',
-      }}>
-        <div style={{ 
-          fontWeight: 'bold', 
-          fontSize: '14px',
-          marginBottom: '5px',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
+    } catch (err) {
+      console.error("Error rendering event:", err, eventInfo);
+      // Return a fallback rendering for the event
+      return (
+        <div style={{
+          backgroundColor: '#f44336',
+          color: 'white',
+          padding: '2px 4px',
+          borderRadius: '3px',
+          fontSize: '11px'
         }}>
-          <FitnessCenterIcon sx={{ fontSize: 15, verticalAlign: 'middle', mr: 0.5 }} />
-          {title}
+          {eventInfo.event?.title || 'Event Error'}
         </div>
-        
-        {start && end && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '4px'
-          }}>
-            <AccessTimeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            <span>{formatTime(start)} - {formatTime(end)}</span>
-          </div>
-        )}
-        
-        {extendedProps.instructor && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '3px'
-          }}>
-            <PersonOutlineIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            {extendedProps.instructor}
-          </div>
-        )}
-        
-        {extendedProps.classLevel && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            marginBottom: '3px'
-          }}>
-            <GradeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            {extendedProps.classLevel}
-          </div>
-        )}
-        
-        {extendedProps.age && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            <GroupsIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            {extendedProps.age}
-          </div>
-        )}
-      </div>
-    );
+      );
+    }
   }
 
   const handleSubmit = (e, recurrence) => {
@@ -735,7 +621,6 @@ export default function Calendar() {
       padding: '0',
       margin: '0'
     }}>
-      <style>{eventStyles}</style>
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'flex-end', 
@@ -770,9 +655,9 @@ export default function Calendar() {
       </Box>
       <div style={{ 
         flex: 1, 
-        overflow: 'auto', 
-        paddingRight: '1px',  // Minimal padding to prevent border cutoff
-        paddingBottom: '1px',  // Minimal padding to prevent border cutoff
+        overflow: 'auto',
+        paddingRight: '1px',
+        paddingBottom: '1px',
         marginBottom: '0'
       }}>
         <FullCalendar
@@ -785,11 +670,6 @@ export default function Calendar() {
             center: typeof window !== 'undefined' && windowWidth < 768 ? 'title' : 'prev title next',
             end: 'addClassButton',
           }}
-          footerToolbar={typeof window !== 'undefined' && windowWidth < 768 ? {
-            start: 'timeGridDay,timeGridWeek,dayGridMonth',
-            center: '',
-            end: 'today'
-          } : false}
           allDaySlot={false}
           events={events}
           eventContent={renderEventContent}
@@ -828,6 +708,10 @@ export default function Calendar() {
           datesSet={(info) => {
             setCurrentView(info.view.type);
           }}
+          // Month view configuration
+          dayMaxEventRows={3}
+          dayMaxEvents={3}
+          fixedWeekCount={false}
           // Responsive settings
           windowResize={(view) => {
             // Update our width state
@@ -840,6 +724,9 @@ export default function Calendar() {
               view.calendar.changeView('timeGridDay');
             } else if (typeof window !== 'undefined' && windowWidth >= 768 && windowWidth < 1024 && view.view.type !== 'timeGridWeek') {
               view.calendar.changeView('timeGridWeek');
+            } else if (typeof window !== 'undefined' && windowWidth >= 1024 && view.view.type === 'dayGridMonth') {
+              // Removing incorrect change to timeGridMonth which doesn't exist
+              // view.calendar.changeView('timeGridMonth');
             }
           }}
         />

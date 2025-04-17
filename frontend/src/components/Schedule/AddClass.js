@@ -5,6 +5,7 @@ import NavigationMenu from "../NavigationMenu";
 import './Dashboard.css';
 import { useEvents } from './EventContext';
 import Calendar from './Calendar';
+import AddClassInformation from './AddClassInformation';
 
 export default function AddClass() {
   const { events, setEvents } = useEvents();
@@ -20,29 +21,38 @@ export default function AddClass() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const title = e.target.elements.title.value;
+    const date = e.target.elements.date.value;
+    const start = `${date}T${e.target.elements.start.value}:00`;
+    const end = `${date}T${e.target.elements.end.value}:00`;
+    const instructor = e.target.elements.instructor.value;
+    const duration = "01:00:00"; // might not be needed
+    const classLevel = e.target.elements.classLevel.value;
+    const selectedAge = age;
 
-    // Collect form data
-    const formData = new FormData(e.target);
     const newEvent = {
-      title: formData.get("title"),
-      start: `${formData.get("date")}T${formData.get("start")}`, // Combine date and time
-      end: `${formData.get("date")}T${formData.get("end")}`,
-      instructor: formData.get("instructor"),
-      description: formData.get("description"),
-      age: formData.get("age"),
-      color: "#E0E0E0",
-      textColor: "black",
-      borderColor: "black",
+      title,
+      start,
+      end,
+      color: '#E0E0E0',
+      textColor: 'black',
+      borderColor: 'black',
+      extendedProps: {
+        instructor,
+        classLevel,
+        age: selectedAge,
+        duration
+      },
     };
 
-    // Update events state
     setEvents([...events, newEvent]);
-
-    console.log("New Event Added:", newEvent);
-
-    // Navigate back to dashboard
     navigate('/dashboard');
   };
+
+
+  const handleCancelButton = () => {
+    navigate('/dashboard');
+  }
 
   return (
     <Box display="flex">
@@ -58,43 +68,7 @@ export default function AddClass() {
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           <div style={{ margin: "75px" }}>
             <Typography variant="h3" mb={2}>Add Class</Typography>
-            <form onSubmit={handleSubmit}>
-              <div>
-                <label>Class Name</label>
-                <TextField fullWidth label="Enter class name" name="title" required margin="normal" />
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <label style={{ marginBottom: '4px' }}>Time Start</label>
-                    <TextField type="time" name="start" required fullWidth />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <label style={{ marginBottom: '4px' }}>Time End</label>
-                    <TextField type="time" name="end" required fullWidth />
-                  </Box>
-                </Box>
-                <label>Date</label>
-                <TextField fullWidth type="date" name="date" required margin="normal" />
-                <label>Instructor</label>
-                <TextField fullWidth label="Enter instructor" name="instructor" required margin="normal" />
-                <label>Description</label>
-                <TextField fullWidth label="Enter description" name="description" required margin="normal" />
-                <label>Age</label>
-                <Select
-                  labelId="age-label"
-                  name="age"
-                  value={age}  // Controlled component needs value
-                  onChange={handleChange}
-                  fullWidth
-                >
-                  <MenuItem value=""><em>None</em></MenuItem>
-                  <MenuItem value="Adult">Adult</MenuItem>
-                  <MenuItem value="Teen">Teen</MenuItem>
-                  <MenuItem value="Child">Child</MenuItem>
-                </Select>
-              </div>
-              <Button id="blackButtons" type="submit" variant="contained" style={{ margin: "5px", marginTop: "50px" }}>Save</Button>
-              <Button onClick={() => navigate('/dashboard')} variant="outlined" style={{ margin: "5px", marginTop: "50px" }}>Cancel</Button>
-            </form >
+            <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit}></AddClassInformation>
           </div>
         </Box >
       </Box>

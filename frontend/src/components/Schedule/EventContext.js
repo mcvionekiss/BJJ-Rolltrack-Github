@@ -4,66 +4,92 @@ const EventContext = createContext();
 
 export const EventProvider = ({ children }) => {
     const [events, setEvents] = useState([
+      // sample classes
         {
-            title: "Adult Fundamentals",
-            color: "#E0E0E0",
-            textColor: "black",
-            borderColor: "black",
-            rrule: {
-              freq: "weekly",
-              byweekday: ["tu", "fr"],
-              dtstart: "2025-03-12T08:00:00Z",
-            },
-            duration: "01:00:00",
+          title: "Adult Fundamentals",
+          color: "#E0E0E0",
+          textColor: "black",
+          borderColor: "black",
+          rrule: {
+            freq: "weekly",
+            byweekday: ["tu", "fr"],
+            dtstart: "2025-03-11T15:00:00Z",
           },
-          {
-            title: "Adult Advanced",
-            color: "#E0E0E0",
-            textColor: "black",
-            borderColor: "black",
-            rrule: {
-              freq: "weekly",
-              byweekday: ["we"],
-              dtstart: "2025-03-12T09:00:00Z",
-            },
-            duration: "01:30:00",
+          duration: "01:00:00",
+          extendedProps: {
+            instructor: "John Doe",
+            classLevel: "Beginner",
+            age: "Adult"
+          }
+        },
+        {
+          title: "Adult Advanced",
+          color: "#E0E0E0",
+          textColor: "black",
+          borderColor: "black",
+          rrule: {
+            freq: "weekly",
+            byweekday: ["we"],
+            dtstart: "2025-03-12T20:00:00Z",
           },
-          {
-            title: "Tiny Champs",
-            color: "#E0E0E0",
-            textColor: "black",
-            borderColor: "black",
-            rrule: {
-              freq: "weekly",
-              byweekday: ["we"],
-              dtstart: "2025-03-12T10:30:00Z",
-            },
-            duration: "01:00:00",
+          duration: "01:30:00",
+          extendedProps: {
+            instructor: "Jane Smith",
+            classLevel: "Advanced",
+            age: "Adult"
+          }
+        },
+        {
+          title: "Tiny Champs",
+          color: "#E0E0E0",
+          textColor: "black",
+          borderColor: "black",
+          rrule: {
+            freq: "weekly",
+            byweekday: ["we"],
+            dtstart: "2025-03-12T17:00:00Z",
           },
-          {
-            title: "Advanced Teams",
-            color: "#E0E0E0",
-            textColor: "black",
-            borderColor: "black",
-            rrule: {
-              freq: "weekly",
-              byweekday: ["th"],
-              dtstart: "2025-03-13T13:00:00Z",
-            },
-            duration: "01:30:00",
+          duration: "01:00:00",
+          extendedProps: {
+            instructor: "Coach Ellie",
+            classLevel: "Kids",
+            age: "Child"
+          }
+        },
+        {
+          title: "Teens Advanced",
+          color: "#E0E0E0",
+          textColor: "black",
+          borderColor: "black",
+          rrule: {
+            freq: "weekly",
+            byweekday: ["th"],
+            dtstart: "2025-03-13T17:00:00Z",
           },
-          {
-            title: "Adult Advanced",
-            color: "#E0E0E0",
-            textColor: "black",
-            borderColor: "black",
-            rrule: {
-              freq: "weekly",
-              byweekday: ["fr"],
-              dtstart: "2025-03-14T14:00:00Z",
-            },
-            duration: "01:30:00",
+          duration: "01:30:00",
+          extendedProps: {
+            instructor: "Coach Mike",
+            classLevel: "Elite",
+            age: "Teen"
+          }
+        },
+        {
+          title: "Adult Advanced",
+          color: "#E0E0E0",
+          textColor: "black",
+          borderColor: "black",
+          rrule: {
+            freq: "weekly",
+            byweekday: ["fr"],
+            dtstart: "2025-03-14T19:00:00Z",
           },
+          duration: "01:30:00",
+          extendedProps: {
+            instructor: "Jane Smith",
+            classLevel: "Advanced",
+            age: "Adult"
+          }
+        }     
       ]);
   
   return (

@@ -14,6 +14,7 @@ import CheckinSelection from "./components/CheckinSelection";
 import MemberSignup from "./components/MemberSignup";
 import GuestCheckin from "./components/GuestCheckin";
 import { EventProvider } from "./components/Schedule/EventContext";
+import EditClass from "./components/Schedule/EditClass";
 function App() {
     return (
         <Router>
@@ -29,6 +30,7 @@ function App() {
                     {/* Gym Owner Pages */}
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/add-class" element={<AddClass />} />
+                    <Route path="/edit-class" element={<EditClass/>}/>
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/clients-page" element={<ClientsPage />} />
 

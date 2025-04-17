@@ -163,3 +163,11 @@
   padding: 8px 50px !important;
   transition: all 0.3s ease;
 }
+
+.fc-scrollgrid {
+  border-radius: 10px;
+}
+
+.fc-timeGridWeek-view {
+  border: none;
+}

@@ -15,7 +15,8 @@ import {
     Link,
     CircularProgress,
     AppBar,
-    Toolbar
+    Toolbar,
+    Divider
 } from "@mui/material";
 import logo from '../assets/logo.jpeg';
 import GoogleSignIn from "../components/GoogleSignIn";
@@ -207,7 +208,7 @@ function Login() {
 
                     {/* Sign Up Link */}
                     <Typography variant="body2" sx={{ mt: 2 }}>
-                        Don’t have an account?{" "}
+                        Don't have an account?{" "}
                         <Link href="#" underline="hover" onClick={handleSignUp}>
                             Sign up
                         </Link>

@@ -14,7 +14,8 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import GradeIcon from '@mui/icons-material/Grade';
 import GroupsIcon from '@mui/icons-material/Groups';
-import Groups from '@mui/icons-material/Groups';
+import EditIcon from '@mui/icons-material/Edit';
+import Edit from '@mui/icons-material/Edit';
 
 
 export default function Calendar() {
@@ -104,6 +105,7 @@ export default function Calendar() {
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
         initialView="timeGridWeek"
+        editable="true"
         headerToolbar={{
           start: 'timeGridDay,timeGridWeek,dayGridMonth today',
           center: 'prev title next',
@@ -116,7 +118,6 @@ export default function Calendar() {
           setSelectedEvent(info.event); // save clicked event
           setIsModalOpen(true);         // open the modal
         }}
-        editable={true}
         selectable={true}
         select={() => {
           setSelectedEvent(null);
@@ -145,6 +146,7 @@ export default function Calendar() {
               </Typography>
               <Typography variant="h6" gutterBottom>
                 <strong>{selectedEvent.title}</strong>
+                <Button onClick={() => navigate('/edit-class')}><EditIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /></Button>
               </Typography>
               <Typography variant="body2">
                 <AccessAlarmIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> {new Date(selectedEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(selectedEvent.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}

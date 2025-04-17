@@ -27,6 +27,7 @@ import GradeIcon from '@mui/icons-material/Grade';
 import GroupsIcon from '@mui/icons-material/Groups';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import ClassTemplateSelector from './ClassTemplateSelector';
 
 const AddClassInformation = ({
   handleCancelButton, 
@@ -41,6 +42,10 @@ const AddClassInformation = ({
     const [date, setDate] = useState(initialDate);
     const [startTime, setStartTime] = useState(initialStartTime);
     const [endTime, setEndTime] = useState(initialEndTime);
+    const [title, setTitle] = useState('');
+    const [instructor, setInstructor] = useState('');
+    const [classLevel, setClassLevel] = useState('Fundamentals');
+    const [maxCapacity, setMaxCapacity] = useState(20);
     
     // Recurring options
     const [isRecurring, setIsRecurring] = useState(false);
@@ -56,6 +61,41 @@ const AddClassInformation = ({
     });
     const [hasEndDate, setHasEndDate] = useState(false);
     const [endDate, setEndDate] = useState('');
+    
+    // Get form data for template handling
+    const getFormData = () => {
+        return {
+            title,
+            instructor,
+            classLevel,
+            maxCapacity,
+            startTime,
+            endTime,
+            age
+        };
+    };
+
+    // Handle template selection
+    const handleTemplateSelect = (template) => {
+        if (template) {
+            console.log('Selected template:', template);
+            setTitle(template.name || '');
+            setInstructor(template.instructor || '');
+            setClassLevel(template.level_id || 'Fundamentals');
+            setMaxCapacity(template.max_capacity || 20);
+            
+            if (template.duration_minutes && startTime) {
+                // If template has duration, calculate end time based on start time
+                const startDate = new Date(`2023-01-01T${startTime}`);
+                const endDate = new Date(startDate.getTime() + template.duration_minutes * 60000);
+                const hours = String(endDate.getHours()).padStart(2, '0');
+                const minutes = String(endDate.getMinutes()).padStart(2, '0');
+                setEndTime(`${hours}:${minutes}`);
+            }
+            
+            setAge(template.age || 'Adult');
+        }
+    };
     
     // Helper function to initialize days based on a date
     const initializeRecurrenceDaysFromDate = (dateStr) => {
@@ -253,6 +293,15 @@ const AddClassInformation = ({
         <Box>
             <form onSubmit={handleFormSubmit}>
                 <Grid container spacing={2}>
+                    {/* Template Selector */}
+                    <Grid item xs={12}>
+                        <ClassTemplateSelector 
+                            onSelectTemplate={handleTemplateSelect} 
+                            formData={getFormData()}
+                        />
+                        <Divider sx={{ mb: 2 }} />
+                    </Grid>
+
                     <Grid item xs={12}>
                         <Box sx={{ mb: 1, display: 'flex', alignItems: 'flex-end' }}>
                             <TextField 
@@ -262,6 +311,8 @@ const AddClassInformation = ({
                                 required 
                                 variant="outlined"
                                 placeholder="e.g. Adult Fundamentals"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
                             />
                         </Box>
                     </Grid>
@@ -461,6 +512,8 @@ const AddClassInformation = ({
                                 required 
                                 variant="standard"
                                 placeholder="e.g. John Doe"
+                                value={instructor}
+                                onChange={(e) => setInstructor(e.target.value)}
                             />
                         </Box>
                     </Grid>
@@ -473,7 +526,8 @@ const AddClassInformation = ({
                                 <Select
                                     labelId="class-level-label"
                                     name="classLevel"
-                                    defaultValue="Fundamentals"
+                                    value={classLevel}
+                                    onChange={(e) => setClassLevel(e.target.value)}
                                     label="Class Level"
                                 >
                                     <MenuItem value="Fundamentals">Fundamentals</MenuItem>
@@ -484,7 +538,7 @@ const AddClassInformation = ({
                         </Box>
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid item xs={6}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-end', mt: 1 }}>
                             <GroupsIcon sx={{ mr: 1, mb: 0.5, color: 'text.secondary' }} />
                             <FormControl fullWidth variant="standard">
@@ -501,6 +555,23 @@ const AddClassInformation = ({
                                     <MenuItem value="Child">Child</MenuItem>
                                 </Select>
                             </FormControl>
+                        </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', mt: 1 }}>
+                            <TextField
+                                fullWidth
+                                label="Max Capacity"
+                                name="maxCapacity"
+                                type="number"
+                                variant="standard"
+                                value={maxCapacity}
+                                onChange={(e) => setMaxCapacity(e.target.value)}
+                                InputProps={{
+                                    inputProps: { min: 1, max: 100 }
+                                }}
+                            />
                         </Box>
                     </Grid>
                     

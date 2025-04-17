@@ -6,12 +6,15 @@ import {
     TextField,
     Container,
     Typography,
-    Box
+    Box,
+    Alert,
+    CircularProgress
 } from "@mui/material";
 
 function Checkin() {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     
     // Log component mount
@@ -32,8 +35,16 @@ function Checkin() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Basic validation
+        if (!email.includes('@')) {
+            setError("Please enter a valid email address");
+            return;
+        }
+        
         console.log(`🔶 Form submitted with email: ${email}`);
         setError(""); // Clear previous errors
+        setLoading(true);
         console.log("🔶 Previous errors cleared");
 
         try {
@@ -54,6 +65,7 @@ function Checkin() {
                 navigate("/available-classes", { state: { email } });
             } else {
                 console.warn(`⚠️ Student exists=false for email: ${email}`);
+                setError("Email not found. Please try again or sign up as a new member.");
             }
         } catch (error) {
             console.error("🔴 Student not found:", {
@@ -63,8 +75,27 @@ function Checkin() {
                 timestamp: new Date().toISOString(),
                 fullError: error
             });
-            setError("Email not found. Please try again or contact an instructor.");
-            console.log("🔶 Error state updated with message: Email not found. Please try again or contact an instructor.");
+            
+            // Handle different error types
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                if (error.response.status === 404) {
+                    setError("Email not found. Please try again or sign up as a new member.");
+                } else {
+                    setError(error.response.data.message || "Error checking student. Please try again.");
+                }
+            } else if (error.request) {
+                // The request was made but no response was received
+                setError("Could not connect to server. Please check your connection and try again.");
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                setError("An unexpected error occurred. Please try again later.");
+            }
+            
+            console.log(`🔶 Error state updated with message: ${error}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -102,20 +133,16 @@ function Checkin() {
             </Typography>
 
             {error && (
-                <Typography 
-                    color="error" 
+                <Alert 
+                    severity="error" 
                     sx={{ 
                         mb: 3,
-                        py: 1,
-                        px: 2,
-                        bgcolor: 'rgba(211, 47, 47, 0.1)',
-                        borderRadius: 1,
                         width: '100%',
                         maxWidth: '400px'
                     }}
                 >
                     {error}
-                </Typography>
+                </Alert>
             )}
 
             <Box
@@ -133,10 +160,12 @@ function Checkin() {
                     fullWidth
                     label="Email"
                     variant="outlined"
+                    type="email"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -148,6 +177,7 @@ function Checkin() {
                     type="submit"
                     variant="contained"
                     size="large"
+                    disabled={loading}
                     sx={{ 
                         py: 1.5,
                         backgroundColor: "black", 
@@ -158,12 +188,18 @@ function Checkin() {
                         }
                     }}
                 >
-                    Continue
+                    {loading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                            Checking...
+                        </Box>
+                    ) : "Continue"}
                 </Button>
                 
                 <Button
                     variant="text"
                     onClick={() => navigate("/checkin-selection")}
+                    disabled={loading}
                     sx={{ 
                         mt: 1,
                         color: "text.secondary",

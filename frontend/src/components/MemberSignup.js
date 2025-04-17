@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import axios from "../utils/axiosConfig";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Button,
     TextField,
@@ -30,7 +30,23 @@ function MemberSignup() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [csrfToken, setCsrfToken] = useState("");
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Fetch CSRF token when component mounts
+        const fetchCsrfToken = async () => {
+            try {
+                const response = await axios.get("/auth/csrf/", { withCredentials: true });
+                setCsrfToken(response.data.csrfToken);
+            } catch (error) {
+                console.error("Failed to fetch CSRF token", error);
+                setError("Failed to initialize form. Please refresh the page.");
+            }
+        };
+
+        fetchCsrfToken();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -50,8 +66,24 @@ function MemberSignup() {
         setSuccess("");
 
         try {
-            // TODO: Add backend API call
-            const response = await axios.post("http://localhost:8000/auth/member-signup/", formData);
+            // Prepare the data to match backend field names
+            const backendFormData = {
+                firstName: formData.name.split(' ')[0],
+                lastName: formData.name.split(' ').slice(1).join(' '),
+                email: formData.email,
+                phone: formData.phone,
+                dob: formData.dob,
+                password: formData.password,
+                belt: 1, // Default to White Belt (ID 1)
+                role: 1  // Default to Student Role (ID 1)
+            };
+            
+            // Call the API with CSRF token
+            const response = await axios.post("/auth/member-signup/", backendFormData, {
+                headers: {
+                    "X-CSRFToken": csrfToken
+                }
+            });
             
             setSuccess("Account created successfully! You can now log in.");
             setTimeout(() => {

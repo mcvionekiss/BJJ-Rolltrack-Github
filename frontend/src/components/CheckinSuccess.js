@@ -10,6 +10,7 @@ function CheckinSuccess() {
     const studentName = location.state?.studentName || "Student";
     const studentEmail = location.state?.email || "";
     const className = location.state?.className || "Class";
+    const checkinTime = location.state?.checkinTime ? new Date(location.state.checkinTime).toLocaleTimeString() : "";
 
     return (
         <Container maxWidth="sm" sx={{ textAlign: "center", paddingY: 5 }}>
@@ -20,11 +21,15 @@ function CheckinSuccess() {
 
             {/* Success Message */}
             <Typography variant="h5" fontWeight="bold">
-                You are successfully checkin in for {className}! Have a great workout!
+                You are successfully checked in for {className}!
             </Typography>
 
             <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-                What would you like to do next?
+                Check-in time: {checkinTime}
+            </Typography>
+
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+                Have a great workout! What would you like to do next?
             </Typography>
 
             {/* Action Buttons */}

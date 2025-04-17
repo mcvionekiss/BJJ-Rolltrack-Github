@@ -39,7 +39,7 @@ function Checkin() {
         try {
             console.log(`🔶 Making API request to check_student with email: ${email}`);
             const startTime = performance.now();
-            const response = await axios.post("http://192.168.2.1:8000/api/check_student/", { email });
+            const response = await axios.post("http://localhost:8000/api/check_student/", { email });
             const endTime = performance.now();
             
             console.log(`🔶 API response received in ${(endTime - startTime).toFixed(2)}ms`);

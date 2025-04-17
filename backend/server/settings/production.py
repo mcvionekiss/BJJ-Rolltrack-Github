@@ -26,7 +26,7 @@ SECRET_KEY = get_secret('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['rolltrackapp.com', 'www.rolltrackapp.com']
 
 
 # Application definition
@@ -58,8 +58,8 @@ MIDDLEWARE = [
 
 CORS_ALLOW_CREDENTIALS = True  # ✅ Allow cookies and authentication
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # ✅ Allow frontend to call backend
-    "http://3.133.113.101",
+    "https://rolltrackapp.com",
+    "https://www.rolltrackapp.com",
 ]
 
 ROOT_URLCONF = "server.urls"

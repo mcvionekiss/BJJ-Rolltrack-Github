@@ -3,8 +3,8 @@ set -e
 
 echo "Running entrypoint script..."
 
-# Explicitly set Django settings module to staging
-export DJANGO_SETTINGS_MODULE=server.settings.staging
+# Explicitly set Django settings module to production
+export DJANGO_SETTINGS_MODULE=server.settings.production
 echo "Using Django settings module: $DJANGO_SETTINGS_MODULE"
 
 # Create staticfiles directory if it doesn't exist

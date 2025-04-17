@@ -1,5 +1,5 @@
-# Staging-focused Docker Compose configuration
-# Configured for using the staging environment by default
+# Production-focused Docker Compose configuration
+# Configured for using the production environment
 
 services:
   backend:
@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     env_file: 
-      - .env.staging
+      - .env.production
     container_name: backend
     restart: always
     ports:
@@ -16,14 +16,14 @@ services:
       - ./backend:/app/backend
       - backend_static:/app/backend/staticfiles
     environment:
-      - PIPELINE=staging
+      - PIPELINE=production
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     env_file: 
-      - .env.staging
+      - .env.production
     container_name: frontend
     restart: always
     ports:
@@ -44,7 +44,7 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     env_file: 
-      - .env.staging
+      - .env.production
     container_name: nginx
     restart: always
     ports:
@@ -52,8 +52,8 @@ services:
       - "8443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt/live/staging.rolltrackapp.com/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
-      - /etc/letsencrypt/live/staging.rolltrackapp.com/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+      - /etc/letsencrypt/live/rolltrackapp.com/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/live/rolltrackapp.com/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
       - backend_static:/var/www/html/static
     depends_on:
       - frontend

@@ -17,27 +17,28 @@ class Roles(models.Model):
     """
     Model representing user roles
     """
-    roleID = models.AutoField(primary_key=True)
-    role = models.CharField(max_length=100)
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
 
     class Meta:
         db_table = "roles"
 
     def __str__(self):
-        return f"{self.role}"
+        return f"{self.name}"
 
 class Belts(models.Model):
     """
     Belts for martial arts gyms
     """
-    beltID = models.AutoField(primary_key=True)
-    belt = models.CharField(max_length=100)
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(unique=True, max_length=100)
+    rank = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         db_table = "belts"
 
     def __str__(self):
-        return f"{self.belt}"
+        return self.name
 
 class Users(AbstractUser, PermissionsMixin):
     """
@@ -45,10 +46,13 @@ class Users(AbstractUser, PermissionsMixin):
     Custom user model that extends Django's AbstractUser
     The AbstractUser already includes email, first_name, last_name, and password
     """
-    role = models.ForeignKey(Roles, on_delete=models.CASCADE)
+    role_id = models.ForeignKey(Roles, on_delete=models.CASCADE, db_column='role_id')
     date_enrolled = models.DateField()
     date_of_birth = models.DateField(blank = True)
-    belt = models.ForeignKey(Belts, on_delete=models.CASCADE, blank = True)
+    belt_id = models.ForeignKey(Belts, on_delete=models.CASCADE, blank = True, db_column='belt_id')
+    phone_number = models.CharField(max_length=20)
+    is_gym_owner = models.BooleanField(default=False)
+    is_instructor = models.BooleanField(default=False)
 
     class Meta:
         db_table = "users"
@@ -57,16 +61,17 @@ class Gym(models.Model):
     """
     Model representing a Gym
     """
-    gym_id = models.AutoField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=100)
-    alternate_name = models.CharField(max_length=100, blank = True)
-    owner = models.ManyToManyField(Users)
-    email = models.CharField(max_length=100)
+    alternate_name = models.CharField(max_length=100, blank=True)
+    email = models.CharField(max_length=254)
     phone_number = models.CharField(max_length=20)
-    belts = models.ForeignKey(Belts, on_delete=models.CASCADE)
+    website = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # Not including the belts field as it doesn't appear in the database schema
 
     class Meta:
-        db_table = "gym"
+        db_table = "gyms"
 
     def __str__(self):
         return self.name
@@ -110,33 +115,51 @@ class ClassLevel(models.Model):
     """
     Model Representing the different difficulties a class can have
     """
-    levelID = models.AutoField(primary_key=True)
-    level = models.CharField(max_length=100)
-    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    minimum_belt = models.ForeignKey(Belts, models.DO_NOTHING, blank=True, null=True)
+    gym = models.ForeignKey(Gym, models.DO_NOTHING)
 
     class Meta:
-        db_table = "class_level"
+        db_table = "class_levels"
+        unique_together = (('name', 'gym'),)
+
+class ClassTemplates(models.Model):
+    """
+    Model representing a template for classes
+    """
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    duration_minutes = models.PositiveIntegerField()
+    max_capacity = models.PositiveIntegerField(blank=True, null=True)
+    level = models.ForeignKey(ClassLevel, on_delete=models.DO_NOTHING)
+    gym = models.ForeignKey(Gym, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        db_table = 'class_templates'
+
+    def __str__(self):
+        return f"{self.name} ({self.level.name if hasattr(self, 'level') else 'All Levels'})"
 
 class Class(models.Model):
     """
-    Model representing a class.
+    Model representing a scheduled class.
     """
-    classID = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-    startTime = models.TimeField()
-    endTime = models.TimeField()
-    recurring = models.BooleanField(default=False)  # True if it's a weekly class
-    difficulty = models.ForeignKey(ClassLevel, on_delete=models.CASCADE)
-    instructor = models.ManyToManyField(Users, related_name="classes_teaching")
-    date = models.DateField(null=True, blank=True)
-    gym = models.ForeignKey("Gym", on_delete=models.CASCADE, related_name="classes", null=True)
-    attendance = models.ManyToManyField(Users, related_name="classes_attending")
+    id = models.BigAutoField(primary_key=True)
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_canceled = models.IntegerField(default=0)
+    notes = models.TextField(blank=True, null=True)
+    template = models.ForeignKey('ClassTemplates', on_delete=models.DO_NOTHING)
 
     class Meta:
-        db_table = "class"
+        db_table = "scheduled_classes"
 
     def __str__(self):
-        return f"{self.name} ({self.startTime} - {self.endTime})"
+        return f"{self.template.name if hasattr(self, 'template') else 'Class'} on {self.date} ({self.start_time} - {self.end_time})"
 
 class RepeatingClasses(models.Model):
     """
@@ -147,9 +170,14 @@ class RepeatingClasses(models.Model):
     startTime = models.TimeField()
     endTime = models.TimeField()
     difficulty = models.ForeignKey(ClassLevel, on_delete=models.CASCADE)
+    instructor = models.ManyToManyField(Users, related_name="repeating_classes_teaching")
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name="repeating_classes")
 
     class Meta:
         db_table = "repeating_class"
+        
+    def __str__(self):
+        return f"{self.name} ({self.startTime} - {self.endTime})"
 
 # """
 
@@ -182,7 +210,7 @@ class GymAddress(models.Model):
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
 
     class Meta:
-        db_table = "gym_address"
+        db_table = "gym_addresses"
 
 class GymHours(models.Model):
     """
@@ -209,7 +237,7 @@ class EmergencyContact(models.Model):
     phone_number = models.CharField(max_length=20)
 
     class Meta:
-        db_table = "emergency_contact"
+        db_table = "emergency_contacts"
 
 class FamilyMembers(models.Model):
     """
@@ -234,4 +262,21 @@ class InstructorAvailability(models.Model):
     end_time = models.TimeField()
     private_lesson = models.BooleanField(blank = True)
     instructor = models.ForeignKey(Users, on_delete = models.CASCADE)
+
+class ClassAttendance(models.Model):
+    """
+    Model for tracking student attendance at classes
+    """
+    id = models.BigAutoField(primary_key=True)
+    check_in_time = models.DateTimeField(auto_now_add=True)
+    checked_in_by = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True, related_name='checked_in_attendances')
+    user = models.ForeignKey(Users, models.DO_NOTHING, related_name='attendances')
+    scheduled_class = models.ForeignKey(Class, models.DO_NOTHING)
+
+    class Meta:
+        db_table = 'class_attendance'
+        unique_together = (('user', 'scheduled_class'),)
+        
+    def __str__(self):
+        return f"{self.user.email} checked into {self.scheduled_class.template.name if hasattr(self.scheduled_class, 'template') else 'Class'} on {self.scheduled_class.date}"
 

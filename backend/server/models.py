@@ -2,18 +2,18 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
 
 
-
+"""
 class GymOwner(AbstractUser, PermissionsMixin):
-    """
-    Custom user model that extends Django's AbstractUser
-    The AbstractUser already includes email, first_name, last_name, and password
-    """
+"""
+#Custom user model that extends Django's AbstractUser
+#The AbstractUser already includes email, first_name, last_name, and password
+"""
     class Meta:
         db_table = "gym_owner"
 
     def __str__(self):
         return f"{self.username} ({self.email})"
-
+"""
 
 class Roles(models.Model):
     """
@@ -28,30 +28,16 @@ class Roles(models.Model):
     def __str__(self):
         return f"{self.role}"
 
-class Belts(models.Model):
-    """
-    Belts for martial arts gyms
-    """
-    beltID = models.AutoField(primary_key=True)
-    belt = models.CharField(max_length=100)
-
-    class Meta:
-        db_table = "belts"
-
-    def __str__(self):
-        return f"{self.belt}"
-
 class Users(AbstractUser, PermissionsMixin):
     """
     Model represent user
     Custom user model that extends Django's AbstractUser
     The AbstractUser already includes email, first_name, last_name, and password
     """
+    phone_number = models.CharField(max_length=20, blank = True)
     role = models.ForeignKey(Roles, on_delete=models.CASCADE)
     date_enrolled = models.DateField()
-    date_of_birth = models.DateField(blank = True)
-    belt = models.ForeignKey(Belts, on_delete=models.CASCADE, blank = True)
-
+    date_of_birth = models.DateField(blank = True, null=True)
     class Meta:
         db_table = "users"
 
@@ -65,7 +51,6 @@ class Gym(models.Model):
     owner = models.ManyToManyField(Users, related_name="owner_gym")
     email = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=20)
-    belts = models.ForeignKey(Belts, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "gym"
@@ -74,12 +59,26 @@ class Gym(models.Model):
         return self.name
 
 
+class Belts(models.Model):
+    """
+    Belts for martial arts gyms
+    """
+    beltID = models.AutoField(primary_key=True)
+    belt = models.CharField(max_length=100)
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+    belt = models.ManyToManyField(Users, related_name="student_belts")
 
+    class Meta:
+        db_table = "belts"
 
+    def __str__(self):
+        return f"{self.belt}"
+
+"""
 class GymOwnersGym(models.Model):  # ✅ Fixed inheritance
-    """
-    Junction table for many-to-many relationship between GymOwner and Gym
-    """
+"""
+#Junction table for many-to-many relationship between GymOwner and Gym
+"""
     owner = models.ForeignKey(GymOwner, on_delete=models.CASCADE)
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
 
@@ -89,21 +88,22 @@ class GymOwnersGym(models.Model):  # ✅ Fixed inheritance
 
     def __str__(self):
         return f"{self.owner.username} - {self.gym.name}"
+"""
 
 
 
 class Student(models.Model):
     """
-    Model representing students who check into classes.
+    #Model representing students who check into classes.
     """
     studentID = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    belt = models.ForeignKey(Belts, on_delete=models.CASCADE)
+    #belt = models.ForeignKey(Belts, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "student"
-        managed = False
+        #managed = False
 
     def __str__(self):
         return f"{self.name} ({self.email})"
@@ -180,7 +180,6 @@ class GymAddress(models.Model):
     street2 = models.CharField(max_length=100, blank = True)
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
-    zipcode = models.IntegerField()
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
 
     class Meta:
@@ -192,8 +191,9 @@ class GymHours(models.Model):
     """
     hoursID = models.AutoField(primary_key=True)
     day = models.IntegerField()
-    open_time = models.TimeField(null=True)
-    close_time = models.TimeField(null=True)
+    open_time = models.CharField(max_length=10, blank=True)
+    close_time = models.CharField(max_length=10, blank=True)
+    closed = models.BooleanField()
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
 
     class Meta:

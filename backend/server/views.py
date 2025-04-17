@@ -9,17 +9,19 @@ from django.views import View
 import json
 import logging
 import time
-from .models import Users, Student, Class, Checkin
+from .models import Users, Student, Class, Checkin, Gym, GymAddress, GymHours, Roles
 from django.utils.timezone import now
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
 from django.db import connection
 
+@csrf_exempt
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
     return JsonResponse({"csrfToken": get_token(request)})
 
+@csrf_exempt
 @api_view(['GET'])
 def health_check(request):
     """
@@ -34,7 +36,7 @@ def health_check(request):
             "database": "ok"
         }
     }
-    
+
     # Check database connection
     try:
         with connection.cursor() as cursor:
@@ -43,7 +45,7 @@ def health_check(request):
     except Exception as e:
         status["status"] = "unhealthy"
         status["checks"]["database"] = str(e)
-    
+
     # Return 200 if healthy, 503 if unhealthy
     status_code = 200 if status["status"] == "healthy" else 503
     return JsonResponse(status, status=status_code)
@@ -196,6 +198,7 @@ def check_student(request):
         logger.warning(f"[{request_id}] Method not allowed: {request.method}")
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
+@csrf_exempt
 @api_view(['GET'])
 def available_classes_today(request):
     """Fetch only today's available classes for check-in."""
@@ -228,6 +231,7 @@ def available_classes_today(request):
 
     return JsonResponse({"success": True, "classes": data}, status=200)
 
+@csrf_exempt
 def class_details(request, classID):
     """Returns details of a specific class."""
     try:
@@ -307,3 +311,206 @@ def add_class(request):
             return JsonResponse({"success": False, "message": str(e)}, status=400)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GymOwnerRegistration(View):
+    def post(self, request):
+        try:
+
+            roles = Roles.objects.get(role="owner")
+
+            data = json.loads(request.body)
+            first_name = data.get('firstName', '')
+            last_name = data.get('lastName', '')
+            email = data.get('email')
+            password = data.get('password')
+            phone = data.get('phone')
+            role = roles;
+            gym_name = data.get('gymName')
+            gym_email = data.get('gymEmail')
+            gym_phone = data.get('gymPhoneNumber')
+            gym_address = data.get('address')
+            gym_city = data.get('city')
+            gym_state = data.get('state')
+            gym_schedule = data.get('schedule')
+
+
+            # Check if email already exists
+            if Users.objects.filter(email=email).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Email already registered'
+                }, status=400)
+
+            # Create new gym owner
+            user = Users.objects.create_user(
+                username = email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number = phone,
+                date_enrolled = localdate(),
+                role = role
+            )
+
+            gym = Gym.objects.create(
+                name = gym_name,
+                email = gym_email,
+                phone_number = gym_phone
+            )
+
+            gym_address = GymAddress.objects.create(
+                street1 = gym_address,
+                street2 = "",
+                city = gym_city,
+                state = gym_state,
+                #zipcode = gym_zipcode,
+                gym = gym
+            )
+
+
+            index = 0
+            for days in gym_schedule:
+                if days["closed"] == "true":
+                    hours = GymHours.objects.create(
+                        day = index,
+                        closed = days["closed"],
+                        gym = gym
+                    )
+                    index = index + 1
+                else:
+                    hours = GymHours.objects.create(
+                        day = index,
+                        open_time = days["openTime"],
+                        close_time = days["closeTime"],
+                        closed = days["closed"],
+                        gym = gym
+                    )
+                    index = index + 1
+
+            """
+
+            # sunday
+            if gym_schedule[0].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 0,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 0,
+                    open_time = gym_schedule[0].openTime,
+                    close_time = gym_schedule[0].closeTime,
+                    gym = gym
+                )
+
+            # monday
+            if gym_schedule[1].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 1,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 1,
+                    open_time = gym_schedule[1].openTime,
+                    close_time = gym_schedule[1].closeTime,
+                    gym = gym
+                )
+
+            #tuesday
+            if gym_schedule[2].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 2,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 2,
+                    open_time = gym_schedule[2].openTime,
+                    close_time = gym_schedule[2].closeTime,
+                    gym = gym
+                )
+
+            #wednesday
+            if gym_schedule[3].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 3,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 3,
+                    open_time = gym_schedule[3].openTime,
+                    close_time = gym_schedule[3].closeTime,
+                    gym = gym
+                )
+
+            #thursday
+            if gym_schedule[4].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 4,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 4,
+                    open_time = gym_schedule[4].openTime,
+                    close_time = gym_schedule[4].closeTime,
+                    gym = gym
+                )
+
+            #friday
+            if gym_schedule[5].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 5,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 5,
+                    open_time = gym_schedule[5].openTime,
+                    close_time = gym_schedule[5].closeTime,
+                    gym = gym
+                )
+
+            #saturday
+            if gym_schedule[6].closed == "true":
+                hours = GymHours.objects.create(
+                    day = 6,
+                    gym = gym
+                )
+            else:
+                hours = GymHours.objects.create(
+                    day = 6,
+                    open_time = gym_schedule[6].openTime,
+                    close_time = gym_schedule[6].closeTime,
+                    gym = gym
+                )
+            """
+
+
+
+
+
+            # Log the user in
+            login(request, user)
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Registration successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'firstName': user.first_name,
+                    'lastName': user.last_name
+                }
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=400)

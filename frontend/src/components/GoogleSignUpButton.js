@@ -4,16 +4,28 @@ import { jwtDecode } from "jwt-decode"; // Optional
 import { GoogleLogin } from "@react-oauth/google";
 
 const GoogleSignUpButton = () => {
+  const getCsrfToken = async () => {
+    const res = await axios.get("http://localhost:8000/auth/csrf/", {
+      withCredentials: true,
+    });
+    return res.data.csrfToken;
+  };
+
   const handleSuccess = async (credentialResponse) => {
     const id_token = credentialResponse.credential;
+    const csrfToken = await getCsrfToken();
 
     try {
       const res = await axios.post(
         "http://localhost:8000/auth/google/",
         { id_token },
-        { withCredentials: true }
+        {
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        withCredentials: true,
+        }
       );
-
       console.log("✅ Google signup success:", res.data);
 
       // Save token & user info (optional: decode it if needed)

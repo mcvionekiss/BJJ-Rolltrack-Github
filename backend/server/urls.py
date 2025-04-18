@@ -1,9 +1,7 @@
 from django.contrib import admin
 from django.urls import path, re_path
 from django.views.generic import RedirectView
-from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, check_student, available_classes_today, class_details, checkin, student_attendance_history
-from .views import google_auth
-
+from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, check_student, available_classes_today, class_details, checkin, student_attendance_history, google_auth
 
 urlpatterns = [
     path("admin/", admin.site.urls),

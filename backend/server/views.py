@@ -9,7 +9,7 @@ import json
 import logging
 import time
 import requests
-from .models import Users, Class, Belts, Roles, ClassAttendance
+from .models import Users, Class, Belts, Roles, ClassAttendance, GoogleTestUser
 from django.utils import timezone
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
@@ -603,23 +603,22 @@ def google_auth(request):
         if not email:
             return Response({"error": "Email not in token"}, status=400)
 
-        User = get_user_model()
-        user, created = User.objects.get_or_create(email=email, defaults={
-            "username": email,
+        #User = get_user_model()
+        user, created = GoogleTestUser.objects.get_or_create(email=email, defaults={
             "first_name": first_name,
             "last_name": last_name,
         })
 
-        # You can update missing fields
         if not user.first_name or not user.last_name:
-            user.first_name = first_name
-            user.last_name = last_name
-            user.save()
+            GoogleTestUser.objects.filter(pk=user.pk).update(
+                first_name=first_name,
+                last_name=last_name
+            )
 
-        token, _ = Token.objects.get_or_create(user=user)
+        #token, _ = Token.objects.get_or_create(user=user)
 
         return Response({
-            "token": token.key,
+            #"token": token.key,
             "user": {
                 "email": user.email,
                 "first_name": user.first_name,

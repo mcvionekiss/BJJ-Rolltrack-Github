@@ -107,7 +107,7 @@ REST_FRAMEWORK = {
     ]
 }
 
-AUTH_USER_MODEL = 'server.GymOwner'
+AUTH_USER_MODEL = 'server.Users'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -122,10 +122,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://192.168.2.1:3000"]  # TODO: CHANGE THIS TO RUN LOCALLY
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://172.16.42.15"]  # TODO: CHANGE THIS TO RUN LOCALLY
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://192.168.2.1:3000",   # TODO: CHANGE THIS TO RUN LOCALLY
+    "http://172.16.42.15",   # TODO: CHANGE THIS TO RUN LOCALLY
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -162,7 +162,7 @@ WSGI_APPLICATION = "server.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": 'test',
+        "NAME": 'googleoauth_local_test',
         "USER": "admin",
         "PASSWORD": "RollTrackTeam495080",
         "HOST": "rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com",

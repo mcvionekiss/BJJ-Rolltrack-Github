@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin, Group, Permission
 
 # """
 # class GymOwner(AbstractUser, PermissionsMixin):
@@ -17,7 +17,7 @@ class Roles(models.Model):
     """
     Model representing user roles
     """
-    id = models.AutoField(primary_key=True)
+    roleID = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
 
     class Meta:
@@ -280,3 +280,10 @@ class ClassAttendance(models.Model):
     def __str__(self):
         return f"{self.user.email} checked into {self.scheduled_class.template.name if hasattr(self.scheduled_class, 'template') else 'Class'} on {self.scheduled_class.date}"
 
+class GoogleTestUser(models.Model):
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.email

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: bjj-backend-staging
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_static:/app/backend/staticfiles
+    environment:
+      - PIPELINE=staging
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - BYPASS_HTTPS=${BYPASS_HTTPS:-false}
+  
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: bjj-frontend-staging
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - frontend_logs:/var/log/nginx
+      
+  # The user mentioned we don't need nginx configuration for staging yet,
+  # so we're using the nginx configuration built into the frontend container
+
+volumes:
+  backend_static:
+    driver: local
+  frontend_logs:
+    driver: local

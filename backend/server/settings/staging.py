@@ -20,7 +20,7 @@ SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
 DEBUG = False
 
 # Get allowed hosts from environment variable
-ALLOWED_HOSTS = get_secret('ALLOWED_HOSTS', 'staging.rolltrackapp.com').split(',')
+ALLOWED_HOSTS = get_secret('ALLOWED_HOSTS', 'staging.your-domain.com').split(',')
 
 # Application definition
 INSTALLED_APPS = [

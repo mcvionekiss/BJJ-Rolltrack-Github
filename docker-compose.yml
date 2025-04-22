@@ -1,5 +1,5 @@
-# Staging-focused Docker Compose configuration
-# Configured for using the staging environment by default
+# Production Docker Compose configuration
+# Configured for production deployment with proper security and optimization
 
 services:
   backend:
@@ -7,35 +7,34 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     env_file: 
-      - .env.staging
+      - .env.production
     container_name: backend
     restart: always
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app/backend
+      # Only mount the static files volume, not the entire backend directory
       - backend_static:/app/backend/staticfiles
     environment:
-      - PIPELINE=staging
+      - PIPELINE=production
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     env_file: 
-      - .env.staging
+      - .env.production
     container_name: frontend
     restart: always
     ports:
       - "3000:80"
     volumes:
-      - ./frontend:/app/frontend
+      # Only preserve node_modules volume for caching
       - /app/frontend/node_modules
     depends_on:
       - backend
     environment:
       - NODE_ENV=production
-      # Make React accessible via IP address
       - HOST=0.0.0.0
       - WDS_SOCKET_HOST=localhost
 
@@ -44,7 +43,7 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     env_file: 
-      - .env.staging
+      - .env.production
     container_name: nginx
     restart: always
     ports:
@@ -52,8 +51,8 @@ services:
       - "8443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt/live/staging.rolltrackapp.com/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
-      - /etc/letsencrypt/live/staging.rolltrackapp.com/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+      - /etc/letsencrypt/live/rolltrackapp.com/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/live/rolltrackapp.com/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
       - backend_static:/var/www/html/static
     depends_on:
       - frontend

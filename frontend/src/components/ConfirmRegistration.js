@@ -51,6 +51,24 @@ const ConfirmRegistration = ({ formData, onEdit, onSubmit }) => {
           </ul>
         </div>
       </div>
+
+      <div className="section">
+        <div className="section-header">
+          <h3>Waiver Information</h3>
+          <button onClick={() => onEdit("waiver")}>Edit</button>
+        </div>
+        <div className="section-content">
+          <p><span>Waiver Type:</span> {formData.waiverType === "default" ? "Default Template" : "Custom Upload"}</p>
+          
+          {formData.waiverType === "default" ? (
+            <p><span>Gym Name on Waiver:</span> {formData.waiverGymName || formData.gymName || "Not specified"}</p>
+          ) : (
+            <p><span>Uploaded Waiver File:</span> {formData.waiverFileName || "No file uploaded"}</p>
+          )}
+          
+          <p><span>Waiver Status:</span> Ready for member sign-up</p>
+        </div>
+      </div>
     </div>
   );
 };

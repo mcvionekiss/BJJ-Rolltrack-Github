@@ -25,6 +25,7 @@ import ScheduleDetails from "./ScheduleDetails.js";
 import ConfirmRegistration from "./ConfirmRegistration.js";
 import WelcomePage from "./WelcomePage.js"
 import AddressAutocomplete from "./AddressAutocomplete";
+import WaiverSetup from "./WaiverSetup";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -44,8 +45,8 @@ const registerUser = async (userData, csrfToken) => {
     });
 };
 
-const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
-const stepperSteps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
+const steps = ["Personal Information", "Gym Details", "Schedule Details", "Waiver Setup", "Confirmation", "Welcome"];
+const stepperSteps = ["Personal Information", "Gym Details", "Schedule Details", "Waiver Setup", "Confirmation"];
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -62,6 +63,10 @@ export default function Register() {
         gymEmail: "",
         gymPhoneNumber: "",
         schedule: [],
+        waiverType: "default",
+        waiverGymName: "",
+        waiverFileName: "",
+        waiverFile: null,
     });
 
     const passwordMessages = {
@@ -159,11 +164,13 @@ export default function Register() {
         if (stepName === "personal") setActiveStep(0);
         if (stepName === "gym") setActiveStep(1);
         if (stepName === "schedule") setActiveStep(2);
+        if (stepName === "waiver") setActiveStep(3);
     };
 
     const handleSkip = (stepName) => {
         if (stepName === "gym") setActiveStep(2);
         if (stepName === "schedule") setActiveStep(3);
+        if (stepName === "waiver") setActiveStep(4);
     };
 
     const handleScheduleUpdate = (scheduleData) => {
@@ -221,16 +228,18 @@ export default function Register() {
             <div className="form-container">
                 <Paper elevation={3} className="form-box">
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    {activeStep < 3 && (
-                        <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
-                    )}
-                    {activeStep === 1 && (
+                        {activeStep < 5 && (
+                            <Typography variant="h5" className="form-title">{steps[activeStep]}</Typography>
+                        )}
+                        {activeStep === 1 && (
                             <button onClick={() => handleSkip("gym")}>Skip</button>
-                    )}
-                    {activeStep === 2 && (
+                        )}
+                        {activeStep === 2 && (
                             <button onClick={() => handleSkip("schedule")}>Skip</button>
-                        
-                    )}
+                        )}
+                        {activeStep === 3 && (
+                            <button onClick={() => handleSkip("waiver")}>Skip</button>
+                        )}
                     </Box>
 
                     <form onSubmit={handleNext} className="form">
@@ -368,6 +377,13 @@ export default function Register() {
                         )}
 
                         {activeStep === 3 && (
+                            <WaiverSetup 
+                                formData={formData}
+                                setFormData={setFormData}
+                            />
+                        )}
+
+                        {activeStep === 4 && (
                             <ConfirmRegistration
                                 formData={formData}
                                 onEdit={handleEdit}
@@ -375,7 +391,9 @@ export default function Register() {
                             />
                         )}
 
-                        {activeStep === 4 && (<WelcomePage />)}
+                        {activeStep === 5 && (
+                            <WelcomePage />
+                        )}
 
                         {error && (
                             <Typography color="error" align="center" sx={{ marginBottom: 2 }}>
@@ -383,7 +401,7 @@ export default function Register() {
                             </Typography>
                         )}
 
-                        {activeStep < 3 && (
+                        {activeStep < 4 && (
                             <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
                                 {activeStep > 0 && (
                                     <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
@@ -402,7 +420,8 @@ export default function Register() {
                                 </Button>
                             </Box>
                         )}
-                        {activeStep === 3 && (
+
+                        {activeStep === 4 && (
                             <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
                                 <Button 
                                     type="button" 

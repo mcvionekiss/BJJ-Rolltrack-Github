@@ -84,6 +84,7 @@ export default function Calendar() {
 
     const newEvent = {
       title,
+      date,
       start,
       end,
       color: '#E0E0E0',
@@ -146,7 +147,18 @@ export default function Calendar() {
               </Typography>
               <Typography variant="h6" gutterBottom>
                 <strong>{selectedEvent.title}</strong>
-                <Button onClick={() => navigate('/edit-class')}><EditIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /></Button>
+                <Button onClick={() => navigate('/edit-class', {
+                  state:
+                    { event: {
+                      title: selectedEvent.title,
+                      start: selectedEvent.start.toISOString(),
+                      end: selectedEvent.end.toISOString(),
+                      color: selectedEvent.color,
+                      textColor: selectedEvent.textColor,
+                      borderColor: selectedEvent.borderColor,
+                      extendedProps: selectedEvent.extendedProps
+                    } }
+                })}><EditIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /></Button>
               </Typography>
               <Typography variant="body2">
                 <AccessAlarmIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} /> {new Date(selectedEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(selectedEvent.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}

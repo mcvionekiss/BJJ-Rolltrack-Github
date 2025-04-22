@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography, Button, TextField, Select, MenuItem, InputLabel } from '@mui/material';
 import NavigationMenu from "../NavigationMenu";
 import './Dashboard.css';
@@ -7,9 +7,10 @@ import { useEvents } from './EventContext';
 import Calendar from './Calendar';
 import AddClassInformation from './AddClassInformation';
 
+
 const EditClass = () => {
     const { events, setEvents } = useEvents();
-
+    const { state } = useLocation();
     const navigate = useNavigate();
 
     const [age, setAge] = React.useState('');
@@ -67,7 +68,7 @@ const EditClass = () => {
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <div style={{ margin: "75px" }}>
                         <Typography variant="h3" mb={2}>Edit Class</Typography>
-                        <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit}></AddClassInformation>
+                        <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit} data={state}></AddClassInformation>
                     </div>
                 </Box >
             </Box>

@@ -7,7 +7,7 @@ from django.views.decorators.cache import cache_page
 from server.views import (
     LoginView, LogoutView, RegisterView, get_csrf_token,
     CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView,
-    check_student, available_classes_today, class_details, checkin, add_class
+    check_student, available_classes_today, class_details, checkin, add_class, student_attendance_history
 )
 
 # API URLs grouped together for better organization
@@ -56,6 +56,13 @@ urlpatterns = [
     path("auth/", include(auth_patterns)),
     path("api/", include(api_patterns)),
     path("health/", health_check, name="health_check"),
+    path("api/attendance/history/", student_attendance_history, name="student_attendance_history"),
+    path("api/attendance/history/<str:email>/", student_attendance_history, name="student_attendance_history_by_email"),
+
+    # Enable Google OAuth
+    path("auth/", include("dj_rest_auth.urls")),
+    path("auth/registration/", include("dj_rest_auth.registration.urls")),
+    path("accounts/", include("allauth.urls")),
     
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),

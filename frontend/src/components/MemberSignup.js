@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { useState } from "react";
+import axios from "../utils/axiosConfig";
+import { useState, useEffect } from "react";
 import {
     Button,
     TextField,
@@ -30,7 +30,23 @@ function MemberSignup() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [csrfToken, setCsrfToken] = useState("");
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Fetch CSRF token when component mounts
+        const fetchCsrfToken = async () => {
+            try {
+                const response = await axios.get("/auth/csrf/", { withCredentials: true });
+                setCsrfToken(response.data.csrfToken);
+            } catch (error) {
+                console.error("Failed to fetch CSRF token", error);
+                setError("Failed to initialize form. Please refresh the page.");
+            }
+        };
+
+        fetchCsrfToken();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -50,8 +66,24 @@ function MemberSignup() {
         setSuccess("");
 
         try {
-            // TODO: Add backend API call
-            const response = await axios.post("/auth/member-signup/", formData);
+            // Prepare the data to match backend field names
+            const backendFormData = {
+                firstName: formData.name.split(' ')[0],
+                lastName: formData.name.split(' ').slice(1).join(' '),
+                email: formData.email,
+                phone: formData.phone,
+                dob: formData.dob,
+                password: formData.password,
+                belt: 1, // Default to White Belt (ID 1)
+                role: 1  // Default to Student Role (ID 1)
+            };
+            
+            // Call the API with CSRF token
+            const response = await axios.post("/auth/member-signup/", backendFormData, {
+                headers: {
+                    "X-CSRFToken": csrfToken
+                }
+            });
             
             setSuccess("Account created successfully! You can now log in.");
             setTimeout(() => {
@@ -66,6 +98,7 @@ function MemberSignup() {
         <Container 
             maxWidth="sm" 
             sx={{ 
+                px: 4,
                 py: 8,
                 display: 'flex',
                 flexDirection: 'column',
@@ -242,6 +275,7 @@ function MemberSignup() {
                 <FormControl 
                     variant="outlined" 
                     fullWidth
+                    error={formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -268,7 +302,6 @@ function MemberSignup() {
                             </InputAdornment>
                         }
                         label="Confirm Password"
-                        error={formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword}
                     />
                     {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
                         <FormHelperText error>
@@ -293,10 +326,6 @@ function MemberSignup() {
                 >
                     Sign Up
                 </Button>
-
-                <Divider sx={{ my: 1 }}>
-                    <Typography variant="body2" color="text.secondary">OR</Typography>
-                </Divider>
                 
                 <Button
                     variant="text"

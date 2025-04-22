@@ -1,3 +1,171 @@
+/* CALENDAR STYLES */
+
+/* Global styles to prevent page scrolling and set fixed heights */
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Calendar container styling */
+.calendar-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+}
+
+.calendar-scroll-container {
+  flex: 1;
+  overflow: auto;
+  padding-right: 1px;  /* Minimal padding to prevent border cutoff */
+  padding-bottom: 1px; /* Minimal padding to prevent border cutoff */
+  margin-bottom: 0;
+}
+
+/* Fix for border display issues */
+.fc {
+  border: none !important;
+  height: 100% !important;
+}
+
+/* Fix for cut-off corners */
+.fc-theme-standard td, .fc-theme-standard th {
+  border-radius: 0 !important;
+}
+
+/* Fix for reducing bottom padding */
+.fc-timegrid-slots tr:last-child td {
+  border-bottom: none;
+}
+
+/* Reduce cell spacing */
+.fc-timegrid-slot {
+  height: 1.8em !important;
+  padding: 0 !important;
+}
+
+/* Fix scrollbars on edges */
+.fc-scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Remove extra space at bottom of calendar */
+.fc-timegrid-body {
+  margin-bottom: 0 !important;
+  overflow: visible !important;
+}
+
+.fc-timegrid-body table {
+  margin-bottom: 0 !important;
+}
+
+.fc-timegrid-body-liquid {
+  overflow: visible !important;
+}
+
+/* Fix corner borders */
+.fc-scrollgrid-section > td {
+  border: 1px solid var(--fc-border-color) !important;
+}
+
+.fc-view-harness {
+  min-height: 600px;
+}
+
+.fc-scroller {
+  overflow: auto !important;
+  height: auto !important;
+}
+
+.fc-scroller-liquid-absolute {
+  position: static !important;
+  overflow: visible !important;
+}
+
+.fc-view-harness-active {
+  height: 100% !important;
+}
+
+.calendar-container .fc-view {
+  overflow: auto !important;
+}
+
+/* Event styling */
+.fc-event {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+
+.fc-timegrid-event .fc-event-main {
+  padding: 0;
+}
+
+.fc .fc-timegrid-col.fc-day-today {
+  background-color: rgba(236,246,255,0.6);
+}
+
+/* Scrollbar styling for better appearance */
+.calendar-container ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.calendar-container ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.calendar-container ::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.calendar-container ::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .fc .fc-toolbar-title {
+    font-size: 1.25em;
+  }
+  .fc .fc-button {
+    padding: 0.25em 0.5em;
+    font-size: 0.85em;
+  }
+  .fc .fc-timegrid-slot {
+    height: 1.5em;
+  }
+  .fc .fc-timegrid-col.fc-day-today {
+    background-color: rgba(236,246,255,0.8);
+  }
+  .fc-direction-ltr .fc-timegrid-slot-label-frame {
+    text-align: left;
+  }
+  .fc .fc-timegrid-slot-label {
+    font-size: 0.7em;
+  }
+  .fc .fc-timegrid-slot-minor {
+    border-top-style: none;
+  }
+}
+
 .MuiButton {
   background-color: white !important;
   color: black !important;
@@ -162,4 +330,252 @@
   font-size: 14px !important;
   padding: 8px 50px !important;
   transition: all 0.3s ease;
+}
+
+.fc-scrollgrid {
+  border-radius: 10px;
+}
+
+.fc-timeGridWeek-view {
+  border: none;
+}
+
+/* Month view optimizations */
+.fc-dayGridMonth-view .fc-daygrid-day-events {
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-day-top {
+  justify-content: center;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-day-number {
+  padding: 2px !important;
+  margin: 2px;
+  text-align: center;
+}
+
+.fc-dayGridMonth-view .fc-event {
+  margin: 1px 2px !important;
+  font-size: 0.8em !important;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-event-harness {
+  margin: 0 0 1px !important;
+}
+
+/* Reduce animations for better performance */
+.fc-dayGridMonth-view .fc-event {
+  transition: none !important;
+}
+
+.fc-dayGridMonth-view .fc-event:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Use hardware acceleration where possible */
+.fc-view-harness,
+.fc-scroller,
+.fc-scroller-liquid-absolute,
+.fc-daygrid-body {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Additional Month view performance optimizations */
+.month-view-active .fc-daygrid-body {
+  contain: content;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.month-view-active .fc-daygrid-day-events {
+  padding: 0 !important;
+  margin: 0 !important;
+  contain: content;
+}
+
+/* Use hardware acceleration and disable animations in month view */
+.month-view-active .fc-event {
+  transition: none !important;
+  animation: none !important;
+  transform: translateZ(0);
+  contain: content;
+  will-change: transform;
+  margin: 1px 0 !important;
+  box-shadow: none !important;
+}
+
+.month-view-active .fc-event:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Optimize paint and layout operations */
+.month-view-active .fc-daygrid-day-frame {
+  contain: content;
+}
+
+/* Prevent costly repaints */
+.month-view-active .fc-day-today {
+  background-color: rgba(236,246,255,0.3) !important;
+}
+
+/* Reduce paint area by hiding weekday headers in month view */
+.month-view-active .fc-col-header-cell-cushion {
+  padding: 2px !important;
+  font-size: 0.8em !important;
+}
+
+/* Minimize month day number display */
+.month-view-active .fc-daygrid-day-number {
+  font-size: 0.8em !important;
+  padding: 1px 3px !important;
+}
+
+/* Optimize "more" link */
+.month-view-active .fc-daygrid-more-link {
+  font-size: 0.7em !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+  text-align: center;
+}
+
+/* Global styles to prevent page scrolling and set fixed heights */
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Fix for border display issues */
+.fc {
+  border: none !important;
+  height: 100% !important;
+}
+
+/* Fix for cut-off corners */
+.fc-theme-standard td, .fc-theme-standard th {
+  border-radius: 0 !important;
+}
+
+/* Fix for reducing bottom padding */
+.fc-timegrid-slots tr:last-child td {
+  border-bottom: none;
+}
+
+/* Reduce cell spacing */
+.fc-timegrid-slot {
+  height: 1.8em !important;
+  padding: 0 !important;
+}
+
+/* Fix scrollbars on edges */
+.fc-scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Remove extra space at bottom of calendar */
+.fc-timegrid-body {
+  margin-bottom: 0 !important;
+}
+
+.fc-timegrid-body table {
+  margin-bottom: 0 !important;
+}
+
+/* Fix corner borders */
+.fc-scrollgrid-section > td {
+  border: 1px solid var(--fc-border-color) !important;
+}
+
+/* Month view specific fixes */
+.fc-view-harness {
+  min-height: 600px;
+}
+
+/* Fix for the specific scroller issue in the image */
+.fc-scroller-liquid-absolute {
+  position: absolute !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* Fix for day grid body height */
+.fc-daygrid-body {
+  height: auto !important;
+}
+
+/* Event styling */
+.fc-event {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+
+.fc-timegrid-event .fc-event-main {
+  padding: 0;
+}
+
+.fc .fc-timegrid-col.fc-day-today {
+  background-color: rgba(236,246,255,0.6);
+}
+
+/* Scrollbar styling for better appearance */
+.calendar-container ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.calendar-container ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.calendar-container ::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.calendar-container ::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .fc .fc-toolbar-title {
+    font-size: 1.25em;
+  }
+  .fc .fc-button {
+    padding: 0.25em 0.5em;
+    font-size: 0.85em;
+  }
+  .fc .fc-timegrid-slot {
+    height: 1.5em;
+  }
+  .fc .fc-timegrid-col.fc-day-today {
+    background-color: rgba(236,246,255,0.8);
+  }
+  .fc-direction-ltr .fc-timegrid-slot-label-frame {
+    text-align: left;
+  }
+  .fc .fc-timegrid-slot-label {
+    font-size: 0.7em;
+  }
+  .fc .fc-timegrid-slot-minor {
+    border-top-style: none;
+  }
 }

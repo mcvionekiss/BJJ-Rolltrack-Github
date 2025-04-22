@@ -1,5 +1,4 @@
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.utils.timezone import localdate
 from django.middleware.csrf import get_token
@@ -14,6 +13,9 @@ from .models import GymOwner, Student, Class, Checkin
 from django.utils.timezone import now
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from .models import Users, Class, Belts, Roles, ClassAttendance
+from django.utils import timezone
+from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 from django.conf import settings
@@ -50,8 +52,8 @@ class LoginView(View):
 
             # Find user by email
             try:
-                user = GymOwner.objects.get(email=email)
-            except GymOwner.DoesNotExist:
+                user = Users.objects.get(email=email)
+            except Users.DoesNotExist:
                 return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
             # Authenticate user with their email and password
@@ -96,21 +98,30 @@ class RegisterView(View):
             password = data.get('password')
             first_name = data.get('firstName', '')
             last_name = data.get('lastName', '')
+            belt_id = data.get('belt', 1)  # Default to first belt if not provided
+            role_id = data.get('role', 1)  # Default to first role if not provided
 
             # Check if email already exists
-            if GymOwner.objects.filter(email=email).exists():
+            if Users.objects.filter(email=email).exists():
                 return JsonResponse({
                     'success': False,
                     'message': 'Email already registered'
                 }, status=400)
 
-            # Create new gym owner
-            user = GymOwner.objects.create_user(
+            # Create new user
+            belt = Belts.objects.get(beltID=belt_id)
+            role = Roles.objects.get(roleID=role_id)
+            
+            user = Users.objects.create_user(
                 username=username,
                 email=email,
                 password=password,
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                date_enrolled=timezone.now().date(),
+                date_of_birth=timezone.now().date(),  # Default value, should be updated later
+                belt=belt,
+                role=role
             )
 
             # Log the user in
@@ -152,13 +163,119 @@ class CheckinSelectionView(View):
 @method_decorator(login_required, name='dispatch')
 class GuestCheckinView(View):
     def post(self, request):
-        return JsonResponse({"success": True, "message": "Guest checkin successful"})
+        try:
+            data = json.loads(request.body)
+            name = data.get('name')
+            email = data.get('email')
+            phone = data.get('phone')
+            experience_level = data.get('experienceLevel')
+            referral_source = data.get('referralSource')
+            first_time_visit = data.get('firstTimeVisit', True)
+            marketing_consent = data.get('marketingConsent', False)
+            other_dojos = data.get('otherDojos', '')
+
+            # Validate required fields
+            if not all([name, email, phone, experience_level, referral_source]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Please fill in all required fields'
+                }, status=400)
+
+            # Create a temporary record of the guest check-in
+            # You can create a GuestVisit model to store this data permanently if needed
+            # For now, we'll just log it
+            print(f"Guest Check-in: {name} ({email}) - Experience: {experience_level}, Source: {referral_source}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Guest check-in successful',
+                'guest': {
+                    'name': name,
+                    'email': email,
+                    'experienceLevel': experience_level
+                }
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid data format'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=500)
     
 @method_decorator(csrf_protect, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 class MemberSignupView(View):
     def post(self, request):
-        return JsonResponse({"success": True, "message": "Member signup successful"})
+        try:
+            data = json.loads(request.body)
+            first_name = data.get('firstName')
+            last_name = data.get('lastName')
+            email = data.get('email')
+            phone = data.get('phone')
+            dob = data.get('dob')
+            password = data.get('password')
+            belt_id = data.get('belt', 1)  # Default to first belt if not provided
+            role_id = data.get('role', 1)  # Default to first role if not provided
+
+            # Validate required fields
+            if not all([first_name, last_name, email, phone, dob, password]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'All fields are required'
+                }, status=400)
+
+            # Check if email already exists
+            if Users.objects.filter(email=email).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Email already registered'
+                }, status=400)
+
+            # Create new user
+            belt = Belts.objects.get(id=belt_id)
+            role = Roles.objects.get(id=role_id)
+            
+            user = Users.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                date_enrolled=timezone.now().date(),
+                date_of_birth=dob,
+                belt_id=belt,
+                role_id=role,
+                phone_number=phone,
+                is_gym_owner=False
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Member registration successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name
+                }
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid JSON data'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=400)
 
 @csrf_protect
 @login_required
@@ -183,7 +300,7 @@ def check_student(request):
             # Check if student exists
             logger.debug(f"[{request_id}] Querying database for student with email: {email}")
             query_start_time = time.time()
-            student_exists = Student.objects.filter(email=email).exists()
+            student_exists = Users.objects.filter(email=email).exists()
             query_time = time.time() - query_start_time
             logger.debug(f"[{request_id}] Database query completed in {query_time:.4f}s")
             
@@ -219,45 +336,87 @@ def available_classes_today(request):
     """Fetch only today's available classes for check-in."""
     today = localdate()  # Get today's date
 
-    # Try to get cached data first
-    cached_classes = cache.get(f"available_classes_{today}")
-    if cached_classes:
-        return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+    try:
+        # Try to get cached data first
+        cached_classes = cache.get(f"available_classes_{today}")
+        if cached_classes:
+            return JsonResponse({"success": True, "classes": cached_classes}, status=200)
 
-    # Query only classes for today
-    # classes = Class.objects.filter(date=today).order_by("startTime")
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date=today,
+            is_canceled=0,  # Only get non-canceled classes
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
 
-    # Query for ALL classes
-    classes = Class.objects.all().order_by("startTime")
+        data = []
+        for cls in classes:
+            try:
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                
+                data.append({
+                    "id": cls.id,
+                    "name": template.name,
+                    "startTime": cls.start_time.strftime("%H:%M"),
+                    "endTime": cls.end_time.strftime("%H:%M"),
+                    "level": level_name,
+                    "maxCapacity": template.max_capacity,
+                    "description": template.description,
+                    "notes": cls.notes
+                })
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
 
-    data = [
-        {
-            "classID": cls.classID,
-            "name": cls.name,
-            "startTime": cls.startTime.strftime("%H:%M"),
-            "endTime": cls.endTime.strftime("%H:%M"),
-            "recurring": cls.recurring
-        }
-        for cls in classes
-    ]
+        # Store in cache for 30 seconds
+        cache.set(f"available_classes_{today}", data, timeout=30)
 
-    # Store in cache for 30 seconds
-    cache.set(f"available_classes_{today}", data, timeout=30)
-
-    return JsonResponse({"success": True, "classes": data}, status=200)
+        return JsonResponse({"success": True, "classes": data}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
 
 @login_required
 def class_details(request, classID):
     """Returns details of a specific class."""
     try:
-        class_instance = get_object_or_404(Class, classID=classID)
-        return JsonResponse({
-            "classID": class_instance.classID,
-            "name": class_instance.name,
-            "startTime": str(class_instance.startTime),
-            "endTime": str(class_instance.endTime),
-            "recurring": class_instance.recurring,
-        })
+        class_instance = get_object_or_404(Class, id=classID)
+        
+        # Check if required fields exist
+        if not hasattr(class_instance, 'template') or not class_instance.template:
+            return JsonResponse({"success": False, "message": "Class has incomplete data"}, status=400)
+        
+        template = class_instance.template
+        level = template.level if hasattr(template, 'level') else None
+            
+        data = {
+            "success": True,
+            "id": class_instance.id,
+            "name": template.name,
+            "startTime": str(class_instance.start_time),
+            "endTime": str(class_instance.end_time),
+            "date": str(class_instance.date),
+            "isCanceled": class_instance.is_canceled == 1,
+            "notes": class_instance.notes or "",
+            "description": template.description or "",
+            "maxCapacity": template.max_capacity,
+        }
+        
+        # Add level info if available
+        if level:
+            data["level"] = level.name
+            
+        return JsonResponse(data)
+        
+    except Class.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Class not found"}, status=404)
     except Exception as e:
         logger = logging.getLogger('django.request')
         logger.error(f"Error retrieving class details: {str(e)}")
@@ -271,27 +430,85 @@ def checkin(request):
         try:
             data = json.loads(request.body)
             email = data.get("email")
-            classID = data.get("classID")
+            class_id = data.get("classID")  # We still accept classID from frontend
+            
+            if not email or not class_id:
+                return JsonResponse({
+                    "success": False, 
+                    "message": "Email and class ID are required"
+                }, status=400)
 
             # Check if student exists
-            student = Student.objects.filter(email=email).first()
+            student = Users.objects.filter(email=email).first()
             if not student:
-                return JsonResponse({"success": False, "message": "Student not found"}, status=404)
+                return JsonResponse({
+                    "success": False, 
+                    "message": "Student not found"
+                }, status=404)
 
-            # Check if class exists
-            class_instance = Class.objects.filter(classID=classID).first()
+            # Check if class exists - using the new id field
+            class_instance = Class.objects.filter(id=class_id).first()
             if not class_instance:
-                return JsonResponse({"success": False, "message": "Class not found"}, status=404)
+                return JsonResponse({
+                    "success": False, 
+                    "message": "Class not found"
+                }, status=404)
+                
+            # Check if class is canceled
+            if class_instance.is_canceled:
+                return JsonResponse({
+                    "success": False, 
+                    "message": "This class has been canceled"
+                }, status=400)
+                
+            # Get class template info
+            template = class_instance.template
+            if not template:
+                return JsonResponse({
+                    "success": False, 
+                    "message": "Class template not found"
+                }, status=404)
 
-            # Create a check-in record
-            Checkin.objects.create(student=student, class_instance=class_instance)
-
-            return JsonResponse({"success": True, "message": "Check-in successful!"}, status=200)
+            # Create a ClassAttendance record
+            attendance, created = ClassAttendance.objects.get_or_create(
+                user=student,
+                scheduled_class=class_instance,
+                defaults={
+                    "check_in_time": timezone.now(),
+                    "checked_in_by": None  # No instructor checked them in - self check-in
+                }
+            )
+            
+            check_in_status = "created" if created else "already exists"
+            
+            # Record the check-in in logs
+            print(f"Student {student.email} checked into class {template.name} on {class_instance.date} - {check_in_status}")
+            
+            # Format the response data
+            current_time = timezone.now()
+            response_data = {
+                "success": True,
+                "message": "Check-in successful!",
+                "checkin": {
+                    "studentName": f"{student.first_name} {student.last_name}",
+                    "className": template.name,
+                    "date": str(class_instance.date),
+                    "checkinTime": current_time.strftime("%Y-%m-%dT%H:%M:%S%z")
+                }
+            }
+            
+            return JsonResponse(response_data, status=200)
 
         except Exception as e:
-            logger = logging.getLogger('django.request')
-            logger.error(f"Checkin error: {str(e)}")
-            return JsonResponse({"success": False, "message": "An error occurred during check-in"}, status=400)
+            import traceback
+            print(f"Error in checkin: {str(e)}")
+            print(traceback.format_exc())
+            return JsonResponse({
+                "success": False, 
+                "message": f"An error occurred: {str(e)}"
+            }, status=500)
+    else:
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @csrf_protect
 @login_required
@@ -333,3 +550,63 @@ def add_class(request):
             return JsonResponse({"success": False, "message": "An error occurred while adding the class"}, status=400)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
+
+@api_view(['GET'])
+def student_attendance_history(request, email=None):
+    """
+    Get the attendance history for a student
+    """
+    try:
+        # Check if student exists
+        if email:
+            student = get_object_or_404(Users, email=email)
+        else:
+            # Use the authenticated user if no email is provided
+            if not request.user.is_authenticated:
+                return JsonResponse({"success": False, "message": "Authentication required"}, status=401)
+            student = request.user
+        
+        # Get attendance records
+        attendance_records = ClassAttendance.objects.filter(
+            user=student
+        ).select_related('scheduled_class', 'scheduled_class__template').order_by('-check_in_time')
+        
+        # Format the data
+        attendance_data = []
+        for record in attendance_records:
+            scheduled_class = record.scheduled_class
+            template = getattr(scheduled_class, 'template', None)
+            
+            class_data = {
+                "id": scheduled_class.id,
+                "date": str(scheduled_class.date),
+                "checkInTime": record.check_in_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "className": template.name if template else "Class",
+            }
+            
+            # Add additional class details if available
+            if template:
+                class_data.update({
+                    "description": template.description,
+                    "startTime": scheduled_class.start_time.strftime("%H:%M") if hasattr(scheduled_class, 'start_time') else None,
+                    "endTime": scheduled_class.end_time.strftime("%H:%M") if hasattr(scheduled_class, 'end_time') else None,
+                })
+            
+            attendance_data.append(class_data)
+        
+        return JsonResponse({
+            "success": True,
+            "student": {
+                "id": student.id,
+                "email": student.email,
+                "name": f"{student.first_name} {student.last_name}",
+            },
+            "attendanceCount": len(attendance_data),
+            "attendanceRecords": attendance_data
+        })
+            
+    except Exception as e:
+        import traceback
+        print(f"Error in student_attendance_history: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)

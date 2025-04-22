@@ -10,11 +10,9 @@ import {
     ListItemIcon,
     Typography,
     Tooltip,
-    IconButton,
-    Divider
+    IconButton
 } from "@mui/material";
 
-// Import MUI Icons
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
@@ -25,34 +23,28 @@ const NavigationMenu = ({ onWidthChange }) => {
     const navigate = useNavigate();
     const currentPath = window.location.pathname;
 
-    // State for Sidebar Width
     const [sidebarWidth, setSidebarWidth] = useState(250);
-
-    // Responsive Breakpoints
     const MAX_WIDTH = 250;
     const MIN_WIDTH = 60;
 
-    // Handle Resize
     const handleResize = () => {
         const screenWidth = window.innerWidth;
         const displayWidth = window.screen.width;
 
         if (screenWidth < (displayWidth / 2)) {
-            setSidebarWidth(MIN_WIDTH); // Only icons
+            setSidebarWidth(MIN_WIDTH);
         } else {
-            setSidebarWidth(MAX_WIDTH); // Full version
+            setSidebarWidth(MAX_WIDTH);
         }
     };
 
-    // Notify parent component of width change
     useEffect(() => {
         onWidthChange(sidebarWidth);
     }, [sidebarWidth, onWidthChange]);
 
-    // Add Event Listener for Resizing
     useEffect(() => {
         window.addEventListener("resize", handleResize);
-        handleResize(); // Initial check
+        handleResize();
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
@@ -71,6 +63,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                 boxShadow: "2px 0 5px rgba(0, 0, 0, 0.1)",
                 padding: "20px 10px",
                 position: "fixed",
+                zIndex: 1200,
                 overflowX: "hidden",
                 transition: "width 0.3s ease-in-out"
             }}
@@ -85,7 +78,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                     <img
                         src={logo}
                         alt="RollTrack Logo"
-                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
+                        style={{ height: "40px", cursor: "pointer" }}
                         onClick={() => navigate("/")}
                     />
                 )}
@@ -103,10 +96,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                     sx={{
                         cursor: "pointer",
                         color: "#757575",
-                        transition: "transform 0.3s",
-                        // "&:hover": {
-                        //     transform: "rotate(90deg)"
-                        // }
+                        transition: "transform 0.3s"
                     }}
                 />
             </Box>

@@ -16,6 +16,7 @@ function CheckinSelection() {
         <Container 
             maxWidth="sm" 
             sx={{ 
+                px: 4,
                 py: 8,
                 display: 'flex',
                 flexDirection: 'column',
@@ -26,7 +27,7 @@ function CheckinSelection() {
             }}
         >
             <Typography 
-                variant="h4" 
+                variant="h5" 
                 sx={{ 
                     mb: 4, 
                     fontWeight: "bold",
@@ -44,7 +45,7 @@ function CheckinSelection() {
                 Please select an option
             </Typography>
             
-            <Stack spacing={3} sx={{ mb: 4, width: '100%', maxWidth: '400px' }}>
+            <Stack spacing={3} sx={{ width: '100%', maxWidth: '400px' }}>
                 <Button 
                     variant="contained" 
                     size="large"
@@ -82,7 +83,7 @@ function CheckinSelection() {
                 </Button>
             </Stack>
 
-            <Divider sx={{ my: 3, width: '100%', maxWidth: '400px' }}>
+            <Divider sx={{ my: 4, width: '100%', maxWidth: '400px' }}>
                 <Typography variant="body2" color="text.secondary">OR</Typography>
             </Divider>
             

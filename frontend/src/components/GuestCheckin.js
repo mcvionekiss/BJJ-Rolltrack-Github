@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { useState } from "react";
+import axios from "../utils/axiosConfig";
+import { useState, useEffect } from "react";
 import {
     Button,
     TextField,
@@ -29,7 +29,22 @@ function GuestCheckin() {
     });
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [csrfToken, setCsrfToken] = useState("");
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchCsrfToken = async () => {
+            try {
+                const response = await axios.get("/auth/csrf/", { withCredentials: true });
+                setCsrfToken(response.data.csrfToken);
+            } catch (error) {
+                console.error("Failed to fetch CSRF token", error);
+                setError("Failed to initialize form. Please refresh the page.");
+            }
+        };
+
+        fetchCsrfToken();
+    }, []);
 
     const experienceLevels = [
         "No Experience",
@@ -64,16 +79,19 @@ function GuestCheckin() {
         setSuccess("");
 
         try {
-            // TODO: Add backend API call
-            const response = await axios.post("/auth/guest-checkin/", formData);
+            const response = await axios.post("/auth/guest-checkin/", formData, {
+                headers: {
+                    "X-CSRFToken": csrfToken
+                }
+            });
             
-            setSuccess("Check-in successful! Please proceed to the front desk.");
+            setSuccess("Check-in successful! Redirecting to available classes...");
             setTimeout(() => {
-                navigate("/checkin-success", { 
+                navigate("/available-classes", { 
                     state: { 
                         studentName: formData.name,
                         email: formData.email,
-                        className: "Guest Visit"
+                        isGuest: true
                     } 
                 });
             }, 2000);
@@ -86,6 +104,7 @@ function GuestCheckin() {
         <Container 
             maxWidth="sm" 
             sx={{ 
+                px: 4,
                 py: 8,
                 display: 'flex',
                 flexDirection: 'column',

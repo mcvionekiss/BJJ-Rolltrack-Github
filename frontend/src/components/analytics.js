@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Container,
     Paper, 
@@ -10,7 +10,9 @@ import {
     TableCell,
     TableHead,
     TableRow,
-    Box
+    Box,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { 
@@ -182,6 +184,38 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
 function Analytics() {
     const [timeRange, setTimeRange] = useState('day');
     const [sidebarWidth, setSidebarWidth] = useState(250);
+    const theme = useTheme();
+    const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
+    const isSmScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const isMdScreen = useMediaQuery(theme.breakpoints.down('lg'));
+    
+    // Set chart height based on screen size
+    const getChartHeight = () => {
+        if (isXsScreen) return 300;
+        if (isSmScreen) return 350;
+        return 400;
+    };
+
+    // Get appropriate bar size based on screen size
+    const getMaxBarSize = () => {
+        if (isXsScreen) return 30;
+        if (isSmScreen) return 40;
+        return 50;
+    };
+    
+    // Modify bar gap based on screen size
+    const getBarGap = () => {
+        if (isXsScreen) return 4;
+        if (isSmScreen) return 8;
+        return 12;
+    };
+    
+    // Modify category gap based on screen size
+    const getBarCategoryGap = () => {
+        if (isXsScreen) return 20;
+        if (isSmScreen) return 30;
+        return 40;
+    };
 
     const getChartData = (timeRange) => {
         switch (timeRange) {
@@ -194,22 +228,27 @@ function Analytics() {
         }
     };
 
+    // Function to handle font size for axis tick labels
+    const getTickFontSize = () => {
+        if (isXsScreen) return 10;
+        return 12;
+    };
+
     return (
         <Box display="flex">
             <NavigationMenu onWidthChange={setSidebarWidth} />
             <Container disableGutters maxWidth={false}
-                       sx={{
-                        flexGrow: 1,
-                        px: { xs: 2, sm: 3, md: 5 },
-                        pt: { xs: 2, sm: 3, md: 5 },
-                        marginLeft: `${sidebarWidth}px`,
-                        width: "calc(100% - " + sidebarWidth + "px)"
-                    }}
+                sx={{
+                    flexGrow: 1,
+                    px: { xs: 1, sm: 2, md: 3, lg: 5 },
+                    pt: { xs: 1, sm: 2, md: 3, lg: 5 },
+                    marginLeft: `${sidebarWidth}px`,
+                    width: `calc(100% - ${sidebarWidth}px)`
+                }}
             >
-
                 {/* Attendance Stats Cards */}
-                <Grid container spacing={4} sx={{ mb: 6, width: '100%' }}>
-                    <Grid xs={12} md={4} flexGrow={1}>
+                <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ mb: { xs: 3, sm: 4, md: 6 }, width: '100%' }}>
+                    <Grid item xs={12} md={4}>
                         <AttendanceStatsCard
                             title="Daily Attendance"
                             value="80"
@@ -218,7 +257,7 @@ function Analytics() {
                             data={sparklineData.daily}
                         />
                     </Grid>
-                    <Grid xs={12} md={4} flexGrow={1}>
+                    <Grid item xs={12} md={4}>
                         <AttendanceStatsCard
                             title="Weekly Attendance"
                             value="400"
@@ -227,7 +266,7 @@ function Analytics() {
                             data={sparklineData.weekly}
                         />
                     </Grid>
-                    <Grid xs={12} md={4} flexGrow={1}>
+                    <Grid item xs={12} md={4}>
                         <AttendanceStatsCard
                             title="Monthly Attendance"
                             value="1,600"
@@ -238,71 +277,75 @@ function Analytics() {
                     </Grid>
                 </Grid>
 
-                {/* Today's Classes and Trends */}
-                <Grid container flexGrow={1} spacing={4} sx={{ display: 'flex', flexWrap: 'nowrap' }}>
-                {/* Today's Classes */}
-                    <Grid xs={12} sm={4} md={4} flexShrink={0} display="flex" flexDirection="column">
-                    <Paper
+                {/* Today's Classes and Trends - Side by side */}
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, sm: 3, md: 4 } }}>
+                    {/* Today's Classes */}
+                    <Box sx={{ flex: 1 }}>
+                        <Paper
                             sx={{
-                                p: 4,
+                                p: { xs: 2, sm: 3, md: 4 },
                                 borderRadius: 3,
-                                minHeight: '450px',
+                                minHeight: '300px',
                                 height: '100%',
                             }}
                         >
-                            <Typography variant="h5" sx={{ mb: 4 }}>
+                            <Typography variant="h5" sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
                                 Today's Classes
                             </Typography>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>CLASS NAME</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>CHECK-INS</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>TIME</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {mockClassData.map((classItem, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{classItem.name}</TableCell>
-                                            <TableCell>{classItem.checkIns}</TableCell>
-                                            <TableCell>{classItem.time}</TableCell>
+                            <Box sx={{ overflowX: 'auto' }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1, sm: 2 } }}>CLASS NAME</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1, sm: 2 } }}>CHECK-INS</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1, sm: 2 }, minWidth: '100px' }}>TIME</TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHead>
+                                    <TableBody>
+                                        {mockClassData.map((classItem, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell sx={{ py: { xs: 1, sm: 2 } }}>{classItem.name}</TableCell>
+                                                <TableCell sx={{ py: { xs: 1, sm: 2 } }}>{classItem.checkIns}</TableCell>
+                                                <TableCell sx={{ py: { xs: 1, sm: 2 }, whiteSpace: 'nowrap' }}>{classItem.time}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Box>
                         </Paper>
-                    </Grid>
+                    </Box>
 
                     {/* Trends */}
-                    <Grid xs={12} sm={8} md={8} display="flex" flexDirection="column">
-                    <Paper
+                    <Box sx={{ flex: 2 }}>
+                        <Paper
                             sx={{
-                                p: 5,
+                                p: { xs: 2, sm: 3, md: 4, lg: 5 },
                                 borderRadius: 3,
-                                minHeight: '450px',
+                                minHeight: { xs: '300px', md: '350px', lg: '450px' },
                                 height: '100%',
-                                width: '91.5%'
+                                width: '100%'
                             }}
                         >
                             <Box sx={{
                                 display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
                                 justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 4
+                                alignItems: { xs: 'flex-start', sm: 'center' },
+                                mb: { xs: 2, sm: 3, md: 4 },
+                                gap: { xs: 2, sm: 0 }
                             }}>
                                 <Typography variant="h5">
                                     Trends
                                 </Typography>
                                 <ToggleButtonGroup
-                                    size="small"
+                                    size={isXsScreen ? "small" : "medium"}
                                     value={timeRange}
                                     exclusive
-                                    onChange={(e, newValue) => setTimeRange(newValue)}
+                                    onChange={(e, newValue) => newValue && setTimeRange(newValue)}
                                     sx={{
                                         '& .MuiToggleButton-root': {
                                             textTransform: 'none',
-                                            px: 3
+                                            px: { xs: 2, sm: 3 }
                                         }
                                     }}
                                 >
@@ -311,17 +354,18 @@ function Analytics() {
                                     <ToggleButton value="month">Month</ToggleButton>
                                 </ToggleButtonGroup>
                             </Box>
-                            <ResponsiveContainer width="100%" height={400}>
+                            <ResponsiveContainer width="100%" height={getChartHeight()}>
                                 <BarChart
                                     data={getChartData(timeRange)}
                                     margin={{
                                         top: 20,
-                                        right: 30,
-                                        left: 10,
+                                        right: isXsScreen ? 10 : (isSmScreen ? 20 : 30),
+                                        left: isXsScreen ? 0 : 10,
                                         bottom: 20,
                                     }}
-                                    barGap={12}
-                                    barCategoryGap={40}
+                                    barGap={getBarGap()}
+                                    barCategoryGap={getBarCategoryGap()}
+                                    maxBarSize={getMaxBarSize()}
                                 >
                                     <XAxis
                                         dataKey="name"
@@ -329,11 +373,13 @@ function Analytics() {
                                         tickLine={false}
                                         dy={10}
                                         interval={0}
-                                        tick={{ fontSize: 12 }}
+                                        tick={{ fontSize: getTickFontSize() }}
                                     />
                                     <YAxis
                                         axisLine={false}
                                         tickLine={false}
+                                        fontSize={isXsScreen ? 10 : 12}
+                                        width={isXsScreen ? 30 : 40}
                                     />
                                     <Tooltip />
                                     <Legend
@@ -343,7 +389,8 @@ function Analytics() {
                                         align="center"
                                         wrapperStyle={{
                                             paddingTop: '10px',
-                                            paddingBottom: '10px'
+                                            paddingBottom: '10px',
+                                            fontSize: isXsScreen ? '0.75rem' : '0.875rem'
                                         }}
                                     />
                                     <Bar dataKey="Fundamental" fill="#e0e0e0" />
@@ -353,11 +400,11 @@ function Analytics() {
                                 </BarChart>
                             </ResponsiveContainer>
                         </Paper>
-                    </Grid>
-                </Grid>
+                    </Box>
+                </Box>
             </Container>
         </Box>
     );
 }
 
-export default Analytics;
+export default Analytics; 

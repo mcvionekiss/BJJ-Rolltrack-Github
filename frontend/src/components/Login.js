@@ -16,9 +16,11 @@ import {
     Link,
     CircularProgress,
     AppBar,
-    Toolbar
+    Toolbar,
+    Divider
 } from "@mui/material";
 import logo from '../assets/logo.jpeg';
+import GoogleIcon from '@mui/icons-material/Google';
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -100,6 +102,11 @@ function Login() {
         navigate("/register"); // ✅ Redirects to the Register page
     };
 
+    const handleGoogleLogin = () => {
+        // Redirect to the Google OAuth URL
+        window.location.href = "http://localhost:8000/accounts/google/login/";
+    };
+
     return (
         <Container maxWidth="xl">
             {/* Top Navigation Bar with Logo */}
@@ -169,6 +176,34 @@ function Login() {
                             required
                         />
 
+                    <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                        <Divider sx={{ flexGrow: 1 }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
+                            or
+                        </Typography>
+                        <Divider sx={{ flexGrow: 1 }} />
+                    </Box>
+
+                    {/* Google Sign In Button */}
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<GoogleIcon />}
+                        onClick={handleGoogleLogin}
+                        sx={{
+                            mt: 2,
+                            mb: 3,
+                            py: 1.5,
+                            borderColor: 'gray',
+                            '&:hover': {
+                                borderColor: 'black',
+                                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                            }
+                        }}
+                    >
+                        Continue with Google
+                    </Button>
+
                         {/* Remember Me & Forgot Password */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
                             <FormControlLabel
@@ -200,7 +235,7 @@ function Login() {
 
                     {/* Sign Up Link */}
                     <Typography variant="body2" sx={{ mt: 2 }}>
-                        Don’t have an account?{" "}
+                        Don't have an account?{" "}
                         <Link href="#" underline="hover" onClick={handleSignUp}>
                             Sign up
                         </Link>

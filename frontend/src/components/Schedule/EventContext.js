@@ -6,6 +6,7 @@ export const EventProvider = ({ children }) => {
     const [events, setEvents] = useState([
       // sample classes
         {
+          id: "57771",
           title: "Adult Fundamentals",
           color: "#E0E0E0",
           textColor: "black",
@@ -23,6 +24,7 @@ export const EventProvider = ({ children }) => {
           }
         },
         {
+          id: "57772",
           title: "Adult Advanced",
           color: "#E0E0E0",
           textColor: "black",
@@ -40,6 +42,7 @@ export const EventProvider = ({ children }) => {
           }
         },
         {
+          id: "57773",
           title: "Tiny Champs",
           color: "#E0E0E0",
           textColor: "black",
@@ -57,6 +60,7 @@ export const EventProvider = ({ children }) => {
           }
         },
         {
+          id: "57774",
           title: "Teens Advanced",
           color: "#E0E0E0",
           textColor: "black",
@@ -74,6 +78,7 @@ export const EventProvider = ({ children }) => {
           }
         },
         {
+          id: "57775",
           title: "Adult Advanced",
           color: "#E0E0E0",
           textColor: "black",

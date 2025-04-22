@@ -1,5 +1,5 @@
-# Production-focused Docker Compose configuration
-# Configured for using the production environment
+# Production Docker Compose configuration
+# Configured for production deployment with proper security and optimization
 
 services:
   backend:
@@ -13,7 +13,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app/backend
+      # Only mount the static files volume, not the entire backend directory
       - backend_static:/app/backend/staticfiles
     environment:
       - PIPELINE=production
@@ -29,13 +29,12 @@ services:
     ports:
       - "3000:80"
     volumes:
-      - ./frontend:/app/frontend
+      # Only preserve node_modules volume for caching
       - /app/frontend/node_modules
     depends_on:
       - backend
     environment:
       - NODE_ENV=production
-      # Make React accessible via IP address
       - HOST=0.0.0.0
       - WDS_SOCKET_HOST=localhost
 

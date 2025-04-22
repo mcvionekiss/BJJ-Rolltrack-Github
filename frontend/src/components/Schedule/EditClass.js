@@ -13,6 +13,7 @@ const EditClass = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
 
+    console.log("edit", state);
     const [age, setAge] = React.useState('');
     const handleChange = (event) => {
         setAge(event.target.value);
@@ -20,7 +21,7 @@ const EditClass = () => {
 
     const [sidebarWidth, setSidebarWidth] = useState(250);
 
-    const handleSubmit = (e) => {
+    const updateEvent = (e) => {
         e.preventDefault();
         const title = e.target.elements.title.value;
         const date = e.target.elements.date.value;
@@ -29,9 +30,11 @@ const EditClass = () => {
         const instructor = e.target.elements.instructor.value;
         const duration = "01:00:00"; // might not be needed
         const classLevel = e.target.elements.classLevel.value;
-        const selectedAge = age;
+        const selectedAge = e.target.elements.age.value;
+        const id = state.event.id;
 
-        const newEvent = {
+        const updatedEvent = {
+            id,
             title,
             start,
             end,
@@ -45,8 +48,9 @@ const EditClass = () => {
                 duration
             },
         };
-
-        setEvents([...events, newEvent]);
+        
+        const updatedEvents = events.map(event => event.id === id ?  updatedEvent : event);
+        setEvents(updatedEvents);
         navigate('/dashboard');
     };
 
@@ -68,7 +72,7 @@ const EditClass = () => {
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <div style={{ margin: "75px" }}>
                         <Typography variant="h3" mb={2}>Edit Class</Typography>
-                        <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit} data={state}></AddClassInformation>
+                        <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={updateEvent} data={state}></AddClassInformation>
                     </div>
                 </Box >
             </Box>

@@ -16,6 +16,7 @@ import GradeIcon from '@mui/icons-material/Grade';
 import GroupsIcon from '@mui/icons-material/Groups';
 import EditIcon from '@mui/icons-material/Edit';
 import Edit from '@mui/icons-material/Edit';
+import { v4 as uuidv4 } from 'uuid';
 
 
 export default function Calendar() {
@@ -80,9 +81,10 @@ export default function Calendar() {
     const duration = "01:00:00"; // might not be needed
     const age = e.target.elements.age.value;
     const classLevel = e.target.elements.classLevel.value;
-
+    const id = uuidv4();
 
     const newEvent = {
+      id,
       title,
       date,
       start,
@@ -93,7 +95,8 @@ export default function Calendar() {
       extendedProps: {
         instructor,
         classLevel,
-        duration
+        duration,
+        age,
       },
     };
 
@@ -150,6 +153,7 @@ export default function Calendar() {
                 <Button onClick={() => navigate('/edit-class', {
                   state:
                     { event: {
+                      id: selectedEvent.id,
                       title: selectedEvent.title,
                       start: selectedEvent.start.toISOString(),
                       end: selectedEvent.end.toISOString(),

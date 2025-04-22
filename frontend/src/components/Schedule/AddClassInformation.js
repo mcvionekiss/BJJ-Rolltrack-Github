@@ -2,7 +2,7 @@ import { Box, Button, MenuItem, Select, TextField } from '@mui/material';
 import React from 'react';
 import { useEvents } from './EventContext';
 
-const AddClassInformation = ({ handleCancelButton, handleSubmit, data }) => {
+const AddClassInformation = ({ handleCancelButton, handleSubmit, data={} }) => {
     const { events, setEvents } = useEvents();
 
     const [age, setAge] = React.useState('');
@@ -15,23 +15,22 @@ const AddClassInformation = ({ handleCancelButton, handleSubmit, data }) => {
             <Box>
                 <form onSubmit={handleSubmit}>
                     <div>
-                        {console.log(data)}
                         <label>Class Name</label>
-                        <TextField fullWidth name="title" required margin="normal" defaultValue={data?.event.title ? data.event.title : ''} />
+                        <TextField fullWidth name="title" required margin="normal" defaultValue={data?.event?.title ? data.event.title : ''} />
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Box sx={{ flex: 1 }}>
                                 <label style={{ marginBottom: '4px' }}>Time Start</label>
                                 <TextField type="time" name="start" required fullWidth defaultValue={
-                                    data?.event.start
-                                        ? new Date(data.event.start).toISOString().slice(11, 16) // "HH:MM"
+                                    data?.event?.start
+                                        ? `${new Date(data.event.start).getHours().toString().padStart(2, '0')}:${new Date(data.event.start).getMinutes().toString().padStart(2, '0')}`// "HH:MM"
                                         : ''
                                 } />
                             </Box>
                             <Box sx={{ flex: 1 }}>
                                 <label style={{ marginBottom: '4px' }}>Time End</label>
                                 <TextField type="time" name="end" required fullWidth defaultValue={
-                                    data?.event.end
-                                        ? new Date(data.event.end).toISOString().slice(11, 16) // "HH:MM"
+                                    data?.event?.end
+                                        ? `${new Date(data.event.end).getHours().toString().padStart(2, '0')}:${new Date(data.event.end).getMinutes().toString().padStart(2, '0')}`
                                         : ''
                                 }/>
                             </Box>
@@ -39,7 +38,7 @@ const AddClassInformation = ({ handleCancelButton, handleSubmit, data }) => {
                         <label>Date</label>
                         <TextField fullWidth type="date" name="date" required margin="normal" 
                         defaultValue={
-                            data?.event.start
+                            data?.event?.start
                                 ? new Date(data.event.start).toISOString().slice(0, 10)
                                 : ''
                         } />
@@ -53,7 +52,7 @@ const AddClassInformation = ({ handleCancelButton, handleSubmit, data }) => {
                                 <Select
                                     labelId="age-label"
                                     name="age"
-                                    value={age}  // Controlled component needs value
+                                    value={age || data?.event?.extendedProps.age}  // Controlled component needs value
                                     onChange={handleChange}
                                     fullWidth
                                 >

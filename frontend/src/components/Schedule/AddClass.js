@@ -6,6 +6,8 @@ import './Dashboard.css';
 import { useEvents } from './EventContext';
 import Calendar from './Calendar';
 import AddClassInformation from './AddClassInformation';
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function AddClass() {
   const { events, setEvents } = useEvents();
@@ -28,10 +30,13 @@ export default function AddClass() {
     const instructor = e.target.elements.instructor.value;
     const duration = "01:00:00"; // might not be needed
     const classLevel = e.target.elements.classLevel.value;
-    const selectedAge = age;
+    const age = e.target.elements.age.value;
+    const id = uuidv4();
 
     const newEvent = {
+      id,
       title,
+      date,
       start,
       end,
       color: '#E0E0E0',
@@ -40,8 +45,8 @@ export default function AddClass() {
       extendedProps: {
         instructor,
         classLevel,
-        age: selectedAge,
-        duration
+        duration,
+        age,
       },
     };
 

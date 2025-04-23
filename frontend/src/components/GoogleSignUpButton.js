@@ -1,9 +1,11 @@
 import React from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode"; // Optional
 import { GoogleLogin } from "@react-oauth/google";
 
 const GoogleSignUpButton = () => {
+  const navigate = useNavigate();
   const getCsrfToken = async () => {
     const res = await axios.get("http://localhost:8000/auth/csrf/", {
       withCredentials: true,
@@ -39,12 +41,14 @@ const GoogleSignUpButton = () => {
         email: decoded.email || "",
       }));
 
-      // 👇 Redirect into stepper flow at step 1
-      window.location.href = "/register/google";
-
-    } catch (err) {
-      console.error("❌ Google signup failed:", err.response?.data || err);
-    }
+      if (res.data.new_user) {
+        navigate("/register/google", { state: res.data });
+      } else {
+        navigate(res.data.redirect);
+      }
+      } catch (err) {
+        console.error("Google login failed:", err);
+      }
   };
 
   return (

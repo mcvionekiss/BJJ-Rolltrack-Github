@@ -164,8 +164,8 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": 'googleoauth_local_test',
         "USER": "admin",
-        "PASSWORD": "RollTrackTeam495080",
-        "HOST": "rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com",
+        "PASSWORD": "GymOwner2950",
+        "HOST": "gymdatabase.c1gma4cy6u0o.us-east-2.rds.amazonaws.com",
         "PORT": "3306",
     }
 }

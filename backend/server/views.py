@@ -93,8 +93,20 @@ class RegisterView(View):
                 }, status=400)
 
             # Create new user
-            belt = Belts.objects.get(beltID=belt_id)
-            role = Roles.objects.get(roleID=role_id)
+            try:
+                belt = Belts.objects.get(id=belt_id)
+            except Roles.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Role with ID {belt_id} does not exist.'
+                }, status=400)
+            try:
+                role = Roles.objects.get(roleID=role_id)
+            except Roles.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Role with ID {role_id} does not exist.'
+                }, status=400)
             
             user = Users.objects.create_user(
                 username=username,
@@ -109,6 +121,7 @@ class RegisterView(View):
             )
 
             # Log the user in
+            user.backend = "django.contrib.auth.backends.ModelBackend"
             login(request, user)
 
             return JsonResponse({
@@ -603,30 +616,30 @@ def google_auth(request):
         if not email:
             return Response({"error": "Email not in token"}, status=400)
 
-        #User = get_user_model()
-        user, created = GoogleTestUser.objects.get_or_create(email=email, defaults={
-            "first_name": first_name,
-            "last_name": last_name,
-        })
+        user = Users.objects.filter(email=email).first()
 
-        if not user.first_name or not user.last_name:
-            GoogleTestUser.objects.filter(pk=user.pk).update(
-                first_name=first_name,
-                last_name=last_name
-            )
-
-        #token, _ = Token.objects.get_or_create(user=user)
-
-        return Response({
-            #"token": token.key,
-            "user": {
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "phone": phone,
-            },
-            "created": created,
-        })
+        if user:
+            # Already registered → log them in and redirect
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            login(request, user)
+            return Response({
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "firstName": user.first_name,
+                    "lastName": user.last_name,
+                },
+                "new_user": False,
+                "redirect": "/dashboard"
+            })
+        else:
+            # Not registered yet → frontend should route to signup
+            return Response({
+                "new_user": True,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name
+            })
 
     except ValueError as e:
         return Response({"error": "Invalid token", "details": str(e)}, status=401)

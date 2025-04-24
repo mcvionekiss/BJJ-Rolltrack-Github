@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-vf1ql$l*ln)wabh$4g#!&9&3v6-j#w+-8r!$ci9948i7wx^(fr"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.2.1"]
 
@@ -83,7 +83,19 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 
-AUTH_USER_MODEL = 'server.GymOwner'
+AUTH_USER_MODEL = 'server.Users'
+
+# Rest Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    # Allow unauthenticated access by default
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -96,17 +108,31 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://192.168.2.1:3000"]  # TODO: CHANGE THIS TO RUN LOCALLY
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://192.168.2.1:3000"
+]  
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://192.168.2.1:3000",   # TODO: CHANGE THIS TO RUN LOCALLY
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://192.168.2.1:3000",
 ]
+
+# Allow all origins for development (remove in production)
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "Content-Type",
     "Authorization",
     "X-Requested-With",
     "X-CSRFToken",
+    "Accept",
 ]
 
 ROOT_URLCONF = "server.urls"
@@ -136,11 +162,14 @@ WSGI_APPLICATION = "server.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": 'test',
+        "NAME": 'rolltrack_new',
         "USER": "admin",
-        "PASSWORD": "RollTrackTeam495080",
-        "HOST": "rds-mysql-bjjrolltrack.cnaa6y844puy.us-east-1.rds.amazonaws.com",
+        "PASSWORD": "GymOwner2950",
+        "HOST": "gymdatabase.c1gma4cy6u0o.us-east-2.rds.amazonaws.com",
         "PORT": "3306",
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 

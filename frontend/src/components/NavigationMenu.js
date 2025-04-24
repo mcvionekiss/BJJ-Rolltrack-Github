@@ -17,6 +17,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import MenuIcon from "@mui/icons-material/Menu";
+import PersonIcon from '@mui/icons-material/Person';
 import logo from '../assets/logo.jpeg';
 
 const NavigationMenu = ({ onWidthChange }) => {
@@ -51,7 +52,8 @@ const NavigationMenu = ({ onWidthChange }) => {
     const menuItems = [
         { text: "Schedule", path: "/dashboard", icon: <CalendarTodayIcon /> },
         { text: "Analytics", path: "/analytics", icon: <BarChartIcon /> },
-        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> }
+        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> },
+        { text: "Profile", path: "/profile", icon: <PersonIcon /> }
     ];
 
     return (

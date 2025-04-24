@@ -636,103 +636,6 @@ export default function Calendar() {
       
       console.log(`Generated ${daysToGenerate} days of daily recurring events`);
     }
-    // If this is a monthly recurring event
-    else if (recurrence && recurrence.type === 'monthly') {
-      console.log("Creating monthly recurring events");
-      
-      // First, create an event for the base day (this month)
-      const baseEventId = `class-${Date.now()}-monthly-${formatDateCustom(baseDate, "YYYY-MM-DD")}`;
-      
-      const baseEvent = {
-        id: baseEventId,
-        title,
-        start: `${date}T${startTime}`,
-        end: `${date}T${endTime}`,
-        color,
-        textColor: 'white',
-        extendedProps: {
-          instructor,
-          classLevel,
-          age: ageGroup,
-          duration: calculateDuration(startTime, endTime),
-          recurring: 'monthly',
-          capacity: capacity
-        }
-      };
-      
-      newEvents.push(baseEvent);
-      console.log(`Created monthly recurring event for base day ${formatDateCustom(baseDate, "YYYY-MM-DD")}`);
-      
-      // For memory efficiency, generate events for a reasonable number of months
-      const maxMonthsToGenerate = 6; // Generate for the next 6 months
-      let monthsToGenerate = maxMonthsToGenerate;
-      
-      // Check if there's an end date specified
-      if (recurrence.hasEndDate && recurrence.endDate) {
-        const endDateObj = new Date(`${recurrence.endDate}T00:00:00`);
-        const monthsDifference = (endDateObj.getFullYear() - baseDate.getFullYear()) * 12 + 
-                                 (endDateObj.getMonth() - baseDate.getMonth());
-        
-        if (monthsDifference > 0) {
-          // Use the smaller of the two: our max months or months until the end date
-          monthsToGenerate = Math.min(monthsDifference, maxMonthsToGenerate);
-          console.log(`Generating monthly events for ${monthsToGenerate} months until the end date`);
-        } else {
-          console.log(`End date is in the same month or earlier, defaulting to ${maxMonthsToGenerate} months`);
-        }
-      } else {
-        console.log(`No end date specified, defaulting to ${maxMonthsToGenerate} months`);
-      }
-      
-      // Get the day of the month from the base date (e.g., the 15th of the month)
-      const dayOfMonth = baseDate.getDate();
-      
-      // Generate events for each month
-      for (let i = 1; i <= monthsToGenerate; i++) {
-        // Clone the base date
-        const eventDate = new Date(baseDate);
-        
-        // Add i months
-        eventDate.setMonth(eventDate.getMonth() + i);
-        
-        // Make sure we're on the right day of the month (handles months with fewer days)
-        // If the base day was the 31st but next month has only 30 days, this sets it to the 30th
-        while (eventDate.getDate() !== dayOfMonth) {
-          eventDate.setDate(eventDate.getDate() - 1);
-          if (eventDate.getDate() === 1) break; // Prevent infinite loop
-        }
-        
-        // Format as YYYY-MM-DD
-        const formattedDate = formatDateCustom(eventDate, "YYYY-MM-DD");
-        
-        // Create a unique ID including the date to avoid collisions
-        const eventId = `class-${Date.now()}-monthly-${formattedDate}`;
-        
-        // Create the event
-        const newEvent = {
-          id: eventId,
-          title,
-          start: `${formattedDate}T${startTime}`,
-          end: `${formattedDate}T${endTime}`,
-          color,
-          textColor: 'white',
-          extendedProps: {
-            instructor,
-            classLevel,
-            age: ageGroup,
-            duration: calculateDuration(startTime, endTime),
-            recurring: 'monthly',
-            capacity: capacity
-          }
-        };
-        
-        // Add to our collection
-        newEvents.push(newEvent);
-        console.log(`Created monthly recurring event for month ${i}: ${formattedDate}`);
-      }
-      
-      console.log(`Generated ${monthsToGenerate} months of monthly recurring events`);
-    } 
     else {
       // Not recurring, just create a single event for the selected date
       const eventId = `class-${Date.now()}-single`;
@@ -836,6 +739,50 @@ export default function Calendar() {
     if (window.confirm('Are you sure you want to reset to default events? This will remove all custom events.')) {
       resetEvents();
       alert('Calendar reset to default events.');
+    }
+  };
+
+  // Add a function to handle deleting an event
+  const handleDeleteEvent = (eventId) => {
+    // Ask for confirmation before deleting
+    if (window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
+      // Filter out the event with the given ID
+      const updatedEvents = events.filter(event => event.id !== eventId);
+      
+      // Update the state
+      setEvents(updatedEvents);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      
+      // Close the modal
+      handleCloseModal();
+    }
+  };
+
+  // Add a function to handle deleting all recurring events
+  const handleDeleteRecurringEvents = (eventTitle) => {
+    // Ask for confirmation before deleting all recurring events
+    if (window.confirm('Do you want to delete all occurrences of this recurring class? This action cannot be undone.')) {
+      // Filter out all events with the given title
+      const updatedEvents = events.filter(event => event.title !== eventTitle);
+      
+      // Update the state
+      setEvents(updatedEvents);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      
+      // Close the modal
+      handleCloseModal();
     }
   };
 
@@ -1100,6 +1047,43 @@ export default function Calendar() {
                   >
                     Edit
                   </Button>
+                </Box>
+                
+                {/* Delete buttons section */}
+                <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Button 
+                    variant="outlined" 
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => handleDeleteEvent(selectedEvent.id)}
+                    sx={{ 
+                      borderRadius: '8px',
+                      borderColor: 'error.light',
+                      color: 'error.main',
+                      '&:hover': {
+                        backgroundColor: 'error.lighter',
+                        borderColor: 'error.main',
+                      }
+                    }}
+                  >
+                    Delete This Class
+                  </Button>
+                  
+                  {/* Only show the delete all occurrences button if it's a recurring event */}
+                  {selectedEvent.extendedProps?.dayOfWeek && (
+                    <Button 
+                      variant="text" 
+                      color="error"
+                      size="small"
+                      onClick={() => handleDeleteRecurringEvents(selectedEvent.title)}
+                      sx={{ 
+                        borderRadius: '8px',
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      Delete All Occurrences
+                    </Button>
+                  )}
                 </Box>
               </Box>
             </>

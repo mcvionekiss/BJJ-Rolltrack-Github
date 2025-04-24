@@ -68,6 +68,7 @@ class Gym(models.Model):
     phone_number = models.CharField(max_length=20)
     website = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    #include arrribute for pdf wavier 
     # Not including the belts field as it doesn't appear in the database schema
 
     class Meta:

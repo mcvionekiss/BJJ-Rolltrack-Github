@@ -13,37 +13,25 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app/backend
-   # environment:
-      # Fixed settings for easier testing (no environment variables needed)
-    #  - PIPELINE=local
-     # - DJANGO_SECRET_KEY=testing_secret_key_123
-      #- DB_NAME=test_db
-     # - DB_USER=test_user
-     # - DB_PASSWORD=test_password
-     # - DB_HOST=localhost
-     # - DB_PORT=3306
-     # - ALLOWED_HOSTS=localhost,127.0.0.1
-     # - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-     # - BYPASS_HTTPS=true
-    # Override the entrypoint to run the development server for easier testing
-    command: python manage.py runserver 0.0.0.0:8000
+      # Exclude the entrypoint script from volume mounting
+      - ./backend/server:/app/backend/server
+      - ./backend/manage.py:/app/backend/manage.py
+      - ./backend/requirements.txt:/app/backend/requirements.txt
+    # Use explicit bash script instead of relying on ENTRYPOINT
+    # This ensures proper execution regardless of file permissions
+    command: bash -c "cd /app/backend && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
   
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     env_file: ".env.testing"
-    # Use the same env_file as backend for consistency
     container_name: bjj-frontend
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app/frontend
       - /app/frontend/node_modules
-  #  environment:
-  #    - NODE_ENV=development
-  #    - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
     # Run in development mode for easier debugging

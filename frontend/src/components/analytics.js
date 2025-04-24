@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     Container,
     Paper, 
@@ -187,7 +187,6 @@ function Analytics() {
     const theme = useTheme();
     const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const isSmScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const isMdScreen = useMediaQuery(theme.breakpoints.down('lg'));
     
     // Set chart height based on screen size
     const getChartHeight = () => {

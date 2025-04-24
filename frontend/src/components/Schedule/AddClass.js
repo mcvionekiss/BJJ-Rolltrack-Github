@@ -180,7 +180,6 @@ export default function AddClass() {
     
     // Navigate back to dashboard
     console.log("=== FORM HANDLER COMPLETED ===");
-    setEvents([...events, newEvent]);
     navigate('/dashboard');
   };
   

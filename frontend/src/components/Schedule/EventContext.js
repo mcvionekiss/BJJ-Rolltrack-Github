@@ -3,10 +3,12 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const EventContext = createContext();
 
 export const EventProvider = ({ children }) => {
+  
   // Default events to use if no saved events exist
   const defaultEvents = [
     // Sample classes with proper formatting
     {
+      id: "57771",
       title: "Adult Fundamentals",
       color: "#4caf50", // Green for fundamentals
       textColor: "white",
@@ -25,6 +27,7 @@ export const EventProvider = ({ children }) => {
       }
     },
     {
+      id: "57772",
       title: "Adult Advanced",
       color: "#f44336", // Red for advanced
       textColor: "white",
@@ -43,6 +46,7 @@ export const EventProvider = ({ children }) => {
       }
     },
     {
+      id: "57773",
       title: "Tiny Champs",
       color: "#4caf50", // Green for kids
       textColor: "white",
@@ -61,6 +65,7 @@ export const EventProvider = ({ children }) => {
       }
     },
     {
+      id: "57773",
       title: "Teens Advanced",
       color: "#2196f3", // Blue for teens
       textColor: "white",

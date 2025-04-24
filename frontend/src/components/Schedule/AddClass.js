@@ -6,6 +6,8 @@ import './Dashboard.css';
 import { useEvents } from './EventContext';
 import Calendar from './Calendar';
 import AddClassInformation from './AddClassInformation';
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function AddClass() {
   const { events, setEvents } = useEvents();
@@ -37,6 +39,7 @@ export default function AddClass() {
     const instructor = form.elements.instructor.value;
     const classLevel = form.elements.classLevel.value;
     const ageGroup = form.elements.age.value;
+    const id = uuidv4();
     
     // Get color based on class level
     const color = getLevelColor(classLevel);
@@ -177,6 +180,7 @@ export default function AddClass() {
     
     // Navigate back to dashboard
     console.log("=== FORM HANDLER COMPLETED ===");
+    setEvents([...events, newEvent]);
     navigate('/dashboard');
   };
   

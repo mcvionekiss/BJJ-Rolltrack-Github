@@ -19,6 +19,8 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeleteIcon from '@mui/icons-material/Delete';
 import './Dashboard.css';
+import Edit from '@mui/icons-material/Edit';
+import { v4 as uuidv4 } from 'uuid';
 
 
 export default function Calendar() {
@@ -423,6 +425,8 @@ export default function Calendar() {
     const instructor = form.elements.instructor.value;
     const classLevel = form.elements.classLevel.value;
     const ageGroup = form.elements.age.value;
+    const id1 = uuidv4();
+
     
     // Get color based on class level
     const color = getLevelColor(classLevel);
@@ -442,17 +446,8 @@ export default function Calendar() {
     const baseEventId = `class-${Date.now()}-single`;
     const baseEvent = {
       id: baseEventId,
-      title,
-      start: `${date}T${startTime}`,
-      end: `${date}T${endTime}`,
-      color,
-      textColor: 'white',
-      extendedProps: {
-        instructor,
-        classLevel,
-        age: ageGroup,
-        duration: calculateDuration(startTime, endTime)
-      }
+      id1,
+
     };
     
     // Add the base event
@@ -475,7 +470,7 @@ export default function Calendar() {
       console.log(`Total selected days: ${selectedDayCount}`);
       
       // Process each day of the week
-      dayNames.forEach((dayName, dayIndex) => {
+      dayNames.forEach((dayName,  dayIndex) => {
         // Skip if this day is not selected or if it's the same as the base day
         if (!recurrence.days[dayName] || dayIndex === baseDayIndex) {
           if (!recurrence.days[dayName]) {
@@ -507,6 +502,7 @@ export default function Calendar() {
         
         // Create the event
         const newEvent = {
+          id,
           id: eventId,
           title,
           start: `${formattedDate}T${startTime}`,

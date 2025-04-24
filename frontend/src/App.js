@@ -10,6 +10,9 @@ import Analytics from './components/analytics';
 import ClientsPage from './components/ClientsPage';
 import CheckinSuccess from './components/CheckinSuccess';
 import AddClass from "./components/Schedule/AddClass";
+import CheckinSelection from "./components/CheckinSelection";
+import MemberSignup from "./components/MemberSignup";
+import GuestCheckin from "./components/GuestCheckin";
 import { EventProvider } from "./components/Schedule/EventContext";
 import EditClass from "./components/Schedule/EditClass";
 function App() {
@@ -33,6 +36,9 @@ function App() {
 
                     {/* Check In Flow */}
                     <Route path="/checkin" element={<Checkin />} />
+                    <Route path="/checkin-selection" element={<CheckinSelection />} />
+                    <Route path="/member-signup" element={<MemberSignup />} />
+                    <Route path="/guest-checkin" element={<GuestCheckin />} />
                     <Route path="/available-classes" element={<AvailableClasses />} />
                     <Route path="/class-details/:id" element={<ClassDetails />} />
                     <Route path="/checkin-success" element={<CheckinSuccess />} />

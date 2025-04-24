@@ -1,104 +1,161 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const EventContext = createContext();
 
 export const EventProvider = ({ children }) => {
-    const [events, setEvents] = useState([
-      // sample classes
-        {
-          id: "57771",
-          title: "Adult Fundamentals",
-          color: "#E0E0E0",
-          textColor: "black",
-          borderColor: "black",
-          rrule: {
-            freq: "weekly",
-            byweekday: ["tu", "fr"],
-            dtstart: "2025-03-11T15:00:00Z",
-          },
-          duration: "01:00:00",
-          extendedProps: {
-            instructor: "John Doe",
-            classLevel: "Beginner",
-            age: "Adult"
-          }
-        },
-        {
-          id: "57772",
-          title: "Adult Advanced",
-          color: "#E0E0E0",
-          textColor: "black",
-          borderColor: "black",
-          rrule: {
-            freq: "weekly",
-            byweekday: ["we"],
-            dtstart: "2025-03-12T20:00:00Z",
-          },
-          duration: "01:30:00",
-          extendedProps: {
-            instructor: "Jane Smith",
-            classLevel: "Advanced",
-            age: "Adult"
-          }
-        },
-        {
-          id: "57773",
-          title: "Tiny Champs",
-          color: "#E0E0E0",
-          textColor: "black",
-          borderColor: "black",
-          rrule: {
-            freq: "weekly",
-            byweekday: ["we"],
-            dtstart: "2025-03-12T17:00:00Z",
-          },
-          duration: "01:00:00",
-          extendedProps: {
-            instructor: "Coach Ellie",
-            classLevel: "Kids",
-            age: "Child"
-          }
-        },
-        {
-          id: "57774",
-          title: "Teens Advanced",
-          color: "#E0E0E0",
-          textColor: "black",
-          borderColor: "black",
-          rrule: {
-            freq: "weekly",
-            byweekday: ["th"],
-            dtstart: "2025-03-13T17:00:00Z",
-          },
-          duration: "01:30:00",
-          extendedProps: {
-            instructor: "Coach Mike",
-            classLevel: "Elite",
-            age: "Teen"
-          }
-        },
-        {
-          id: "57775",
-          title: "Adult Advanced",
-          color: "#E0E0E0",
-          textColor: "black",
-          borderColor: "black",
-          rrule: {
-            freq: "weekly",
-            byweekday: ["fr"],
-            dtstart: "2025-03-14T19:00:00Z",
-          },
-          duration: "01:30:00",
-          extendedProps: {
-            instructor: "Jane Smith",
-            classLevel: "Advanced",
-            age: "Adult"
-          }
-        }     
-      ]);
   
+  // Default events to use if no saved events exist
+  const defaultEvents = [
+    // Sample classes with proper formatting
+    {
+      id: "57771",
+      title: "Adult Fundamentals",
+      color: "#4caf50", // Green for fundamentals
+      textColor: "white",
+      borderColor: "#3d8b40",
+      start: "2025-04-15T09:00:00",
+      end: "2025-04-15T10:00:00",
+      rrule: {
+        freq: "weekly",
+        byweekday: ["tu", "fr"],
+      },
+      duration: "01:00:00",
+      extendedProps: {
+        instructor: "John Doe",
+        classLevel: "Fundamentals",
+        age: "Adult"
+      }
+    },
+    {
+      id: "57772",
+      title: "Adult Advanced",
+      color: "#f44336", // Red for advanced
+      textColor: "white",
+      borderColor: "#d32f2f",
+      start: "2025-04-17T13:00:00",
+      end: "2025-04-17T14:30:00",
+      rrule: {
+        freq: "weekly",
+        byweekday: ["th"],
+      },
+      duration: "01:30:00",
+      extendedProps: {
+        instructor: "Jane Smith",
+        classLevel: "Advanced",
+        age: "Adult"
+      }
+    },
+    {
+      id: "57773",
+      title: "Tiny Champs",
+      color: "#4caf50", // Green for kids
+      textColor: "white",
+      borderColor: "#3d8b40",
+      start: "2025-04-14T16:00:00",
+      end: "2025-04-14T17:00:00",
+      rrule: {
+        freq: "weekly",
+        byweekday: ["mo", "we"],
+      },
+      duration: "01:00:00",
+      extendedProps: {
+        instructor: "Coach Ellie",
+        classLevel: "Kids",
+        age: "Child"
+      }
+    },
+    {
+      id: "57773",
+      title: "Teens Advanced",
+      color: "#2196f3", // Blue for teens
+      textColor: "white",
+      borderColor: "#1976d2",
+      start: "2025-04-16T15:30:00",
+      end: "2025-04-16T17:00:00",
+      rrule: {
+        freq: "weekly",
+        byweekday: ["we"],
+      },
+      duration: "01:30:00",
+      extendedProps: {
+        instructor: "Coach Mike",
+        classLevel: "Elite",
+        age: "Teen"
+      }
+    }
+  ];
+
+  // Load events from localStorage if available
+  const [events, setEvents] = useState(() => {
+    try {
+      const savedEvents = localStorage.getItem('calendarEvents');
+      if (savedEvents) {
+        console.log("Loading saved events from localStorage");
+        return JSON.parse(savedEvents);
+      }
+    } catch (error) {
+      console.error("Error loading events:", error);
+    }
+    return defaultEvents;
+  });
+
+  // Save events to localStorage whenever they change
+  useEffect(() => {
+    try {
+      console.log(`Saving ${events.length} events to localStorage`);
+      localStorage.setItem('calendarEvents', JSON.stringify(events));
+    } catch (error) {
+      console.error("Error saving events:", error);
+    }
+  }, [events]);
+
+  // Add multiple events at once
+  const addEvents = (newEvents) => {
+    console.log(`Adding ${newEvents.length} events to calendar`);
+    
+    // Check for duplicate events before adding
+    const eventsThatDontExist = newEvents.filter(newEvent => {
+      // For each new event, check if a similar event already exists
+      const duplicate = events.find(existingEvent => {
+        // Check if there's an event with the same title and start time
+        return (
+          existingEvent.title === newEvent.title && 
+          existingEvent.start === newEvent.start
+        );
+      });
+      
+      if (duplicate) {
+        console.log(`Skipping duplicate event: ${newEvent.title} at ${newEvent.start}`);
+        return false; // Don't include this event
+      }
+      
+      return true; // Include this event
+    });
+    
+    console.log(`After filtering, adding ${eventsThatDontExist.length} unique events`);
+    
+    // Only update state if we have non-duplicate events to add
+    if (eventsThatDontExist.length > 0) {
+      setEvents(current => [...current, ...eventsThatDontExist]);
+    }
+  };
+
+  // Clear all events and reset to defaults
+  const resetEvents = () => {
+    console.log("Resetting events to defaults");
+    localStorage.removeItem('calendarEvents');
+    setEvents(defaultEvents);
+  };
+
+  // Clear all data from localStorage
+  const clearStorage = () => {
+    console.log("Clearing all calendar data from localStorage");
+    localStorage.removeItem('calendarEvents');
+    setEvents([]);
+  };
+
   return (
-    <EventContext.Provider value={{ events, setEvents }}>
+    <EventContext.Provider value={{ events, setEvents, addEvents, resetEvents, clearStorage }}>
       {children}
     </EventContext.Provider>
   );

@@ -16,7 +16,7 @@ import {
     Step,
     StepLabel,
 } from "@mui/material";
-import { MuiTelInput } from 'mui-tel-input'; // Updated import
+import { MuiTelInput, matchIsValidTel } from 'mui-tel-input'; // Updated import
 import PasswordChecklist from "react-password-checklist";
 import "./Register.css";
 import logo from "../assets/logo.jpeg"; // Import the logo image
@@ -76,6 +76,10 @@ export default function Register() {
     const [error, setError] = useState("");
     const [unmetCriteria, setUnmetCriteria] = useState([]);
     const [confirmPasswordError, setConfirmPasswordError] = useState("");
+    const [phoneErrors, setPhoneErrors] = useState({
+        personal: "",
+        gym: "",
+      });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -104,6 +108,26 @@ export default function Register() {
     
         setConfirmPasswordError(""); // Clear error if passwords match
 
+    if (
+        activeStep === 0 &&
+        formData.phone &&
+        (!matchIsValidTel(formData.phone) || !formData.phone.startsWith("+1"))
+        ) {
+        setPhoneErrors({ personal: "Please enter a valid US phone number.", gym: "" });
+        return;
+        }
+        
+        if (
+        activeStep === 1 &&
+        (!matchIsValidTel(formData.gymPhoneNumber) || !formData.gymPhoneNumber.startsWith("+1"))
+        ) {
+        setPhoneErrors({ personal: "", gym: "Please enter a valid US gym phone number." });
+        return;
+        }
+        
+        // Clear both if no error
+        setPhoneErrors({ personal: "", gym: "" });
+
         setError("");
         if (activeStep < steps.length - 1) {
             setActiveStep(activeStep + 1);
@@ -112,23 +136,21 @@ export default function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (activeStep < steps.length - 1) {
-            setActiveStep(activeStep + 1);
-        } else {
-            if (loading) return;
-            setLoading(true);
-            setError("");
-
-            try {
-                const response = await registerUser(formData, csrfToken);
-                console.log("🟢 Registration successful", response.data);
-                setActiveStep(activeStep + 1); // Move to Welcome Page step
-            } catch (error) {
-                console.error("🔴 Registration failed", error.response?.data || error);
-                setError(error.response?.data?.message || "Registration failed. Please try again.");
-            } finally {
-                setLoading(false);
-            }
+        if (loading) return;
+        setLoading(true);
+        setError("");
+    
+        console.log("Submitting with data:", formData, "and CSRF:", csrfToken);
+    
+        try {
+            const response = await registerUser(formData, csrfToken);
+            console.log("🟢 Registration successful", response.data);
+            setActiveStep(activeStep + 1); // Move to Welcome Page step
+        } catch (error) {
+            console.error("🔴 Registration failed", error.response?.data || error);
+            setError(error.response?.data?.message || "Registration failed. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -147,7 +169,6 @@ export default function Register() {
         setFormData(prev => ({ ...prev, schedule: scheduleData }));
     };
 
-    // Updated phone handler for MuiTelInput
     const handlePhoneChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -243,12 +264,17 @@ export default function Register() {
                                 {/* Updated MuiTelInput for Personal Phone */}
                                 <MuiTelInput
                                     defaultCountry="US"
+                                    onlyCountries={['US']}
+                                    forceCallingCode
+                                    readOnlyCountryCode
                                     label="Phone Number"
                                     variant="outlined"
                                     value={formData.phone}
                                     onChange={(value) => handlePhoneChange("phone", value)}
                                     fullWidth
                                     margin="normal"
+                                    error={!!phoneErrors.personal}
+                                    helperText={phoneErrors.personal}
                                 />
                             </>
                         )}
@@ -315,6 +341,9 @@ export default function Register() {
                                 {/* Updated MuiTelInput for Gym Phone */}
                                 <MuiTelInput
                                     defaultCountry="US"
+                                    onlyCountries={['US']}
+                                    forceCallingCode
+                                    readOnlyCountryCode
                                     label="Gym Phone Number"
                                     variant="outlined"
                                     value={formData.gymPhoneNumber}
@@ -322,6 +351,8 @@ export default function Register() {
                                     fullWidth
                                     margin="normal"
                                     required
+                                    error={!!phoneErrors.gym}
+                                    helperText={phoneErrors.gym}
                                 />
                             </>
                         )}
@@ -373,7 +404,7 @@ export default function Register() {
                         {activeStep === 3 && (
                             <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
                                 <Button 
-                                    type="submit" 
+                                    type="button" 
                                     variant="contained" 
                                     sx={{
                                         backgroundColor: "black",
@@ -382,8 +413,9 @@ export default function Register() {
                                         "&:hover": { backgroundColor: "#333" } // Darker shade on hover
                                     }}
                                     disabled={loading}
+                                    onClick={handleSubmit}
                                 >
-                                    {loading ? "Submitting..." : activeStep === 3 && "Complete Registration"}
+                                    {loading ? "Submitting..." : "Complete Registration"}
                                 </Button>
                             </Box>
                         )}

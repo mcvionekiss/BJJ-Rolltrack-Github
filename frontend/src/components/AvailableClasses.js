@@ -7,6 +7,7 @@ import {
     Box,
     Grid2,
     Card,
+    Button,
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import GroupIcon from "@mui/icons-material/Group";
@@ -48,28 +49,74 @@ function AvailableClasses() {
     const navigate = useNavigate();
     const location = useLocation();
     const [weekDays, setWeekDays] = useState(getWeekDays());
+    const [retryCount, setRetryCount] = useState(0);
 
     // Retrieve student email from the previous page
     const studentEmail = location.state?.email || "";
+    const studentName = location.state?.studentName || "";
+    const isGuest = location.state?.isGuest || false;
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Show welcome message for guests
+        if (isGuest && studentName) {
+            console.log(`Guest ${studentName} has checked in and is viewing available classes`);
+        }
+
         // Fetch available classes for the current week
-        axios.get("http://192.168.2.1:8000/api/available_classes_today/")
+        setLoading(true);
+        setError("");
+        
+        axios.get("http://localhost:8000/api/available_classes_today/")
             .then(response => {
-                setClasses(response.data.classes);
+                console.log("API Response:", response.data);
+                if (response.data.success && response.data.classes) {
+                    setClasses(response.data.classes);
+                } else {
+                    setClasses([]);
+                    if (!response.data.success) {
+                        setError(response.data.message || "No classes data available.");
+                    }
+                }
                 setLoading(false);
             })
             .catch(error => {
                 console.error("Error fetching classes:", error);
-                setError("Failed to load classes.");
+                
+                let errorMessage = "Failed to load classes.";
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    console.error("Error response:", error.response.data);
+                    errorMessage = error.response.data.message || errorMessage;
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    errorMessage = "No response from server. Please check your connection.";
+                } else {
+                    // Something happened in setting up the request
+                    errorMessage = error.message || errorMessage;
+                }
+                
+                setError(errorMessage);
                 setLoading(false);
+                
+                // Retry up to 2 times with increasing delay if we get an error
+                if (retryCount < 2) {
+                    setTimeout(() => {
+                        setRetryCount(count => count + 1);
+                    }, 1000 * (retryCount + 1)); // Exponential backoff
+                }
             });
-    }, []);
+    }, [retryCount]);
 
-    const handleClassSelect = (classID) => {
-        console.log(studentEmail);
-        navigate(`/class-details/${classID}`, { state: { email: studentEmail } });
+    const handleClassSelect = (classId) => {
+        console.log("Selected class ID:", classId);
+        navigate(`/class-details/${classId}`, { 
+            state: { 
+                email: studentEmail,
+                studentName: studentName,
+                isGuest: isGuest
+            } 
+        });
     };
 
     // Get today's date formatted
@@ -83,7 +130,7 @@ function AvailableClasses() {
                     sx={{ cursor: "pointer", color: "#757575" }}
                 />
                 <Typography variant="h5" fontWeight="bold" sx={{ ml: 1 }}>
-                    Gym Name
+                    Elite Jiu-Jitsu Academy
                 </Typography>
             </Box>
 
@@ -94,9 +141,27 @@ function AvailableClasses() {
                 justifyContent="center"
                 textAlign="center"
             >
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    Location Placeholder
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    628 S Pacific Coast Hwy, Redondo Beach, California
                 </Typography>
+                
+                {isGuest && studentName && (
+                    <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                            mt: 2, 
+                            mb: 3, 
+                            py: 1,
+                            px: 2,
+                            bgcolor: 'rgba(76, 175, 80, 0.1)',
+                            color: 'success.main',
+                            borderRadius: 1,
+                            width: '100%'
+                        }}
+                    >
+                        Welcome, {studentName}! Please select a class to join.
+                    </Typography>
+                )}
             </Box>
 
             {/* Date Display */}
@@ -134,14 +199,53 @@ function AvailableClasses() {
                 })}
             </Grid2>
 
-            {error && <Typography color="error">{error}</Typography>}
+            {/* Loading state */}
+            {loading && (
+                <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    minHeight="40vh"
+                    textAlign="center"
+                >
+                    <Typography variant="h6" color="text.secondary">
+                        Loading classes...
+                    </Typography>
+                </Box>
+            )}
 
-            {Array.isArray(classes) && classes.length > 0 ? (
+            {/* Error message */}
+            {error && !loading && (
+                <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    minHeight="20vh"
+                    textAlign="center"
+                    sx={{ my: 2 }}
+                >
+                    <Typography color="error" variant="body1" sx={{ mb: 2 }}>
+                        {error}
+                    </Typography>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => setRetryCount(count => count + 1)}
+                    >
+                        Retry
+                    </Button>
+                </Box>
+            )}
+
+            {/* Classes list */}
+            {!loading && !error && Array.isArray(classes) && classes.length > 0 ? (
                 <Grid2 container direction="column" spacing={2}>
                     {classes.map((cls) => (
-                        <Grid2 item xs={12} key={cls.classID}>
+                        <Grid2 item xs={12} key={cls.id}>
                             <Card
-                                onClick={() => handleClassSelect(cls.classID)}
+                                onClick={() => handleClassSelect(cls.id)}
                                 sx={{
                                     borderRadius: "15px",
                                     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
@@ -158,19 +262,18 @@ function AvailableClasses() {
                             >
                                 <Box>
                                     <Typography variant="subtitle2" color="text.secondary" mb={1}>
-                                        {formatTime(cls.startTime)}
+                                        {formatTime(cls.startTime)} - {formatTime(cls.endTime)}
                                     </Typography>
                                     <Typography variant="h6" fontWeight="bold">
                                         {cls.name}
                                     </Typography>
                                     <Box display="flex" alignItems="center" mt={1}>
                                         <Typography variant="body2" color="text.secondary">
-                                            {/* cls.trainer */}
-                                            Trainer Placeholder
+                                            {cls.level || "All Levels"}
                                         </Typography>
                                         <GroupIcon sx={{ fontSize: "16px", ml: 1, mr: 0.5, color: "#757575" }} />
                                         <Typography variant="body2" color="text.secondary">
-                                            {cls.capacity}
+                                            {cls.currentAttendance || 0}/{cls.maxCapacity || "∞"}
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -179,13 +282,13 @@ function AvailableClasses() {
                         </Grid2>
                     ))}
                 </Grid2>
-            ) : !loading && (
+            ) : !loading && !error && (
                 <Box
                     display="flex"
                     flexDirection="column"
                     alignItems="center"
                     justifyContent="center"
-                    minHeight="40vh" // Adjust based on your preference
+                    minHeight="40vh"
                     textAlign="center"
                 >
                     <Typography variant="h6" color="text.secondary" fontWeight="bold">

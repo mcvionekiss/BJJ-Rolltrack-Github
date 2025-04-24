@@ -71,7 +71,11 @@ const AddClassInformation = ({
             maxCapacity,
             startTime,
             endTime,
-            age
+            age,
+            // Include recurrence information
+            isRecurring,
+            recurrenceType,
+            recurrenceDays: isRecurring ? { ...recurrenceDays } : null
         };
     };
 
@@ -94,6 +98,26 @@ const AddClassInformation = ({
             }
             
             setAge(template.age || 'Adult');
+            
+            // Handle recurrence settings if present in the template
+            if (template.isRecurring) {
+                console.log('Setting recurrence from template:', template.isRecurring, template.recurrenceType, template.recurrenceDays);
+                setIsRecurring(template.isRecurring);
+                
+                if (template.recurrenceType) {
+                    setRecurrenceType(template.recurrenceType);
+                }
+                
+                if (template.recurrenceDays) {
+                    // Make sure we're dealing with a deep copy to avoid reference issues
+                    const days = JSON.parse(JSON.stringify(template.recurrenceDays));
+                    setRecurrenceDays(days);
+                } else if (date) {
+                    // If template doesn't have specific days but is recurring,
+                    // initialize with the current selected date
+                    initializeRecurrenceDaysFromDate(date);
+                }
+            }
         }
     };
     

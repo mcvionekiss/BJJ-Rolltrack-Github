@@ -106,7 +106,6 @@ export default function Calendar() {
   };
   const [repeat, setRepeat] = useState(false);
 
-
   // State to control the modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -425,6 +424,7 @@ export default function Calendar() {
     const instructor = form.elements.instructor.value;
     const classLevel = form.elements.classLevel.value;
     const ageGroup = form.elements.age.value;
+    const capacity = form.elements.maxCapacity.value;
     const id1 = uuidv4();
 
     
@@ -469,14 +469,41 @@ export default function Calendar() {
       });
       console.log(`Total selected days: ${selectedDayCount}`);
       
-      // Process each day of the week
-      dayNames.forEach((dayName,  dayIndex) => {
+      // First create an event for the base day if it's in the selected days
+      if (recurrence.days[baseDayName]) {
+        console.log(`Creating event for base day: ${baseDayName}`);
+        
+        const eventId = `class-${Date.now()}-${baseDayName}`;
+        
+        const baseEvent = {
+          id: eventId,
+          title,
+          start: `${date}T${startTime}`,
+          end: `${date}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            dayOfWeek: baseDayName,
+            capacity: capacity
+          }
+        };
+        
+        newEvents.push(baseEvent);
+        console.log(`Created recurring event for base day ${baseDayName} on ${date}`);
+      }
+      
+      // Process each day of the week (except the base day which was already handled)
+      dayNames.forEach((dayName, dayIndex) => {
         // Skip if this day is not selected or if it's the same as the base day
         if (!recurrence.days[dayName] || dayIndex === baseDayIndex) {
           if (!recurrence.days[dayName]) {
             console.log(`Skipping ${dayName} as it's not selected`);
           } else {
-            console.log(`Skipping ${dayName} as it's the same as the base day (${baseDayName})`);
+            console.log(`Skipping ${dayName} as it's the same as the base day (already processed)`);
           }
           return;
         }
@@ -502,7 +529,6 @@ export default function Calendar() {
         
         // Create the event
         const newEvent = {
-          id,
           id: eventId,
           title,
           start: `${formattedDate}T${startTime}`,
@@ -514,7 +540,8 @@ export default function Calendar() {
             classLevel,
             age: ageGroup,
             duration: calculateDuration(startTime, endTime),
-            dayOfWeek: dayName
+            dayOfWeek: dayName,
+            capacity: capacity
           }
         };
         
@@ -522,6 +549,28 @@ export default function Calendar() {
         newEvents.push(newEvent);
         console.log(`Created recurring event for ${dayName} on ${formattedDate}`);
       });
+    } else {
+      // Not recurring, just create a single event for the selected date
+      const eventId = `class-${Date.now()}-single`;
+      
+      const singleEvent = {
+        id: eventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          capacity: capacity
+        }
+      };
+      
+      newEvents.push(singleEvent);
+      console.log(`Created single event for ${date}`);
     }
     
     // Check for existing events with the same title and date/time to avoid duplicates
@@ -614,8 +663,6 @@ export default function Calendar() {
       height: 'calc(100vh - 120px)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '0',
-      margin: '0'
     }}>
       <Box sx={{ 
         display: 'flex', 
@@ -649,23 +696,20 @@ export default function Calendar() {
           Reset to Defaults
         </Button>
       </Box>
-      <div style={{ 
-        flex: 1, 
-        overflow: 'auto',
-        paddingRight: '1px',
-        paddingBottom: '1px',
-        marginBottom: '0'
-      }}>
+
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
           initialView="timeGridWeek"
-          editable="true"
+          editable={true}
           headerToolbar={{
             start: typeof window !== 'undefined' && windowWidth < 768 ? 'prev,next' : 'timeGridDay,timeGridWeek,dayGridMonth today',
             center: typeof window !== 'undefined' && windowWidth < 768 ? 'title' : 'prev title next',
             end: 'addClassButton',
           }}
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
+          scrollTime="08:00:00"
           allDaySlot={false}
           events={events}
           eventContent={renderEventContent}
@@ -726,7 +770,6 @@ export default function Calendar() {
             }
           }}
         />
-      </div>
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
@@ -827,7 +870,7 @@ export default function Calendar() {
                     <PeopleAltIcon sx={{ color: 'text.secondary', mr: 2 }} />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Capacity</Typography>
-                      <Typography variant="body1">20 students</Typography>
+                      <Typography variant="body1">{selectedEvent.extendedProps?.capacity || '20'} students</Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -843,7 +886,23 @@ export default function Calendar() {
                   <Button 
                     variant="contained" 
                     startIcon={<EditIcon />}
-                    onClick={() => navigate('/edit-class')}
+                    onClick={() => {
+                      const eventData = {
+                        id: selectedEvent.id,
+                        title: selectedEvent.title,
+                        start: selectedEvent.start,
+                        end: selectedEvent.end,
+                        extendedProps: {
+                          instructor: selectedEvent.extendedProps?.instructor,
+                          classLevel: selectedEvent.extendedProps?.classLevel,
+                          age: selectedEvent.extendedProps?.age,
+                          capacity: selectedEvent.extendedProps?.capacity,
+                          duration: selectedEvent.extendedProps?.duration,
+                          dayOfWeek: selectedEvent.extendedProps?.dayOfWeek
+                        }
+                      };
+                      navigate('/edit-class', { state: { event: eventData } });
+                    }}
                     sx={{ 
                       borderRadius: '8px', 
                       backgroundColor: selectedEvent.extendedProps?.classLevel ? 

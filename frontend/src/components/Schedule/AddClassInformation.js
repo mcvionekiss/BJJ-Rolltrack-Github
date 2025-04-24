@@ -578,7 +578,6 @@ const AddClassInformation = ({
                                     >
                                         <FormControlLabel value="daily" control={<Radio size="small" />} label="Daily" />
                                         <FormControlLabel value="weekly" control={<Radio size="small" />} label="Weekly" />
-                                        <FormControlLabel value="monthly" control={<Radio size="small" />} label="Monthly" />
                                     </RadioGroup>
                                 </FormControl>
                                 

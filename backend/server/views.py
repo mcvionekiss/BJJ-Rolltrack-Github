@@ -8,11 +8,15 @@ from django.views import View
 import json
 import logging
 import time
-from .models import Users, Class, Belts, Roles, ClassAttendance
+from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache  # Add caching for faster load times
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from django.views.decorators.http import require_http_methods
+from django.core import serializers
 
 
 def get_csrf_token(request):
@@ -570,3 +574,259 @@ def student_attendance_history(request, email=None):
         print(f"Error in student_attendance_history: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def get_templates(request):
+    """
+    GET: Get all templates
+    POST: Create a new template
+    """
+    if request.method == 'GET':
+        try:
+            # Get all templates
+            templates = ClassTemplates.objects.all().select_related('level', 'gym')
+            
+            # Serialize the data
+            data = []
+            for template in templates:
+                level_name = template.level.name if template.level else "All Levels"
+                
+                data.append({
+                    "id": template.id,
+                    "name": template.name,
+                    "description": template.description,
+                    "duration_minutes": template.duration_minutes,
+                    "max_capacity": template.max_capacity,
+                    "level_id": level_name,
+                    "gym_id": template.gym.id if template.gym else None,
+                    "gym_name": template.gym.name if template.gym else None
+                })
+            
+            return JsonResponse(data, safe=False)
+        except Exception as e:
+            import traceback
+            print(f"Error getting templates: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({"error": str(e)}, status=500)
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Get required fields
+            name = data.get('name')
+            level_id = data.get('level_id')
+            
+            if not name:
+                return JsonResponse({"error": "Template name is required"}, status=400)
+            
+            # Get or create level
+            level = None
+            try:
+                if level_id:
+                    try:
+                        # First try to get an existing level
+                        level = ClassLevel.objects.get(name=level_id)
+                        print(f"Found existing level: {level.name}")
+                    except ClassLevel.DoesNotExist:
+                        # If it doesn't exist, make sure we have at least one gym
+                        gym = None
+                        try:
+                            gym = Gym.objects.first()
+                        except:
+                            # Create a default gym if none exists
+                            gym = Gym.objects.create(
+                                name="Default Gym",
+                                email="default@example.com",
+                                phone_number="555-555-5555"
+                            )
+                            print(f"Created default gym: {gym.name}")
+                        
+                        # Now create the level
+                        level = ClassLevel.objects.create(
+                            name=level_id,
+                            description=f'{level_id} level',
+                            gym=gym
+                        )
+                        print(f"Created new level: {level.name}")
+            except Exception as e:
+                print(f"Error handling level: {e}")
+                # Use a default level or continue without one
+            
+            # Make sure we have a gym
+            gym = None
+            try:
+                gym = Gym.objects.first()
+            except:
+                gym = Gym.objects.create(
+                    name="Default Gym",
+                    email="default@example.com",
+                    phone_number="555-555-5555"
+                )
+                print(f"Created default gym: {gym.name}")
+            
+            # Create new template
+            new_template = ClassTemplates.objects.create(
+                name=name,
+                description=data.get('description') or f"{name} template",
+                duration_minutes=data.get('duration_minutes') or 60,
+                max_capacity=data.get('max_capacity') or 20,
+                level=level or ClassLevel.objects.first(),  # Default to first level if not specified
+                gym=gym
+            )
+            
+            print(f"Created new template: {new_template.name}")
+            
+            # Return the new template
+            return JsonResponse({
+                "id": new_template.id,
+                "name": new_template.name,
+                "description": new_template.description,
+                "duration_minutes": new_template.duration_minutes,
+                "max_capacity": new_template.max_capacity,
+                "level_id": new_template.level.name if new_template.level else "All Levels",
+                "gym_id": new_template.gym.id if new_template.gym else None,
+                "gym_name": new_template.gym.name if new_template.gym else None
+            }, status=201)
+        except Exception as e:
+            import traceback
+            print(f"Error creating template: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(['DELETE'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def delete_template(request, template_id):
+    """Delete a template by ID"""
+    try:
+        template = get_object_or_404(ClassTemplates, id=template_id)
+        template.delete()
+        return JsonResponse({"success": True, "message": "Template deleted successfully"})
+    except Exception as e:
+        import traceback
+        print(f"Error deleting template {template_id}: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(['PUT'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def update_template(request, template_id):
+    """Update a template by ID"""
+    try:
+        template = get_object_or_404(ClassTemplates, id=template_id)
+        data = json.loads(request.body)
+        
+        # Update fields
+        if 'name' in data:
+            template.name = data['name']
+        if 'description' in data:
+            template.description = data['description']
+        if 'duration_minutes' in data:
+            template.duration_minutes = data['duration_minutes']
+        if 'max_capacity' in data:
+            template.max_capacity = data['max_capacity']
+        if 'level_id' in data:
+            # Get or create level
+            try:
+                level = ClassLevel.objects.get(name=data['level_id'])
+            except ClassLevel.DoesNotExist:
+                level = ClassLevel.objects.create(
+                    name=data['level_id'],
+                    description=f'{data["level_id"]} level',
+                    gym=template.gym or Gym.objects.first()  # Use the same gym or default
+                )
+            template.level = level
+            
+        # Save the updated template
+        template.save()
+        
+        # Return the updated template
+        return JsonResponse({
+            "id": template.id,
+            "name": template.name,
+            "description": template.description,
+            "duration_minutes": template.duration_minutes,
+            "max_capacity": template.max_capacity,
+            "level_id": template.level.name if template.level else "All Levels",
+            "gym_id": template.gym.id if template.gym else None,
+            "gym_name": template.gym.name if template.gym else None
+        })
+    except Exception as e:
+        import traceback
+        print(f"Error updating template {template_id}: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_gym_hours(request, gym_id=None):
+    """
+    Get gym hours for a specific gym
+    If gym_id is not provided, uses the user's associated gym
+    Returns hours for all days of the week
+    """
+    try:
+        # Determine which gym to use
+        if gym_id:
+            gym = get_object_or_404(Gym, id=gym_id)
+        else:
+            # Use the user's gym if authenticated
+            if request.user.is_authenticated:
+                if hasattr(request.user, 'gym') and request.user.gym:
+                    gym = request.user.gym
+                elif hasattr(request.user, 'gym_id') and request.user.gym_id:
+                    gym = get_object_or_404(Gym, id=request.user.gym_id)
+                else:
+                    # Fallback to first gym if no gym is associated
+                    gym = Gym.objects.first()
+                    if not gym:
+                        return Response({
+                            "success": False,
+                            "message": "No gyms in the system"
+                        }, status=404)
+            else:
+                # Not authenticated, use first gym
+                gym = Gym.objects.first()
+                if not gym:
+                    return Response({
+                        "success": False,
+                        "message": "No gyms in the system"
+                    }, status=404)
+        
+        # Get hours for this gym
+        gym_hours = GymHours.objects.filter(gym=gym).order_by('day')
+        
+        # Format the response
+        hours_data = []
+        for hour in gym_hours:
+            # Format the times as HH:MM strings
+            open_time = hour.open_time.strftime('%H:%M') if hour.open_time else None
+            close_time = hour.close_time.strftime('%H:%M') if hour.close_time else None
+            
+            hours_data.append({
+                "day": hour.day,
+                "open": open_time,
+                "close": close_time,
+                "is_closed": hour.is_closed if hasattr(hour, 'is_closed') else (open_time is None or close_time is None)
+            })
+        
+        return Response({
+            "success": True,
+            "gym_id": gym.id,
+            "gym_name": gym.name,
+            "hours": hours_data
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error getting gym hours: {e}")
+        print(traceback.format_exc())
+        return Response({
+            "success": False,
+            "message": str(e)
+        }, status=500)

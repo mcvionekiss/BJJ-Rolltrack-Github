@@ -1,7 +1,14 @@
 from django.contrib import admin
 from django.urls import path, re_path
 from django.views.generic import RedirectView
-from server.views import LoginView, LogoutView, RegisterView, get_csrf_token, CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, check_student, available_classes_today, class_details, checkin, student_attendance_history, google_auth
+from server.views import (
+    LoginView, LogoutView, RegisterView, get_csrf_token, 
+    CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, 
+    check_student, available_classes_today, class_details, checkin, 
+    student_attendance_history, get_gym_hours, google_auth,
+    # Add new template views
+    get_templates, delete_template, update_template
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -19,6 +26,13 @@ urlpatterns = [
     path("api/checkin/", checkin, name="checkin"),
     path("api/attendance/history/", student_attendance_history, name="student_attendance_history"),
     path("api/attendance/history/<str:email>/", student_attendance_history, name="student_attendance_history_by_email"),
+    path("api/gym-hours/", get_gym_hours, name="gym_hours"),
+    path("api/gym-hours/<int:gym_id>/", get_gym_hours, name="gym_hours_by_id"),
+    
+    # Add template API endpoints
+    path("api/templates/", get_templates, name="get_templates"),
+    path("api/templates/<int:template_id>/", delete_template, name="delete_template"),
+    path("api/templates/<int:template_id>/update/", update_template, name="update_template"),
     path("auth/google/", google_auth),
     
     # Redirect root to login

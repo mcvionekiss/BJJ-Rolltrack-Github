@@ -3,10 +3,12 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const EventContext = createContext();
 
 export const EventProvider = ({ children }) => {
+  
   // Default events to use if no saved events exist
   const defaultEvents = [
     // Sample classes with proper formatting
     {
+      id: "57771",
       title: "Adult Fundamentals",
       color: "#4caf50", // Green for fundamentals
       textColor: "white",
@@ -25,6 +27,7 @@ export const EventProvider = ({ children }) => {
       }
     },
     {
+      id: "57772",
       title: "Adult Advanced",
       color: "#f44336", // Red for advanced
       textColor: "white",
@@ -43,6 +46,7 @@ export const EventProvider = ({ children }) => {
       }
     },
     {
+      id: "57773",
       title: "Tiny Champs",
       color: "#4caf50", // Green for kids
       textColor: "white",
@@ -61,6 +65,7 @@ export const EventProvider = ({ children }) => {
       }
     },
     {
+      id: "57773",
       title: "Teens Advanced",
       color: "#2196f3", // Blue for teens
       textColor: "white",
@@ -110,7 +115,24 @@ export const EventProvider = ({ children }) => {
     
     // Check for duplicate events before adding
     const eventsThatDontExist = newEvents.filter(newEvent => {
-      // For each new event, check if a similar event already exists
+      // For recurring events, check by ID only
+      if (newEvent.rrule) {
+        const duplicate = events.some(existingEvent => 
+          existingEvent.id === newEvent.id || 
+          // Check for similar recurrence patterns to avoid duplicates
+          (existingEvent.rrule && 
+           existingEvent.title === newEvent.title && 
+           JSON.stringify(existingEvent.rrule) === JSON.stringify(newEvent.rrule))
+        );
+        
+        if (duplicate) {
+          console.log(`Skipping duplicate recurring event: ${newEvent.title}`);
+          return false; 
+        }
+        return true;
+      }
+      
+      // For regular events, check by title and start time
       const duplicate = events.find(existingEvent => {
         // Check if there's an event with the same title and start time
         return (

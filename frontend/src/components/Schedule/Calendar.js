@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import FullCalendar from '@fullcalendar/react';
 import rrulePlugin from '@fullcalendar/rrule'
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
-import { Box, Modal, Typography, Button, TextField, Select, MenuItem, Switch, FormControlLabel, Divider, Paper, IconButton, Chip } from '@mui/material';
+import { Box, Modal, Typography, Button, IconButton, Chip } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
-import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
@@ -16,45 +15,32 @@ import GradeIcon from '@mui/icons-material/Grade';
 import GroupsIcon from '@mui/icons-material/Groups';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
-import EventIcon from '@mui/icons-material/Event';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeleteIcon from '@mui/icons-material/Delete';
+import './Dashboard.css';
+import Edit from '@mui/icons-material/Edit';
+import { v4 as uuidv4 } from 'uuid';
 
 
 export default function Calendar() {
   const navigate = useNavigate();
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 768);
+
   const style = {
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
     maxWidth: 440,
-    width: '90%',
+    width: typeof window !== 'undefined' && windowWidth < 768 ? '95%' : '90%',
     bgcolor: 'background.paper',
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     borderRadius: '12px',
-    overflow: 'hidden',
+    overflow: 'auto',
+    maxHeight: typeof window !== 'undefined' && windowWidth < 768 ? '95vh' : '90vh',
     p: 0,
   };
-
-  // CSS for event styling
-  const eventStyles = `
-    .fc-event {
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .fc-event:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-      z-index: 100;
-    }
-    .fc-timegrid-event .fc-event-main {
-      padding: 0;
-    }
-    .fc .fc-timegrid-col.fc-day-today {
-      background-color: rgba(236,246,255,0.6);
-    }
-  `;
 
   // Helper function to determine class level color - moved to component scope
   const getLevelColor = (level) => {
@@ -120,10 +106,22 @@ export default function Calendar() {
   };
   const [repeat, setRepeat] = useState(false);
 
-
   // State to control the modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Effect to handle window resize events
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        setWindowWidth(window.innerWidth);
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, []);
 
   // Handlers for opening and closing the modal
   const handleOpenModal = () => setIsModalOpen(true);
@@ -157,77 +155,167 @@ export default function Calendar() {
 
   // Event Render Function To Get Event Info and Display it
   function renderEventContent(eventInfo) {
-    const { title, start, end, extendedProps, backgroundColor } = eventInfo.event;
-    
-    // Calculate event duration in minutes
-    const durationMinutes = end && start ? 
-      Math.round((new Date(end) - new Date(start)) / 60000) : 0;
-    
-    // Categorize events by duration
-    const isSmallEvent = durationMinutes <= 60;
-    const isMediumEvent = durationMinutes > 60 && durationMinutes <= 90;
-    const isLargeEvent = durationMinutes > 90;
-    
-    // Get background color based on class properties
-    const bgColor = getLevelColor(extendedProps.classLevel);
-
-    // Always show more details in day view regardless of size
-    const viewAdjustedSize = currentView === 'timeGridDay' 
-      ? 'large' 
-      : isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
-
-    // SMALL EVENT: only show class name and time
-    if (viewAdjustedSize === 'small') {
-      return (
-        <div style={{
-          borderRadius: '6px',
-          border: '1px solid rgba(0,0,0,0.1)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          padding: '4px 6px',
-          height: '100%',
-          overflow: 'hidden',
-          backgroundColor: bgColor,
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          transition: 'transform 0.2s ease',
-          cursor: 'pointer',
-        }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            fontSize: '12px',
-            marginBottom: '2px',
+    try {
+      const { title, start, end, extendedProps, backgroundColor } = eventInfo.event;
+      
+      // Month view simplified rendering
+      if (currentView === 'dayGridMonth') {
+        const bgColor = getLevelColor(extendedProps?.classLevel);
+        return (
+          <div style={{
+            backgroundColor: bgColor,
+            color: 'white',
+            padding: '2px 4px',
+            borderRadius: '3px',
+            fontSize: '11px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
             {title}
           </div>
-          
-          {start && end && (
+        );
+      }
+    
+      // Calculate event duration in minutes
+      const durationMinutes = end && start ? 
+        Math.round((new Date(end) - new Date(start)) / 60000) : 0;
+      
+      // Categorize events by duration
+      const isSmallEvent = durationMinutes <= 60;
+      const isMediumEvent = durationMinutes > 60 && durationMinutes <= 90;
+      const isLargeEvent = durationMinutes > 90;
+      
+      // Get background color based on class properties
+      const bgColor = getLevelColor(extendedProps?.classLevel);
+
+      // Always show more details in day view regardless of size
+      const viewAdjustedSize = currentView === 'timeGridDay' 
+        ? 'large' 
+        : isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
+
+      // SMALL EVENT: only show class name and time
+      if (viewAdjustedSize === 'small') {
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '4px 6px',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: bgColor,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            transition: 'transform 0.2s ease',
+            cursor: 'pointer',
+          }}>
             <div style={{ 
-              fontSize: '10px', 
-              opacity: '0.9',
+              fontWeight: 'bold', 
+              fontSize: '12px',
+              marginBottom: '2px',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis'
             }}>
-              {formatTime(start)}
+              {title}
             </div>
-          )}
-        </div>
-      );
-    }
+            
+            {start && end && (
+              <div style={{ 
+                fontSize: '10px', 
+                opacity: '0.9',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {formatTime(start)}
+              </div>
+            )}
+          </div>
+        );
+      }
 
-    // MEDIUM EVENT: show class name, time, instructor and level
-    else if (viewAdjustedSize === 'medium') {
+      // MEDIUM EVENT: show class name, time, instructor and level
+      else if (viewAdjustedSize === 'medium') {
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '5px 7px',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: bgColor,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'transform 0.2s ease',
+            cursor: 'pointer',
+          }}>
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '13px',
+              marginBottom: '3px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              <FitnessCenterIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
+              {title}
+            </div>
+            
+            {start && end && (
+              <div style={{ 
+                fontSize: '11px', 
+                opacity: '0.9',
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '2px'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                <span>{formatTime(start)} - {formatTime(end)}</span>
+              </div>
+            )}
+            
+            {extendedProps?.instructor && (
+              <div style={{ 
+                fontSize: '11px', 
+                opacity: '0.9',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                <PersonOutlineIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                {extendedProps.instructor}
+              </div>
+            )}
+            
+            {extendedProps?.classLevel && (
+              <div style={{ 
+                fontSize: '11px', 
+                opacity: '0.9',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                <GradeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                {extendedProps.classLevel}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // LARGE EVENT: show all available information
       return (
         <div style={{
           borderRadius: '6px',
           border: '1px solid rgba(0,0,0,0.1)',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          padding: '5px 7px',
+          padding: '8px 10px',
           height: '100%',
           overflow: 'hidden',
           backgroundColor: bgColor,
@@ -239,13 +327,13 @@ export default function Calendar() {
         }}>
           <div style={{ 
             fontWeight: 'bold', 
-            fontSize: '13px',
-            marginBottom: '3px',
+            fontSize: '14px',
+            marginBottom: '5px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
-            <FitnessCenterIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
+            <FitnessCenterIcon sx={{ fontSize: 15, verticalAlign: 'middle', mr: 0.5 }} />
             {title}
           </div>
           
@@ -255,27 +343,44 @@ export default function Calendar() {
               opacity: '0.9',
               display: 'flex',
               alignItems: 'center',
-              marginBottom: '2px'
+              marginBottom: '4px'
             }}>
-              <AccessTimeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+              <AccessTimeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
               <span>{formatTime(start)} - {formatTime(end)}</span>
             </div>
           )}
           
-          {extendedProps.instructor && (
+          {extendedProps?.instructor && (
             <div style={{ 
               fontSize: '11px', 
               opacity: '0.9',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              textOverflow: 'ellipsis',
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '3px'
             }}>
-              <PersonOutlineIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+              <PersonOutlineIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
               {extendedProps.instructor}
             </div>
           )}
           
-          {extendedProps.classLevel && (
+          {extendedProps?.classLevel && (
+            <div style={{ 
+              fontSize: '11px', 
+              opacity: '0.9',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              marginBottom: '3px'
+            }}>
+              <GradeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
+              {extendedProps.classLevel}
+            </div>
+          )}
+          
+          {extendedProps?.age && (
             <div style={{ 
               fontSize: '11px', 
               opacity: '0.9',
@@ -283,99 +388,27 @@ export default function Calendar() {
               overflow: 'hidden',
               textOverflow: 'ellipsis'
             }}>
-              <GradeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.classLevel}
+              <GroupsIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
+              {extendedProps.age}
             </div>
           )}
         </div>
       );
-    }
-
-    // LARGE EVENT: show all available information
-    return (
-      <div style={{
-        borderRadius: '6px',
-        border: '1px solid rgba(0,0,0,0.1)',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        padding: '8px 10px',
-        height: '100%',
-        overflow: 'hidden',
-        backgroundColor: bgColor,
-        color: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.2s ease',
-        cursor: 'pointer',
-      }}>
-        <div style={{ 
-          fontWeight: 'bold', 
-          fontSize: '14px',
-          marginBottom: '5px',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
+    } catch (err) {
+      console.error("Error rendering event:", err, eventInfo);
+      // Return a fallback rendering for the event
+      return (
+        <div style={{
+          backgroundColor: '#f44336',
+          color: 'white',
+          padding: '2px 4px',
+          borderRadius: '3px',
+          fontSize: '11px'
         }}>
-          <FitnessCenterIcon sx={{ fontSize: 15, verticalAlign: 'middle', mr: 0.5 }} />
-          {title}
+          {eventInfo.event?.title || 'Event Error'}
         </div>
-        
-        {start && end && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '4px'
-          }}>
-            <AccessTimeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            <span>{formatTime(start)} - {formatTime(end)}</span>
-          </div>
-        )}
-        
-        {extendedProps.instructor && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '3px'
-          }}>
-            <PersonOutlineIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            {extendedProps.instructor}
-          </div>
-        )}
-        
-        {extendedProps.classLevel && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            marginBottom: '3px'
-          }}>
-            <GradeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            {extendedProps.classLevel}
-          </div>
-        )}
-        
-        {extendedProps.age && (
-          <div style={{ 
-            fontSize: '11px', 
-            opacity: '0.9',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            <GroupsIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-            {extendedProps.age}
-          </div>
-        )}
-      </div>
-    );
+      );
+    }
   }
 
   const handleSubmit = (e, recurrence) => {
@@ -391,6 +424,9 @@ export default function Calendar() {
     const instructor = form.elements.instructor.value;
     const classLevel = form.elements.classLevel.value;
     const ageGroup = form.elements.age.value;
+    const capacity = form.elements.maxCapacity.value;
+    const id1 = uuidv4();
+
     
     // Get color based on class level
     const color = getLevelColor(classLevel);
@@ -410,17 +446,8 @@ export default function Calendar() {
     const baseEventId = `class-${Date.now()}-single`;
     const baseEvent = {
       id: baseEventId,
-      title,
-      start: `${date}T${startTime}`,
-      end: `${date}T${endTime}`,
-      color,
-      textColor: 'white',
-      extendedProps: {
-        instructor,
-        classLevel,
-        age: ageGroup,
-        duration: calculateDuration(startTime, endTime)
-      }
+      id1,
+
     };
     
     // Add the base event
@@ -442,14 +469,41 @@ export default function Calendar() {
       });
       console.log(`Total selected days: ${selectedDayCount}`);
       
-      // Process each day of the week
+      // First create an event for the base day if it's in the selected days
+      if (recurrence.days[baseDayName]) {
+        console.log(`Creating event for base day: ${baseDayName}`);
+        
+        const eventId = `class-${Date.now()}-${baseDayName}`;
+        
+        const baseEvent = {
+          id: eventId,
+          title,
+          start: `${date}T${startTime}`,
+          end: `${date}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            dayOfWeek: baseDayName,
+            capacity: capacity
+          }
+        };
+        
+        newEvents.push(baseEvent);
+        console.log(`Created recurring event for base day ${baseDayName} on ${date}`);
+      }
+      
+      // Process each day of the week (except the base day which was already handled)
       dayNames.forEach((dayName, dayIndex) => {
         // Skip if this day is not selected or if it's the same as the base day
         if (!recurrence.days[dayName] || dayIndex === baseDayIndex) {
           if (!recurrence.days[dayName]) {
             console.log(`Skipping ${dayName} as it's not selected`);
           } else {
-            console.log(`Skipping ${dayName} as it's the same as the base day (${baseDayName})`);
+            console.log(`Skipping ${dayName} as it's the same as the base day (already processed)`);
           }
           return;
         }
@@ -486,7 +540,8 @@ export default function Calendar() {
             classLevel,
             age: ageGroup,
             duration: calculateDuration(startTime, endTime),
-            dayOfWeek: dayName
+            dayOfWeek: dayName,
+            capacity: capacity
           }
         };
         
@@ -494,6 +549,212 @@ export default function Calendar() {
         newEvents.push(newEvent);
         console.log(`Created recurring event for ${dayName} on ${formattedDate}`);
       });
+    } 
+    // If this is a daily recurring event
+    else if (recurrence && recurrence.type === 'daily') {
+      console.log("Creating daily recurring events");
+      
+      // First, create an event for the base day
+      const baseEventId = `class-${Date.now()}-daily-${formatDateCustom(baseDate, "YYYY-MM-DD")}`;
+      
+      const baseEvent = {
+        id: baseEventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          recurring: 'daily',
+          capacity: capacity
+        }
+      };
+      
+      newEvents.push(baseEvent);
+      console.log(`Created daily recurring event for base day ${formatDateCustom(baseDate, "YYYY-MM-DD")}`);
+      
+      // For memory efficiency and to avoid overwhelming localStorage, 
+      // we'll generate events for a reasonable time period (e.g., 2 weeks)
+      // If an end date is specified, we'll respect that
+      const maxDaysToGenerate = 14; // 2 weeks
+      let daysToGenerate = maxDaysToGenerate;
+      
+      // Check if there's an end date specified
+      if (recurrence.hasEndDate && recurrence.endDate) {
+        const endDateObj = new Date(`${recurrence.endDate}T00:00:00`);
+        const daysDifference = Math.floor((endDateObj - baseDate) / (24 * 60 * 60 * 1000));
+        
+        if (daysDifference > 0) {
+          // Use the smaller of the two: our max days or the days until the end date
+          daysToGenerate = Math.min(daysDifference, maxDaysToGenerate);
+          console.log(`Generating daily events for ${daysToGenerate} days until the end date`);
+        } else {
+          console.log(`End date is on or before the start date, defaulting to ${maxDaysToGenerate} days`);
+        }
+      } else {
+        console.log(`No end date specified, defaulting to ${maxDaysToGenerate} days`);
+      }
+      
+      // Generate events for the specified number of days
+      for (let i = 1; i <= daysToGenerate; i++) {
+        // Clone the base date and add the days
+        const eventDate = new Date(baseDate);
+        eventDate.setDate(eventDate.getDate() + i);
+        
+        // Format as YYYY-MM-DD
+        const formattedDate = formatDateCustom(eventDate, "YYYY-MM-DD");
+        
+        // Create a unique ID including the date to avoid collisions
+        const eventId = `class-${Date.now()}-daily-${formattedDate}`;
+        
+        // Create the event
+        const newEvent = {
+          id: eventId,
+          title,
+          start: `${formattedDate}T${startTime}`,
+          end: `${formattedDate}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            recurring: 'daily',
+            capacity: capacity
+          }
+        };
+        
+        // Add to our collection
+        newEvents.push(newEvent);
+        console.log(`Created daily recurring event for day ${i}: ${formattedDate}`);
+      }
+      
+      console.log(`Generated ${daysToGenerate} days of daily recurring events`);
+    }
+    // If this is a monthly recurring event
+    else if (recurrence && recurrence.type === 'monthly') {
+      console.log("Creating monthly recurring events");
+      
+      // First, create an event for the base day (this month)
+      const baseEventId = `class-${Date.now()}-monthly-${formatDateCustom(baseDate, "YYYY-MM-DD")}`;
+      
+      const baseEvent = {
+        id: baseEventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          recurring: 'monthly',
+          capacity: capacity
+        }
+      };
+      
+      newEvents.push(baseEvent);
+      console.log(`Created monthly recurring event for base day ${formatDateCustom(baseDate, "YYYY-MM-DD")}`);
+      
+      // For memory efficiency, generate events for a reasonable number of months
+      const maxMonthsToGenerate = 6; // Generate for the next 6 months
+      let monthsToGenerate = maxMonthsToGenerate;
+      
+      // Check if there's an end date specified
+      if (recurrence.hasEndDate && recurrence.endDate) {
+        const endDateObj = new Date(`${recurrence.endDate}T00:00:00`);
+        const monthsDifference = (endDateObj.getFullYear() - baseDate.getFullYear()) * 12 + 
+                                 (endDateObj.getMonth() - baseDate.getMonth());
+        
+        if (monthsDifference > 0) {
+          // Use the smaller of the two: our max months or months until the end date
+          monthsToGenerate = Math.min(monthsDifference, maxMonthsToGenerate);
+          console.log(`Generating monthly events for ${monthsToGenerate} months until the end date`);
+        } else {
+          console.log(`End date is in the same month or earlier, defaulting to ${maxMonthsToGenerate} months`);
+        }
+      } else {
+        console.log(`No end date specified, defaulting to ${maxMonthsToGenerate} months`);
+      }
+      
+      // Get the day of the month from the base date (e.g., the 15th of the month)
+      const dayOfMonth = baseDate.getDate();
+      
+      // Generate events for each month
+      for (let i = 1; i <= monthsToGenerate; i++) {
+        // Clone the base date
+        const eventDate = new Date(baseDate);
+        
+        // Add i months
+        eventDate.setMonth(eventDate.getMonth() + i);
+        
+        // Make sure we're on the right day of the month (handles months with fewer days)
+        // If the base day was the 31st but next month has only 30 days, this sets it to the 30th
+        while (eventDate.getDate() !== dayOfMonth) {
+          eventDate.setDate(eventDate.getDate() - 1);
+          if (eventDate.getDate() === 1) break; // Prevent infinite loop
+        }
+        
+        // Format as YYYY-MM-DD
+        const formattedDate = formatDateCustom(eventDate, "YYYY-MM-DD");
+        
+        // Create a unique ID including the date to avoid collisions
+        const eventId = `class-${Date.now()}-monthly-${formattedDate}`;
+        
+        // Create the event
+        const newEvent = {
+          id: eventId,
+          title,
+          start: `${formattedDate}T${startTime}`,
+          end: `${formattedDate}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            recurring: 'monthly',
+            capacity: capacity
+          }
+        };
+        
+        // Add to our collection
+        newEvents.push(newEvent);
+        console.log(`Created monthly recurring event for month ${i}: ${formattedDate}`);
+      }
+      
+      console.log(`Generated ${monthsToGenerate} months of monthly recurring events`);
+    } 
+    else {
+      // Not recurring, just create a single event for the selected date
+      const eventId = `class-${Date.now()}-single`;
+      
+      const singleEvent = {
+        id: eventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          capacity: capacity
+        }
+      };
+      
+      newEvents.push(singleEvent);
+      console.log(`Created single event for ${date}`);
     }
     
     // Check for existing events with the same title and date/time to avoid duplicates
@@ -579,15 +840,33 @@ export default function Calendar() {
   };
 
   return (
-    <div>
-      <style>{eventStyles}</style>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+    <div className="calendar-container" style={{ 
+      width: '100%', 
+      maxWidth: '100%', 
+      overflow: 'hidden',
+      height: 'calc(100vh - 120px)',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        flexWrap: 'wrap',
+        mb: 1,
+        mt: 0,
+        mr: 1,
+        gap: 1,
+        '@media (max-width: 768px)': {
+          justifyContent: 'center'
+        }
+      }}>
         <Button 
           variant="outlined" 
           color="error" 
           startIcon={<DeleteIcon />} 
           onClick={handleClearStorage}
-          sx={{ mr: 1 }}
+          size={typeof window !== 'undefined' && windowWidth < 768 ? "small" : "medium"}
+          sx={{ fontSize: typeof window !== 'undefined' && windowWidth < 768 ? '0.75rem' : 'inherit' }}
         >
           Clear All Events
         </Button>
@@ -595,58 +874,86 @@ export default function Calendar() {
           variant="outlined" 
           startIcon={<FitnessCenterIcon />} 
           onClick={handleResetToDefaults}
+          size={typeof window !== 'undefined' && windowWidth < 768 ? "small" : "medium"}
+          sx={{ fontSize: typeof window !== 'undefined' && windowWidth < 768 ? '0.75rem' : 'inherit' }}
         >
           Reset to Defaults
         </Button>
       </Box>
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
-        initialView="timeGridWeek"
-        editable="true"
-        headerToolbar={{
-          start: 'timeGridDay,timeGridWeek,dayGridMonth today',
-          center: 'prev title next',
-          end: 'addClassButton',
-        }}
-        allDaySlot={false}
-        events={events}
-        eventContent={renderEventContent}
-        eventClick={(info) => {
-          setSelectedEvent(info.event); // save clicked event
-          setIsModalOpen(true);         // open the modal
-        }}
-        selectable={true}
-        select={(info) => {
-          // Capture the selected date and time
-          setSelectedDate(info.start);
-          setSelectedStartTime(info.start);
-          setSelectedEndTime(calculateEndTime(info.start));
-          setSelectedEvent(null);
-          handleOpenModal();
-        }}
-        customButtons={{
-          addClassButton: {
-            text: 'Add Class',
-            click: () => navigate('/add-class'),
-          },
-        }}
-        titleFormat={{ year: 'numeric', month: 'long' }}
-        height={'95vh'}
-        slotLabelFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }}
-        eventTimeFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }}
-        datesSet={(info) => {
-          setCurrentView(info.view.type);
-        }}
-      />
+
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
+          initialView="timeGridWeek"
+          editable={true}
+          headerToolbar={{
+            start: typeof window !== 'undefined' && windowWidth < 768 ? 'prev,next' : 'timeGridDay,timeGridWeek,dayGridMonth today',
+            center: typeof window !== 'undefined' && windowWidth < 768 ? 'title' : 'prev title next',
+            end: 'addClassButton',
+          }}
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
+          scrollTime="08:00:00"
+          allDaySlot={false}
+          events={events}
+          eventContent={renderEventContent}
+          eventClick={(info) => {
+            setSelectedEvent(info.event); // save clicked event
+            setIsModalOpen(true);         // open the modal
+          }}
+          selectable={true}
+          select={(info) => {
+            // Capture the selected date and time
+            setSelectedDate(info.start);
+            setSelectedStartTime(info.start);
+            setSelectedEndTime(calculateEndTime(info.start));
+            setSelectedEvent(null);
+            handleOpenModal();
+          }}
+          customButtons={{
+            addClassButton: {
+              text: 'Add Class',
+              click: () => navigate('/add-class'),
+            },
+          }}
+          titleFormat={{ year: 'numeric', month: 'long' }}
+          height="100%"
+          stickyHeaderDates={true}
+          slotLabelFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }}
+          eventTimeFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }}
+          datesSet={(info) => {
+            setCurrentView(info.view.type);
+          }}
+          // Month view configuration
+          dayMaxEventRows={3}
+          dayMaxEvents={3}
+          fixedWeekCount={false}
+          // Responsive settings
+          windowResize={(view) => {
+            // Update our width state
+            if (typeof window !== 'undefined') {
+              setWindowWidth(window.innerWidth);
+            }
+            
+            // Automatically adjust to screen size
+            if (typeof window !== 'undefined' && windowWidth < 768 && view.view.type !== 'timeGridDay') {
+              view.calendar.changeView('timeGridDay');
+            } else if (typeof window !== 'undefined' && windowWidth >= 768 && windowWidth < 1024 && view.view.type !== 'timeGridWeek') {
+              view.calendar.changeView('timeGridWeek');
+            } else if (typeof window !== 'undefined' && windowWidth >= 1024 && view.view.type === 'dayGridMonth') {
+              // Removing incorrect change to timeGridMonth which doesn't exist
+              // view.calendar.changeView('timeGridMonth');
+            }
+          }}
+        />
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
@@ -700,7 +1007,7 @@ export default function Calendar() {
                 </Box>
               </Box>
               
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   {selectedEvent.extendedProps?.classLevel && (
                     <Chip 
@@ -747,7 +1054,7 @@ export default function Calendar() {
                     <PeopleAltIcon sx={{ color: 'text.secondary', mr: 2 }} />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Capacity</Typography>
-                      <Typography variant="body1">20 students</Typography>
+                      <Typography variant="body1">{selectedEvent.extendedProps?.capacity || '20'} students</Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -763,7 +1070,23 @@ export default function Calendar() {
                   <Button 
                     variant="contained" 
                     startIcon={<EditIcon />}
-                    onClick={() => navigate('/edit-class')}
+                    onClick={() => {
+                      const eventData = {
+                        id: selectedEvent.id,
+                        title: selectedEvent.title,
+                        start: selectedEvent.start,
+                        end: selectedEvent.end,
+                        extendedProps: {
+                          instructor: selectedEvent.extendedProps?.instructor,
+                          classLevel: selectedEvent.extendedProps?.classLevel,
+                          age: selectedEvent.extendedProps?.age,
+                          capacity: selectedEvent.extendedProps?.capacity,
+                          duration: selectedEvent.extendedProps?.duration,
+                          dayOfWeek: selectedEvent.extendedProps?.dayOfWeek
+                        }
+                      };
+                      navigate('/edit-class', { state: { event: eventData } });
+                    }}
                     sx={{ 
                       borderRadius: '8px', 
                       backgroundColor: selectedEvent.extendedProps?.classLevel ? 
@@ -821,7 +1144,7 @@ export default function Calendar() {
                 )}
               </Box>
               
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
                 <AddClassInformation 
                   handleSubmit={handleSubmit} 
                   handleCancelButton={handleCloseModal}

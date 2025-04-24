@@ -27,13 +27,15 @@ import GradeIcon from '@mui/icons-material/Grade';
 import GroupsIcon from '@mui/icons-material/Groups';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import ClassTemplateSelector from './ClassTemplateSelector';
 
 const AddClassInformation = ({
   handleCancelButton, 
   handleSubmit,
   initialDate = '',
   initialStartTime = '',
-  initialEndTime = '' 
+  initialEndTime = '',
+  data={} 
 }) => {
     const { events, setEvents } = useEvents();
 
@@ -41,6 +43,10 @@ const AddClassInformation = ({
     const [date, setDate] = useState(initialDate);
     const [startTime, setStartTime] = useState(initialStartTime);
     const [endTime, setEndTime] = useState(initialEndTime);
+    const [title, setTitle] = useState('');
+    const [instructor, setInstructor] = useState('');
+    const [classLevel, setClassLevel] = useState('Fundamentals');
+    const [maxCapacity, setMaxCapacity] = useState(20);
     
     // Recurring options
     const [isRecurring, setIsRecurring] = useState(false);
@@ -57,15 +63,181 @@ const AddClassInformation = ({
     const [hasEndDate, setHasEndDate] = useState(false);
     const [endDate, setEndDate] = useState('');
     
+    // Initialize form with event data for editing
+    useEffect(() => {
+        // Check if we have event data for editing
+        if (data && data.event) {
+            console.log('Initializing form with event data:', data.event);
+            
+            // Set basic event details
+            setTitle(data.event.title || '');
+            
+            // Format date from ISO string (YYYY-MM-DDThh:mm:ss) to YYYY-MM-DD
+            if (data.event.start) {
+                const startDate = new Date(data.event.start);
+                const year = startDate.getFullYear();
+                const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                const day = String(startDate.getDate()).padStart(2, '0');
+                setDate(`${year}-${month}-${day}`);
+                
+                // Format time from ISO string to HH:MM
+                const hours = String(startDate.getHours()).padStart(2, '0');
+                const minutes = String(startDate.getMinutes()).padStart(2, '0');
+                setStartTime(`${hours}:${minutes}`);
+            }
+            
+            // Format end time
+            if (data.event.end) {
+                const endDate = new Date(data.event.end);
+                const hours = String(endDate.getHours()).padStart(2, '0');
+                const minutes = String(endDate.getMinutes()).padStart(2, '0');
+                setEndTime(`${hours}:${minutes}`);
+            }
+            
+            // Set extended properties
+            if (data.event.extendedProps) {
+                setInstructor(data.event.extendedProps.instructor || '');
+                setClassLevel(data.event.extendedProps.classLevel || 'Fundamentals');
+                setAge(data.event.extendedProps.age || 'Adult');
+                setMaxCapacity(data.event.extendedProps.capacity || 20);
+                
+                // Check if it's a recurring event by looking for the dayOfWeek property
+                const dayOfWeek = data.event.extendedProps.dayOfWeek;
+                console.log('Day of week from event:', dayOfWeek);
+                
+                if (dayOfWeek) {
+                    console.log('This is a recurring event with day of week:', dayOfWeek);
+                    setIsRecurring(true);
+                    setRecurrenceType('weekly');
+                    
+                    // Initialize recurrence days with the current event's day
+                    const initialDays = {
+                        sunday: false,
+                        monday: false,
+                        tuesday: false,
+                        wednesday: false,
+                        thursday: false,
+                        friday: false,
+                        saturday: false
+                    };
+                    
+                    // Use our helper to detect days in this event's dayOfWeek property
+                    const daysFromEvent = extractDayOfWeek(dayOfWeek);
+                    
+                    if (daysFromEvent) {
+                        console.log('Days detected from event dayOfWeek:', daysFromEvent);
+                        Object.keys(daysFromEvent).forEach(day => {
+                            if (daysFromEvent[day]) {
+                                initialDays[day] = true;
+                            }
+                        });
+                    }
+                    
+                    // Find the events with the same title to determine which days are recurring
+                    const eventTitle = data.event.title;
+                    if (eventTitle && events.length > 0) {
+                        console.log('Finding recurring days for:', eventTitle);
+                        
+                        // Get all events with the same title
+                        const relatedEvents = events.filter(event => 
+                            event.title === eventTitle && 
+                            event.id !== data.event.id && // exclude the current event
+                            event.extendedProps?.dayOfWeek
+                        );
+                        
+                        console.log(`Found ${relatedEvents.length} related events`);
+                        
+                        // Process each related event to mark its day
+                        relatedEvents.forEach(event => {
+                            const relatedDayOfWeek = event.extendedProps?.dayOfWeek;
+                            if (relatedDayOfWeek) {
+                                console.log(`Processing related event with dayOfWeek: ${relatedDayOfWeek}`);
+                                const daysFromRelated = extractDayOfWeek(relatedDayOfWeek);
+                                
+                                // Add these days to our initialDays map
+                                if (daysFromRelated) {
+                                    Object.keys(daysFromRelated).forEach(day => {
+                                        if (daysFromRelated[day]) {
+                                            initialDays[day] = true;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Log the final state of recurring days
+                    console.log('Setting recurring days to:', initialDays);
+                    setRecurrenceDays(initialDays);
+                }
+            }
+        }
+    }, [data, events]);
+
+    // Get form data for template handling
+    const getFormData = () => {
+        return {
+            title,
+            instructor,
+            classLevel,
+            maxCapacity,
+            startTime,
+            endTime,
+            age,
+            // Include recurrence information
+            isRecurring,
+            recurrenceType,
+            recurrenceDays: isRecurring ? { ...recurrenceDays } : null
+        };
+    };
+
+    // Handle template selection
+    const handleTemplateSelect = (template) => {
+        if (template) {
+            setTitle(template.name || '');
+            setInstructor(template.instructor || '');
+            setClassLevel(template.level_id || 'Fundamentals');
+            setMaxCapacity(template.max_capacity || 20);
+            
+            if (template.duration_minutes && startTime) {
+                // If template has duration, calculate end time based on start time
+                const startDate = new Date(`2023-01-01T${startTime}`);
+                const endDate = new Date(startDate.getTime() + template.duration_minutes * 60000);
+                const hours = String(endDate.getHours()).padStart(2, '0');
+                const minutes = String(endDate.getMinutes()).padStart(2, '0');
+                setEndTime(`${hours}:${minutes}`);
+            }
+            
+            setAge(template.age || 'Adult');
+            
+            // Handle recurrence settings if present in the template
+            if (template.isRecurring) {
+                setIsRecurring(template.isRecurring);
+                
+                if (template.recurrenceType) {
+                    setRecurrenceType(template.recurrenceType);
+                }
+                
+                if (template.recurrenceDays) {
+                    // Make sure we're dealing with a deep copy to avoid reference issues
+                    const days = JSON.parse(JSON.stringify(template.recurrenceDays));
+                    setRecurrenceDays(days);
+                } else if (date) {
+                    // If template doesn't have specific days but is recurring,
+                    // initialize with the current selected date
+                    initializeRecurrenceDaysFromDate(date);
+                }
+            }
+        }
+    };
+    
     // Helper function to initialize days based on a date
     const initializeRecurrenceDaysFromDate = (dateStr) => {
-        if (!dateStr) {
-            console.log("No date provided for initialization");
-            return;
-        }
+        // Make sure we're parsing the date correctly with a proper timezone
+        // Format: YYYY-MM-DD -> add T00:00:00 to ensure proper date parsing
+        const dateTimeString = `${dateStr}T00:00:00`;
+        const date = new Date(dateTimeString);
         
-        console.log(`Initializing recurrence days from date: ${dateStr}`);
-        const date = new Date(dateStr);
         const dayOfWeek = date.getDay();
         
         // Map JS day number (0-6) to day name
@@ -80,7 +252,6 @@ const AddClassInformation = ({
         };
         
         const dayName = dayMap[dayOfWeek];
-        console.log(`Selected date day of week: ${dayOfWeek} (${dayName})`);
         
         // Create an object with all days initialized to false, 
         // then set only the current day to true
@@ -97,7 +268,6 @@ const AddClassInformation = ({
         // Set only the day corresponding to the selected date
         newDays[dayName] = true;
         
-        console.log(`Setting recurrence days to:`, newDays);
         setRecurrenceDays(newDays);
     };
 
@@ -105,7 +275,6 @@ const AddClassInformation = ({
     useEffect(() => {
         if (initialDate) {
             setDate(initialDate);
-            console.log('Initial date changed:', initialDate);
             initializeRecurrenceDaysFromDate(initialDate);
         }
         if (initialStartTime) setStartTime(initialStartTime);
@@ -115,7 +284,6 @@ const AddClassInformation = ({
     // When date changes, update the recurrence days
     useEffect(() => {
         if (date) {
-            console.log('Date changed:', date);
             // Only reset days when recurring is first enabled or date changes
             if (!isRecurring) {
                 initializeRecurrenceDaysFromDate(date);
@@ -128,8 +296,6 @@ const AddClassInformation = ({
         e.preventDefault();
         
         console.log("=== FORM SUBMISSION STARTED ===");
-        console.log("Recurrence enabled:", isRecurring);
-        console.log("Current day selections:", recurrenceDays);
         
         // If recurring is enabled, send the recurrence object
         if (isRecurring) {
@@ -141,7 +307,10 @@ const AddClassInformation = ({
                     // If no days selected, set the current date's day
                     console.log("No days selected for weekly recurrence, defaulting to current date's day");
                     if (date) {
-                        const currentDate = new Date(date);
+                        // Make sure we're parsing the date correctly with a proper timezone
+                        const dateTimeString = `${date}T00:00:00`;
+                        const currentDate = new Date(dateTimeString);
+                        
                         const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
                         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
                         
@@ -202,14 +371,18 @@ const AddClassInformation = ({
     // Simpler handler for toggling recurring checkbox
     const handleRecurringToggle = () => {
         const newValue = !isRecurring;
-        console.log(`Toggling recurring checkbox from ${isRecurring} to ${newValue}`);
         
         setIsRecurring(newValue);
         
         // If turning recurring on, initialize with current date's day
         if (newValue && date) {
-            const currentDate = new Date(date);
+            // Make sure we're parsing the date correctly with a proper timezone
+            // Format: YYYY-MM-DD -> add T00:00:00 to ensure proper date parsing
+            const dateTimeString = `${date}T00:00:00`;
+            const currentDate = new Date(dateTimeString);
+            
             const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+            
             const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
             
             // Reset all days first
@@ -226,7 +399,6 @@ const AddClassInformation = ({
             // Only set the current day to true
             freshDays[dayNames[dayOfWeek]] = true;
             
-            console.log(`Initializing with ${dayNames[dayOfWeek]} selected`);
             setRecurrenceDays(freshDays);
         }
     };
@@ -249,20 +421,58 @@ const AddClassInformation = ({
         setAge(event.target.value);
     };
 
+    // Helper function to extract day of week from a string
+    const extractDayOfWeek = (dayString) => {
+        if (!dayString) return null;
+        
+        const dayString_lower = dayString.toLowerCase();
+        const days = {
+            sunday: false,
+            monday: false,
+            tuesday: false,
+            wednesday: false,
+            thursday: false,
+            friday: false,
+            saturday: false
+        };
+        
+        // Check each day
+        if (dayString_lower.includes('sunday')) days.sunday = true;
+        if (dayString_lower.includes('monday')) days.monday = true;
+        if (dayString_lower.includes('tuesday')) days.tuesday = true;
+        if (dayString_lower.includes('wednesday')) days.wednesday = true;
+        if (dayString_lower.includes('thursday')) days.thursday = true;
+        if (dayString_lower.includes('friday')) days.friday = true;
+        if (dayString_lower.includes('saturday')) days.saturday = true;
+        
+        return days;
+    };
+
     return (
         <Box>
             <form onSubmit={handleFormSubmit}>
-                <Grid container spacing={3}>
+                <Grid container spacing={2}>
+                    {/* Template Selector */}
                     <Grid item xs={12}>
-                        <Box sx={{ mb: 2, display: 'flex', alignItems: 'flex-end' }}>
-                            <FitnessCenterIcon sx={{ mr: 1, mb: 0.5, color: 'text.secondary' }} />
+                        <ClassTemplateSelector 
+                            onSelectTemplate={handleTemplateSelect} 
+                            formData={getFormData()}
+                        />
+                        <Divider sx={{ mb: 2 }} />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <Box sx={{ mb: 1, display: 'flex', alignItems: 'flex-end' }}>
                             <TextField 
                                 fullWidth 
                                 label="Class Name" 
                                 name="title" 
                                 required 
-                                variant="standard"
+                                variant="outlined"
                                 placeholder="e.g. Adult Fundamentals"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                defaultValue={data?.event?.title ? data.event.title : ''} 
                             />
                         </Box>
                     </Grid>
@@ -271,14 +481,14 @@ const AddClassInformation = ({
                         <Typography 
                             variant="caption" 
                             color="text.secondary" 
-                            sx={{ display: 'block', mb: 1 }}
+                            sx={{ display: 'block', mb: 0.5 }}
                         >
                             Time & Date
                         </Typography>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 1 }} />
                     </Grid>
 
-                    <Grid item xs={6}>
+                    <Grid item xs={6} sm={6}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
                             <AccessTimeIcon sx={{ mr: 1, mb: 0.5, color: 'text.secondary' }} />
                             <TextField 
@@ -291,11 +501,16 @@ const AddClassInformation = ({
                                 InputLabelProps={{ shrink: true }}
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.target.value)}
+                                defaultValue={
+                                    data?.event?.start
+                                        ? `${new Date(data.event.start).getHours().toString().padStart(2, '0')}:${new Date(data.event.start).getMinutes().toString().padStart(2, '0')}`// "HH:MM"
+                                        : ''
+                                }
                             />
                         </Box>
                     </Grid>
 
-                    <Grid item xs={6}>
+                    <Grid item xs={6} sm={6}>
                         <TextField 
                             type="time" 
                             name="end" 
@@ -322,6 +537,11 @@ const AddClassInformation = ({
                                 InputLabelProps={{ shrink: true }}
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
+                                defaultValue={
+                                    data?.event?.start
+                                        ? new Date(data.event.start).toISOString().slice(0, 10)
+                                        : ''
+                                }
                             />
                         </Box>
                     </Grid>
@@ -344,12 +564,12 @@ const AddClassInformation = ({
                     
                     <Grid item xs={12}>
                         <Collapse in={isRecurring}>
-                            <Box sx={{ pl: 4, pr: 2, pb: 2, pt: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
+                            <Box sx={{ pl: 2, pr: 2, pb: 2, pt: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                                     Recurrence Pattern
                                 </Typography>
                                 
-                                <FormControl component="fieldset" sx={{ mb: 2 }}>
+                                <FormControl component="fieldset" sx={{ mb: 1 }}>
                                     <RadioGroup
                                         row
                                         name="recurrenceType"
@@ -363,54 +583,54 @@ const AddClassInformation = ({
                                 </FormControl>
                                 
                                 <Collapse in={recurrenceType === 'weekly'}>
-                                    <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
                                         Repeat on:
                                     </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                    <Box sx={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        mb: 1,
+                                        maxWidth: '280px'
+                                    }}>
                                         {[
-                                            { key: 'monday', label: 'Mon' },
-                                            { key: 'tuesday', label: 'Tue' },
-                                            { key: 'wednesday', label: 'Wed' },
-                                            { key: 'thursday', label: 'Thu' },
-                                            { key: 'friday', label: 'Fri' },
-                                            { key: 'saturday', label: 'Sat' },
-                                            { key: 'sunday', label: 'Sun' }
+                                            { key: 'sunday', label: 'S' },
+                                            { key: 'monday', label: 'M' },
+                                            { key: 'tuesday', label: 'T' },
+                                            { key: 'wednesday', label: 'W' },
+                                            { key: 'thursday', label: 'T' },
+                                            { key: 'friday', label: 'F' },
+                                            { key: 'saturday', label: 'S' }
                                         ].map(({ key, label }) => (
                                             <Box 
                                                 key={key}
                                                 sx={{
+                                                    width: label.length > 1 ? '32px' : '28px',
+                                                    height: '28px',
                                                     border: '1px solid',
                                                     borderColor: recurrenceDays[key] ? 'primary.main' : 'grey.300',
-                                                    borderRadius: '4px',
-                                                    padding: '4px 8px',
-                                                    backgroundColor: recurrenceDays[key] ? 'primary.light' : 'transparent',
-                                                    color: recurrenceDays[key] ? 'primary.contrastText' : 'text.primary',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: recurrenceDays[key] ? 'primary.main' : 'transparent',
+                                                    color: recurrenceDays[key] ? 'white' : 'text.primary',
                                                     cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    transition: 'all 0.2s ease'
+                                                    justifyContent: 'center',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: recurrenceDays[key] ? 'bold' : 'normal',
+                                                    transition: 'all 0.2s ease',
+                                                    '&:hover': {
+                                                        backgroundColor: recurrenceDays[key] ? 'primary.dark' : 'rgba(0,0,0,0.04)'
+                                                    }
                                                 }}
                                                 onClick={() => handleDayToggle(key)}
                                             >
-                                                <Checkbox 
-                                                    checked={recurrenceDays[key]}
-                                                    onChange={() => handleDayToggle(key)}
-                                                    size="small"
-                                                    sx={{ 
-                                                        padding: '2px',
-                                                        color: recurrenceDays[key] ? 'white' : undefined,
-                                                        '&.Mui-checked': {
-                                                            color: recurrenceDays[key] ? 'white' : undefined,
-                                                        }
-                                                    }}
-                                                />
                                                 {label}
                                             </Box>
                                         ))}
                                     </Box>
                                 </Collapse>
                                 
-                                <Box sx={{ mt: 2 }}>
+                                <Box sx={{ mt: 1 }}>
                                     <FormControlLabel
                                         control={
                                             <Checkbox 
@@ -424,7 +644,7 @@ const AddClassInformation = ({
                                     />
                                     <Collapse in={hasEndDate}>
                                         <TextField 
-                                            sx={{ mt: 1 }}
+                                            sx={{ mt: 0.5 }}
                                             fullWidth 
                                             type="date" 
                                             name="recurrenceEndDate" 
@@ -434,6 +654,11 @@ const AddClassInformation = ({
                                             InputLabelProps={{ shrink: true }}
                                             value={endDate}
                                             onChange={(e) => setEndDate(e.target.value)}
+                                            defaultValue={
+                                                data?.event?.end
+                                                    ? `${new Date(data.event.end).getHours().toString().padStart(2, '0')}:${new Date(data.event.end).getMinutes().toString().padStart(2, '0')}`
+                                                    : ''
+                                            }
                                         />
                                     </Collapse>
                                 </Box>
@@ -445,11 +670,11 @@ const AddClassInformation = ({
                         <Typography 
                             variant="caption" 
                             color="text.secondary" 
-                            sx={{ display: 'block', mt: 2, mb: 1 }}
+                            sx={{ display: 'block', mt: 1, mb: 0.5 }}
                         >
                             Class Details
                         </Typography>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 1 }} />
                     </Grid>
 
                     <Grid item xs={12}>
@@ -462,9 +687,13 @@ const AddClassInformation = ({
                                 required 
                                 variant="standard"
                                 placeholder="e.g. John Doe"
+                                value={instructor}
+                                onChange={(e) => setInstructor(e.target.value)}
+                                defaultValue={data?.event?.extendedProps?.instructor ?? ''}
                             />
                         </Box>
                     </Grid>
+                    
 
                     <Grid item xs={12}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-end', mt: 1 }}>
@@ -474,8 +703,10 @@ const AddClassInformation = ({
                                 <Select
                                     labelId="class-level-label"
                                     name="classLevel"
-                                    defaultValue="Fundamentals"
+                                    value={classLevel}
+                                    onChange={(e) => setClassLevel(e.target.value)}
                                     label="Class Level"
+                                    defaultValue={data?.event?.extendedProps?.classLevel ?? ''}
                                 >
                                     <MenuItem value="Fundamentals">Fundamentals</MenuItem>
                                     <MenuItem value="Intermediate">Intermediate</MenuItem>
@@ -485,7 +716,7 @@ const AddClassInformation = ({
                         </Box>
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid item xs={6}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-end', mt: 1 }}>
                             <GroupsIcon sx={{ mr: 1, mb: 0.5, color: 'text.secondary' }} />
                             <FormControl fullWidth variant="standard">
@@ -493,7 +724,7 @@ const AddClassInformation = ({
                                 <Select
                                     labelId="age-label"
                                     name="age"
-                                    value={age}
+                                    value={age || data?.event?.extendedProps.age}
                                     onChange={handleAgeChange}
                                     label="Age Group"
                                 >
@@ -504,8 +735,25 @@ const AddClassInformation = ({
                             </FormControl>
                         </Box>
                     </Grid>
+
+                    <Grid item xs={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', mt: 1 }}>
+                            <TextField
+                                fullWidth
+                                label="Max Capacity"
+                                name="maxCapacity"
+                                type="number"
+                                variant="standard"
+                                value={maxCapacity}
+                                onChange={(e) => setMaxCapacity(e.target.value)}
+                                InputProps={{
+                                    inputProps: { min: 1, max: 100 }
+                                }}
+                            />
+                        </Box>
+                    </Grid>
                     
-                    <Grid item xs={12} sx={{ mt: 2 }}>
+                    <Grid item xs={12} sx={{ mt: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Button 
                                 onClick={handleCancelButton} 

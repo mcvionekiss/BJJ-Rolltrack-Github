@@ -14,22 +14,32 @@ body {
 
 /* Calendar container styling */
 .calendar-container {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
-  padding: 0;
-  margin: 0;
+  width: auto;
+  height: auto;
 }
 
-.calendar-scroll-container {
-  flex: 1;
-  overflow: auto;
-  padding-right: 1px;  /* Minimal padding to prevent border cutoff */
-  padding-bottom: 1px; /* Minimal padding to prevent border cutoff */
-  margin-bottom: 0;
+.calendar-container .fc {
+  flex-grow: 1;
+  height: 100% !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-container .fc .fc-view-harness {
+  flex-grow: 1;
+  height: auto !important;
+}
+
+.calendar-container .fc-timegrid-slots table {
+  height: 100%;
+}
+
+/* Ensure the calendar takes full width */
+.calendar-container .fc-view-harness-active {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Fix for border display issues */

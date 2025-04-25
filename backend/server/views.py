@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
-from django.utils.timezone import localdate
+from django.utils.timezone import localdate, now, timedelta
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
@@ -9,7 +9,7 @@ import json
 import logging
 import time
 import requests
-from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel
+from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
@@ -27,6 +27,8 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 import os
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 def get_csrf_token(request):
@@ -903,3 +905,46 @@ def google_auth(request):
 
     except ValueError as e:
         return Response({"error": "Invalid token", "details": str(e)}, status=401)
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def request_password_reset(request):
+    email = request.data.get("email")
+    user = Users.objects.filter(email=email).first()
+    if not user:
+        return Response({"success": False, "message": "No user with that email."}, status=404)
+
+    token = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=now() + timedelta(hours=1)
+    )
+    reset_url = f"http://localhost:3000/reset-password/{token.token}"
+    try:
+        send_mail(
+            subject="Reset your RollTrack App password",
+            message=f"Click the link to reset your password: {reset_url}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+        )
+    except Exception as e:
+        print("❌ EMAIL ERROR:", str(e))
+        return Response({"success": False, "message": "Email sending failed."}, status=500)
+
+    return Response({"success": True, "message": "Password reset link sent."})
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request, token):
+    new_password = request.data.get("password")
+    token_obj = PasswordResetToken.objects.filter(token=token).first()
+
+    if not token_obj or token_obj.is_expired():
+        return Response({"success": False, "message": "Invalid or expired token"}, status=400)
+
+    user = token_obj.user
+    user.set_password(new_password)
+    user.save()
+    token_obj.delete()
+    return Response({"success": True, "message": "Password updated successfully"})

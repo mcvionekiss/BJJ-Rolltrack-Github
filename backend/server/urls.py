@@ -5,7 +5,7 @@ from server.views import (
     LoginView, LogoutView, RegisterView, get_csrf_token, 
     CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, 
     check_student, available_classes_today, class_details, checkin, 
-    student_attendance_history, get_gym_hours, google_auth,
+    student_attendance_history, get_gym_hours, google_auth, request_password_reset, reset_password,
     # Add new template views
     get_templates, delete_template, update_template
 )
@@ -34,6 +34,8 @@ urlpatterns = [
     path("api/templates/<int:template_id>/", delete_template, name="delete_template"),
     path("api/templates/<int:template_id>/update/", update_template, name="update_template"),
     path("auth/google/", google_auth),
+    path('auth/request-password-reset/', request_password_reset),
+    path('auth/reset-password/<uuid:token>/', reset_password),
     
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),

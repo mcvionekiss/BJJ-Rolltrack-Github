@@ -16,6 +16,7 @@ import GuestCheckin from "./components/GuestCheckin";
 import ProfilePage from "./components/ProfilePage";
 import { EventProvider } from "./components/Schedule/EventContext";
 import EditClass from "./components/Schedule/EditClass";
+import SignUpChoice from "./components/SignUpChoice";
 function App() {
     return (
         <Router>
@@ -26,7 +27,9 @@ function App() {
 
                     {/* Registration Pages */}
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/signup" element={<SignUpChoice />} />
+                    <Route path="/register/email" element={<Register />} />
+                    <Route path="/register/google" element={<Register />} />
 
                     {/* Gym Owner Pages */}
                     <Route path="/dashboard" element={<Dashboard />} />

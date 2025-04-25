@@ -8,6 +8,7 @@ from django.views import View
 import json
 import logging
 import time
+import requests
 from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -17,6 +18,15 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.views.decorators.http import require_http_methods
 from django.core import serializers
+#googleOauth
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
+import os
 
 
 def get_csrf_token(request):
@@ -74,8 +84,8 @@ class RegisterView(View):
             username = data.get('email')
             email = data.get('email')
             password = data.get('password')
-            first_name = data.get('firstName', '')
-            last_name = data.get('lastName', '')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
             belt_id = data.get('belt', 1)  # Default to first belt if not provided
             role_id = data.get('role', 1)  # Default to first role if not provided
 
@@ -87,8 +97,20 @@ class RegisterView(View):
                 }, status=400)
 
             # Create new user
-            belt = Belts.objects.get(beltID=belt_id)
-            role = Roles.objects.get(roleID=role_id)
+            try:
+                belt = Belts.objects.get(id=belt_id)
+            except Roles.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Role with ID {belt_id} does not exist.'
+                }, status=400)
+            try:
+                role = Roles.objects.get(id=role_id)
+            except Roles.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Role with ID {role_id} does not exist.'
+                }, status=400)
             
             user = Users.objects.create_user(
                 username=username,
@@ -98,11 +120,12 @@ class RegisterView(View):
                 last_name=last_name,
                 date_enrolled=timezone.now().date(),
                 date_of_birth=timezone.now().date(),  # Default value, should be updated later
-                belt=belt,
-                role=role
+                belt_id=belt,
+                role_id=role
             )
 
             # Log the user in
+            user.backend = "django.contrib.auth.backends.ModelBackend"
             login(request, user)
 
             return JsonResponse({
@@ -830,3 +853,53 @@ def get_gym_hours(request, gym_id=None):
             "success": False,
             "message": str(e)
         }, status=500)
+    
+
+User = get_user_model()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+  # ✅ optional but more secure
+@api_view(["POST"])
+def google_auth(request):
+    token_str = request.data.get("id_token")
+    if not token_str:
+        return Response({"error": "ID token required"}, status=400)
+
+    try:
+        # 👇 Secure local verification
+        idinfo = id_token.verify_oauth2_token(token_str, google_requests.Request(), audience=GOOGLE_CLIENT_ID)
+
+        email = idinfo.get("email")
+        first_name = idinfo.get("given_name", "")
+        last_name = idinfo.get("family_name", "")
+        phone = idinfo.get("phone_number", "")  # Optional if returned
+
+        if not email:
+            return Response({"error": "Email not in token"}, status=400)
+
+        user = Users.objects.filter(email=email).first()
+
+        if user:
+            # Already registered → log them in and redirect
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            login(request, user)
+            return Response({
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "firstName": user.first_name,
+                    "lastName": user.last_name,
+                },
+                "new_user": False,
+                "redirect": "/dashboard"
+            })
+        else:
+            # Not registered yet → frontend should route to signup
+            return Response({
+                "new_user": True,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name
+            })
+
+    except ValueError as e:
+        return Response({"error": "Invalid token", "details": str(e)}, status=401)

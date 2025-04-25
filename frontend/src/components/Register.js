@@ -37,10 +37,25 @@ const fetchCsrfToken = async (setCsrfToken) => {
 };
 
 const registerUser = async (userData, csrfToken) => {
-    return axios.post("http://localhost:8000/auth/register/", userData, {
+    const payload = {
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        email: userData.email,
+        ...(userData.password && { password: userData.password }),
+        phone: userData.phone,
+        gym_name: userData.gymName,
+        address: userData.address,
+        city: userData.city,
+        state: userData.state,
+        gym_email: userData.gymEmail,
+        gym_phone_number: userData.gymPhoneNumber,
+        schedule: userData.schedule,
+      };
+    
+      return axios.post("http://localhost:8000/auth/register/", payload, {
         withCredentials: true,
         headers: { "X-CSRFToken": csrfToken },
-    });
+      });
 };
 
 const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
@@ -80,10 +95,26 @@ export default function Register() {
         personal: "",
         gym: "",
       });
+    const [isGoogleSignup, setIsGoogleSignup] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchCsrfToken(setCsrfToken);
+    }, []);
+
+    useEffect(() => {
+        const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    
+        if (window.location.pathname === "/register/google" && userInfo) {
+            setIsGoogleSignup(true);
+            setFormData((prev) => ({
+                ...prev,
+                firstName: userInfo.first_name || "",
+                lastName: userInfo.last_name || "",
+                email: userInfo.email || "",
+            }));
+            setActiveStep(1); // Skip personal info
+        }
     }, []);
 
     const handleChange = (e) => {
@@ -178,7 +209,8 @@ export default function Register() {
 
             {/* Left Sidebar - Stepper */}
             <div className="sidebar">
-                <div className="logo-container">
+                <div className="logo-container" 
+            >
                     <img 
                         src={logo} 
                         alt="RollTrack Logo" 
@@ -235,47 +267,51 @@ export default function Register() {
                     <form onSubmit={handleNext} className="form">
                         {activeStep === 0 && (
                             <>
-                                <TextField label="First Name" placeholder="Enter your first name" name="firstName" value={formData.firstName} onChange={handleChange} fullWidth margin="normal" required/>
-                                <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
-                                <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required 
-                                    error={formData.password.length > 0 && unmetCriteria.length > 0} // Show red border only if password is entered and invalid
-                                    helperText={
-                                        formData.password.length > 0 && unmetCriteria.length > 0
-                                            ? `⚠️ ${unmetCriteria.map(rule => passwordMessages[rule]).join(" ")}`
-                                            : "" // Hide if no unmet criteria
-                                    }
-                                />
-                                <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
-                                
-                                {/* Hidden Password Checklist for Validation */}
-                                {formData.password.length > 0 && (
-                                    <PasswordChecklist
-                                        rules={["minLength", "specialChar", "number", "capital"]}
-                                        minLength={8}
-                                        value={formData.password}
-                                        valueAgain={formData.confirmPassword}
-                                        onChange={(isValid, failedRules) => setUnmetCriteria(failedRules)}
-                                        messages={passwordMessages}
-                                        style={{ display: "none" }} // Hide checklist UI
+                                {!isGoogleSignup && (
+                                <>
+                                    <TextField label="First Name" placeholder="Enter your first name" name="firstName" value={formData.firstName} onChange={handleChange} fullWidth margin="normal" required/>
+                                    <TextField label="Last Name" placeholder="Enter your last name" name="lastName" value={formData.lastName} onChange={handleChange} fullWidth margin="normal" required />
+                                    <TextField label="Email" placeholder="Enter your email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth margin="normal" required />
+                                    <TextField label="Password" placeholder="Create a password" name="password" type="password" value={formData.password} onChange={handleChange} fullWidth margin="normal" required 
+                                        error={formData.password.length > 0 && unmetCriteria.length > 0} // Show red border only if password is entered and invalid
+                                        helperText={
+                                            formData.password.length > 0 && unmetCriteria.length > 0
+                                                ? `⚠️ ${unmetCriteria.map(rule => passwordMessages[rule]).join(" ")}`
+                                                : "" // Hide if no unmet criteria
+                                        }
                                     />
+                                    <TextField label="Confirm Password" placeholder="Confirm a password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} fullWidth margin="normal" required error={!!confirmPasswordError} helperText={confirmPasswordError} />
+                                    
+                                    {/* Hidden Password Checklist for Validation */}
+                                    {formData.password.length > 0 && (
+                                        <PasswordChecklist
+                                            rules={["minLength", "specialChar", "number", "capital"]}
+                                            minLength={8}
+                                            value={formData.password}
+                                            valueAgain={formData.confirmPassword}
+                                            onChange={(isValid, failedRules) => setUnmetCriteria(failedRules)}
+                                            messages={passwordMessages}
+                                            style={{ display: "none" }} // Hide checklist UI
+                                        />
+                                    )}
+                                    
+                                    {/* Updated MuiTelInput for Personal Phone */}
+                                    <MuiTelInput
+                                        defaultCountry="US"
+                                        onlyCountries={['US']}
+                                        forceCallingCode
+                                        readOnlyCountryCode
+                                        label="Phone Number"
+                                        variant="outlined"
+                                        value={formData.phone}
+                                        onChange={(value) => handlePhoneChange("phone", value)}
+                                        fullWidth
+                                        margin="normal"
+                                        error={!!phoneErrors.personal}
+                                        helperText={phoneErrors.personal}
+                                    />
+                                  </>
                                 )}
-                                
-                                {/* Updated MuiTelInput for Personal Phone */}
-                                <MuiTelInput
-                                    defaultCountry="US"
-                                    onlyCountries={['US']}
-                                    forceCallingCode
-                                    readOnlyCountryCode
-                                    label="Phone Number"
-                                    variant="outlined"
-                                    value={formData.phone}
-                                    onChange={(value) => handlePhoneChange("phone", value)}
-                                    fullWidth
-                                    margin="normal"
-                                    error={!!phoneErrors.personal}
-                                    helperText={phoneErrors.personal}
-                                />
                             </>
                         )}
 
@@ -422,7 +458,7 @@ export default function Register() {
                     </form>
 
                     {activeStep === 0 && (
-                        <Typography variant="body2" align="center" sx={{ marginTop: 2 }}>
+                        <Typography variant="body2" align="center" sx={{ marginTop: 2 }}>                            
                             Already have an account?{" "}
                             <Link 
                                 component="button" 

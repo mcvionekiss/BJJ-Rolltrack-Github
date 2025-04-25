@@ -1,11 +1,11 @@
 from django.contrib import admin
-from django.urls import path, re_path, include
+from django.urls import path, re_path
 from django.views.generic import RedirectView
 from server.views import (
     LoginView, LogoutView, RegisterView, get_csrf_token, 
     CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, 
     check_student, available_classes_today, class_details, checkin, 
-    student_attendance_history, get_gym_hours,
+    student_attendance_history, get_gym_hours, google_auth,
     # Add new template views
     get_templates, delete_template, update_template
 )
@@ -33,11 +33,7 @@ urlpatterns = [
     path("api/templates/", get_templates, name="get_templates"),
     path("api/templates/<int:template_id>/", delete_template, name="delete_template"),
     path("api/templates/<int:template_id>/update/", update_template, name="update_template"),
-
-    # Enable Google OAuth
-    path("auth/", include("dj_rest_auth.urls")),
-    path("auth/registration/", include("dj_rest_auth.registration.urls")),
-    path("accounts/", include("allauth.urls")),
+    path("auth/google/", google_auth),
     
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),

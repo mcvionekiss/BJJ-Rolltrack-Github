@@ -279,4 +279,3 @@ class ClassAttendance(models.Model):
         
     def __str__(self):
         return f"{self.user.email} checked into {self.scheduled_class.template.name if hasattr(self.scheduled_class, 'template') else 'Class'} on {self.scheduled_class.date}"
-

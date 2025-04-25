@@ -6,7 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
-import { Box, Modal, Typography, Button, IconButton, Chip } from '@mui/material';
+import { Box, Modal, Typography, Button, IconButton, Chip, Tooltip } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
@@ -176,6 +176,95 @@ export default function Calendar() {
           </div>
         );
       }
+      
+      // SPECIAL DAY VIEW RENDERING - optimized for the daily view
+      if (currentView === 'timeGridDay') {
+        const bgColor = getLevelColor(extendedProps?.classLevel);
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '6px 8px',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: bgColor,
+            color: '#fff',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            cursor: 'pointer',
+            '&:hover': {
+              transform: 'scale(1.02)',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            },
+          }}>
+            {/* Class Title - Larger and Always Visible */}
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '15px',
+              marginBottom: '6px',
+              textAlign: 'center',
+              overflow: 'visible',
+              wordBreak: 'break-word',
+              hyphens: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              flex: '0 0 auto'
+            }}>
+              {title}
+            </div>
+            
+            {/* Details Section - Simplified for day view */}
+            <div style={{ 
+              paddingLeft: '2px',
+              flex: '1 1 auto',
+              overflow: 'auto'
+            }}>
+              {/* Time */}
+              <div style={{ 
+                fontSize: '13px', 
+                marginBottom: '5px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                overflow: 'visible'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                <span>{formatTime(start)} - {formatTime(end)}</span>
+              </div>
+              
+              {/* Instructor */}
+              {extendedProps?.instructor && (
+                <div style={{ 
+                  fontSize: '13px', 
+                  marginBottom: '5px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  overflow: 'visible',
+                  wordBreak: 'break-word'
+                }}>
+                  <PersonOutlineIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                  <span style={{ wordBreak: 'break-word' }}>{extendedProps.instructor}</span>
+                </div>
+              )}
+              
+              {/* Class Level */}
+              {extendedProps?.classLevel && (
+                <div style={{ 
+                  fontSize: '13px', 
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  overflow: 'visible',
+                  wordBreak: 'break-word'
+                }}>
+                  <GradeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                  <span style={{ wordBreak: 'break-word' }}>{extendedProps.classLevel}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
     
       // Calculate event duration in minutes
       const durationMinutes = end && start ? 
@@ -189,56 +278,91 @@ export default function Calendar() {
       // Get background color based on class properties
       const bgColor = getLevelColor(extendedProps?.classLevel);
 
-      // Always show more details in day view regardless of size
-      const viewAdjustedSize = currentView === 'timeGridDay' 
-        ? 'large' 
-        : isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
+      // For week view, adjust by duration
+      const viewAdjustedSize = isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
 
       // SMALL EVENT: only show class name and time
       if (viewAdjustedSize === 'small') {
         return (
-          <div style={{
-            borderRadius: '6px',
-            border: '1px solid rgba(0,0,0,0.1)',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            padding: '4px 6px',
-            height: '100%',
-            overflow: 'hidden',
-            backgroundColor: bgColor,
-            color: '#fff',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            transition: 'transform 0.2s ease',
-            cursor: 'pointer',
-          }}>
-            <div style={{ 
-              fontWeight: 'bold', 
-              fontSize: '12px',
-              marginBottom: '2px',
-              whiteSpace: 'nowrap',
+          <Tooltip 
+            title={
+              <Box>
+                <Typography variant="subtitle2">{title}</Typography>
+                <Typography variant="body2" sx={{display: 'flex', alignItems: 'center'}}>
+                  <AccessTimeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                  {formatTime(start)} - {formatTime(end)}
+                </Typography>
+                {extendedProps?.instructor && (
+                  <Typography variant="body2" sx={{display: 'flex', alignItems: 'center'}}>
+                    <PersonOutlineIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                    {extendedProps.instructor}
+                  </Typography>
+                )}
+                {extendedProps?.classLevel && (
+                  <Typography variant="body2" sx={{display: 'flex', alignItems: 'center'}}>
+                    <GradeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                    {extendedProps.classLevel}
+                  </Typography>
+                )}
+              </Box>
+            }
+            arrow
+            placement="top"
+            enterDelay={300}
+            leaveDelay={100}
+          >
+            <div style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(0,0,0,0.1)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              padding: '3px 5px',
+              height: '100%',
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {title}
-            </div>
-            
-            {start && end && (
+              backgroundColor: bgColor,
+              color: '#fff',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            >
               <div style={{ 
-                fontSize: '10px', 
-                opacity: '0.9',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                fontWeight: 'bold', 
+                fontSize: '12px',
+                marginBottom: '4px', // More spacing below title
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                maxHeight: '36px',
+                overflow: 'auto',
+                textAlign: 'center' // Center the title
               }}>
-                {formatTime(start)}
+                {title}
               </div>
-            )}
-          </div>
+              
+              {start && end && (
+                <div style={{ 
+                  fontSize: '10px', 
+                  opacity: '0.9',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  textAlign: 'left' // Left-align the time
+                }}>
+                  {formatTime(start)}
+                </div>
+              )}
+            </div>
+          </Tooltip>
         );
       }
 
-      // MEDIUM EVENT: show class name, time, instructor and level
+      // MEDIUM EVENT: show class name, time, and instructor
       else if (viewAdjustedSize === 'medium') {
         return (
           <div style={{
@@ -252,162 +376,158 @@ export default function Calendar() {
             color: '#fff',
             display: 'flex',
             flexDirection: 'column',
-            transition: 'transform 0.2s ease',
+            justifyContent: 'flex-start',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             cursor: 'pointer',
-          }}>
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+          >
             <div style={{ 
               fontWeight: 'bold', 
-              fontSize: '13px',
-              marginBottom: '3px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              fontSize: '14px',
+              marginBottom: '5px',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              maxHeight: '38px',
+              overflow: 'auto',
+              textAlign: 'center'
             }}>
-              <FitnessCenterIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
               {title}
             </div>
             
-            {start && end && (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'flex-start'
+            }}>
+              {/* Time */}
               <div style={{ 
-                fontSize: '11px', 
-                opacity: '0.9',
+                fontSize: '13px', 
+                marginBottom: '5px',
                 display: 'flex',
-                alignItems: 'center',
-                marginBottom: '2px'
+                alignItems: 'flex-start',
+                overflow: 'visible'
               }}>
-                <AccessTimeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                <AccessTimeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
                 <span>{formatTime(start)} - {formatTime(end)}</span>
               </div>
-            )}
-            
-            {extendedProps?.instructor && (
-              <div style={{ 
-                fontSize: '11px', 
-                opacity: '0.9',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                <PersonOutlineIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
-                {extendedProps.instructor}
-              </div>
-            )}
-            
-            {extendedProps?.classLevel && (
-              <div style={{ 
-                fontSize: '11px', 
-                opacity: '0.9',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                <GradeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
-                {extendedProps.classLevel}
-              </div>
-            )}
+              
+              {/* Instructor */}
+              {extendedProps?.instructor && (
+                <div style={{ 
+                  fontSize: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  <PersonOutlineIcon sx={{ fontSize: 11, mr: 0.5 }} />
+                  {extendedProps.instructor}
+                </div>
+              )}
+            </div>
           </div>
         );
       }
 
-      // LARGE EVENT: show all available information
-      return (
-        <div style={{
-          borderRadius: '6px',
-          border: '1px solid rgba(0,0,0,0.1)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          padding: '8px 10px',
-          height: '100%',
-          overflow: 'hidden',
-          backgroundColor: bgColor,
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'transform 0.2s ease',
-          cursor: 'pointer',
-        }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            fontSize: '14px',
-            marginBottom: '5px',
-            whiteSpace: 'nowrap',
+      // LARGE EVENT: show all event details
+      else {
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '6px 8px',
+            height: '100%',
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            <FitnessCenterIcon sx={{ fontSize: 15, verticalAlign: 'middle', mr: 0.5 }} />
-            {title}
+            backgroundColor: bgColor,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+          >
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '14px',
+              marginBottom: '6px',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              maxHeight: '42px',
+              overflow: 'auto',
+              textAlign: 'center'
+            }}>
+              {title}
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              {/* Time */}
+              <div style={{ 
+                fontSize: '13px', 
+                marginBottom: '5px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                overflow: 'visible'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                <span>{formatTime(start)} - {formatTime(end)}</span>
+              </div>
+              
+              {/* Instructor */}
+              {extendedProps?.instructor && (
+                <div style={{ 
+                  fontSize: '12px',
+                  marginBottom: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  <PersonOutlineIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                  {extendedProps.instructor}
+                </div>
+              )}
+              
+              {/* Class Level */}
+              {extendedProps?.classLevel && (
+                <div style={{ 
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  <GradeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                  {extendedProps.classLevel}
+                </div>
+              )}
+            </div>
           </div>
-          
-          {start && end && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '4px'
-            }}>
-              <AccessTimeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              <span>{formatTime(start)} - {formatTime(end)}</span>
-            </div>
-          )}
-          
-          {extendedProps?.instructor && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '3px'
-            }}>
-              <PersonOutlineIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.instructor}
-            </div>
-          )}
-          
-          {extendedProps?.classLevel && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              marginBottom: '3px'
-            }}>
-              <GradeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.classLevel}
-            </div>
-          )}
-          
-          {extendedProps?.age && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              <GroupsIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.age}
-            </div>
-          )}
-        </div>
-      );
-    } catch (err) {
-      console.error("Error rendering event:", err, eventInfo);
-      // Return a fallback rendering for the event
-      return (
-        <div style={{
-          backgroundColor: '#f44336',
-          color: 'white',
-          padding: '2px 4px',
-          borderRadius: '3px',
-          fontSize: '11px'
-        }}>
-          {eventInfo.event?.title || 'Event Error'}
-        </div>
-      );
+        );
+      }
+    } catch (error) {
+      console.error("Error rendering event content:", error);
+      return (<div>Error</div>);
     }
   }
 
@@ -817,15 +937,6 @@ export default function Calendar() {
         >
           Clear All Events
         </Button>
-        <Button 
-          variant="outlined" 
-          startIcon={<FitnessCenterIcon />} 
-          onClick={handleResetToDefaults}
-          size={typeof window !== 'undefined' && windowWidth < 768 ? "small" : "medium"}
-          sx={{ fontSize: typeof window !== 'undefined' && windowWidth < 768 ? '0.75rem' : 'inherit' }}
-        >
-          Reset to Defaults
-        </Button>
       </Box>
 
         <FullCalendar
@@ -865,6 +976,7 @@ export default function Calendar() {
           }}
           titleFormat={{ year: 'numeric', month: 'long' }}
           height="100%"
+          expandRows={true}
           stickyHeaderDates={true}
           slotLabelFormat={{
             hour: '2-digit',

@@ -313,7 +313,7 @@ export default function AddClass() {
   };
 
   return (
-    <Box display="flex">
+    <Box display="flex" style={{ overflowY: 'scroll', height: '100vh' }}>
       <NavigationMenu onWidthChange={setSidebarWidth} />
       <Box
         component="main"

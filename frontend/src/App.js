@@ -17,6 +17,9 @@ import ProfilePage from "./components/ProfilePage";
 import { EventProvider } from "./components/Schedule/EventContext";
 import EditClass from "./components/Schedule/EditClass";
 import SignUpChoice from "./components/SignUpChoice";
+import ForgotPassword from "./components/ForgotPassword"
+import ResetPassword from "./components/ResetPassword";
+
 function App() {
     return (
         <Router>
@@ -27,6 +30,8 @@ function App() {
 
                     {/* Registration Pages */}
                     <Route path="/login" element={<Login />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
                     <Route path="/signup" element={<SignUpChoice />} />
                     <Route path="/register/email" element={<Register />} />
                     <Route path="/register/google" element={<Register />} />

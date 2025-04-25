@@ -182,7 +182,7 @@ function Login() {
                                 }
                                 label="Remember me"
                             />
-                            <Link href="/forgot" underline="hover">
+                            <Link href="/forgot-password" underline="hover">
                                 Forgot password?
                             </Link>
                         </Box>

@@ -11,7 +11,7 @@ const ForgotPassword = () => {
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/auth/request-password-reset', { email });
+      const res = await axios.post('http://localhost:8000/auth/request-password-reset/', { email });
       setMessage(res.data.message);
     } catch (err) {
       setMessage(err.response?.data?.message || "Something went wrong.");
@@ -63,7 +63,7 @@ const ForgotPassword = () => {
           </Button>
 
           {message && (
-            <Typography variant="body2" color="error.main">
+            <Typography variant="body2" sx={{ color: message.includes("sent") ? "green" : "red" }}>
               {message}
             </Typography>
           )}

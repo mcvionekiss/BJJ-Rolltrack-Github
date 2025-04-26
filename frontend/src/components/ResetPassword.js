@@ -11,6 +11,7 @@ import {
   Toolbar,
   Box
 } from '@mui/material';
+import PasswordChecklist from "react-password-checklist"; // Make sure you installed this
 import logo from '../assets/logo.jpeg';
 
 const ResetPassword = () => {
@@ -19,12 +20,36 @@ const ResetPassword = () => {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [unmetCriteria, setUnmetCriteria] = useState([]);
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const passwordMessages = {
+    minLength: "At least 8 characters!",
+    specialChar: "At least one special character!",
+    number: "At least one number!",
+    capital: "At least one uppercase letter!",
+  };
+
   const handleReset = async () => {
+    if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match.");
+      return;
+    }
+    if (unmetCriteria.length > 0) {
+      setMessage("Please meet all password requirements.");
+      return;
+    }
     try {
       const res = await axios.post(`http://localhost:8000/auth/reset-password/${token}/`, {
         password,
       });
       setMessage(res.data.message);
+
+      if (res.data.message && res.data.message.toLowerCase().includes("success")) {
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 2000); // Wait 2 seconds so user can see "success" message
+      }
     } catch (err) {
       setMessage(err.response?.data?.message || "Something went wrong.");
     }
@@ -39,7 +64,7 @@ const ResetPassword = () => {
             src={logo}
             alt="RollTrack Logo"
             style={{ height: "40px", cursor: "pointer" }}
-            onClick={() => navigate("/login")}
+            onClick={(e) => { window.location.href = "/"; }}
           />
           <Box />
         </Toolbar>
@@ -61,9 +86,54 @@ const ResetPassword = () => {
             label="New Password"
             variant="outlined"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (confirmPassword && e.target.value !== confirmPassword) {
+                setConfirmPasswordError("Passwords do not match.");
+              } else {
+                setConfirmPasswordError("");
+              }
+            }}
             sx={{ mb: 2 }}
+            error={password.length > 0 && unmetCriteria.length > 0}
+            helperText={
+              password.length > 0 && unmetCriteria.length > 0
+                ? `⚠️ ${unmetCriteria.map(rule => passwordMessages[rule]).join(" ")}`
+                : ""
+            }
           />
+
+          <TextField
+            fullWidth
+            type="password"
+            label="Confirm New Password"
+            variant="outlined"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (password !== e.target.value) {
+                setConfirmPasswordError("Passwords do not match.");
+              } else {
+                setConfirmPasswordError("");
+              }
+            }}
+            sx={{ mb: 2 }}
+            error={!!confirmPasswordError}
+            helperText={confirmPasswordError}
+          />
+
+          {/* Hidden PasswordChecklist for Validation */}
+          {password.length > 0 && (
+            <PasswordChecklist
+              rules={["minLength", "specialChar", "number", "capital"]}
+              minLength={8}
+              value={password}
+              valueAgain={confirmPassword}
+              onChange={(isValid, failedRules) => setUnmetCriteria(failedRules)}
+              messages={passwordMessages}
+              style={{ display: "none" }}
+            />
+          )}
 
           <Button
             fullWidth
@@ -75,7 +145,7 @@ const ResetPassword = () => {
           </Button>
 
           {message && (
-            <Typography variant="body2" color="error.main">
+            <Typography variant="body2" color={message.includes("success") ? "success.main" : "error.main"}>
               {message}
             </Typography>
           )}

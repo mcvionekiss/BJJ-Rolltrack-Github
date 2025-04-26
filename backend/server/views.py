@@ -910,16 +910,22 @@ def google_auth(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def request_password_reset(request):
+    print("request_password_reset() method runs")
     email = request.data.get("email")
     user = Users.objects.filter(email=email).first()
     if not user:
         return Response({"success": False, "message": "No user with that email."}, status=404)
 
-    token = PasswordResetToken.objects.create(
-        user=user,
-        expires_at=now() + timedelta(hours=1)
-    )
+    try:
+        token = PasswordResetToken.objects.create(
+            user=user,
+            expires_at=now() + timedelta(hours=1)
+        )
+    except Exception as e:
+        print("❌ TOKEN CREATION ERROR:", str(e))
+        return Response({"success": False, "message": "Token creation failed."}, status=500)
     reset_url = f"http://localhost:3000/reset-password/{token.token}"
+
     try:
         send_mail(
             subject="Reset your RollTrack App password",

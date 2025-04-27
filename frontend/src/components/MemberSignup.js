@@ -26,6 +26,7 @@ function MemberSignup() {
         phone: "",
         dob: "",
         password: "",
+        confirmPassword: ""
     });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -275,7 +276,7 @@ function MemberSignup() {
                 <FormControl 
                     variant="outlined" 
                     fullWidth
-                    error={formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword}
+                    error={Boolean(formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword)}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -287,7 +288,7 @@ function MemberSignup() {
                         id="confirmPassword"
                         name="confirmPassword"
                         type={showPassword ? 'text' : 'password'}
-                        value={formData.confirmPassword || ''}
+                        value={formData.confirmPassword}
                         onChange={handleChange}
                         required
                         endAdornment={

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from 'axios';
 import { useState, useEffect } from "react";
 import {
     Button,
@@ -37,7 +37,7 @@ function MemberSignup() {
         // Fetch CSRF token when component mounts
         const fetchCsrfToken = async () => {
             try {
-                const response = await axios.get("/auth/csrf/", { withCredentials: true });
+                const response = await axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true });
                 setCsrfToken(response.data.csrfToken);
             } catch (error) {
                 console.error("Failed to fetch CSRF token", error);
@@ -79,7 +79,7 @@ function MemberSignup() {
             };
             
             // Call the API with CSRF token
-            const response = await axios.post("/auth/member-signup/", backendFormData, {
+            const response = await axios.post("http://localhost:8000/auth/member-signup/", backendFormData, {
                 headers: {
                     "X-CSRFToken": csrfToken
                 }

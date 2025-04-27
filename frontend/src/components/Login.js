@@ -199,11 +199,9 @@ function Login() {
                         </Button>
 
                         {/* 🔹 Google Sign-In Button */}
-                        <form>
                         <Box sx={{ mt: 2 }}>
                             <GoogleSignIn />
                         </Box>
-                        </form>
                     </form>
 
                     {/* Sign Up Link */}

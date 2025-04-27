@@ -106,7 +106,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                 {menuItems.map((item, index) => (
                     <Tooltip title={item.text} placement="right" key={index}>
                         <ListItem
-                            button
+                            component="div"
                             onClick={() => navigate(item.path)}
                             sx={{
                                 mb: 1,
@@ -114,7 +114,8 @@ const NavigationMenu = ({ onWidthChange }) => {
                                 backgroundColor: currentPath === item.path ? "#e0e0e0" : "transparent",
                                 "&:hover": {
                                     backgroundColor: "#e0e0e0"
-                                }
+                                },
+                                cursor: "pointer"
                             }}
                         >
                             <ListItemIcon sx={{ color: "#757575", minWidth: "40px" }}>

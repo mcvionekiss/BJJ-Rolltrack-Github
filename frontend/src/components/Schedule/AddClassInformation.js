@@ -472,7 +472,6 @@ const AddClassInformation = ({
                                 placeholder="e.g. Adult Fundamentals"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                defaultValue={data?.event?.title ? data.event.title : ''} 
                             />
                         </Box>
                     </Grid>
@@ -501,11 +500,6 @@ const AddClassInformation = ({
                                 InputLabelProps={{ shrink: true }}
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.target.value)}
-                                defaultValue={
-                                    data?.event?.start
-                                        ? `${new Date(data.event.start).getHours().toString().padStart(2, '0')}:${new Date(data.event.start).getMinutes().toString().padStart(2, '0')}`// "HH:MM"
-                                        : ''
-                                }
                             />
                         </Box>
                     </Grid>
@@ -537,11 +531,6 @@ const AddClassInformation = ({
                                 InputLabelProps={{ shrink: true }}
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                defaultValue={
-                                    data?.event?.start
-                                        ? new Date(data.event.start).toISOString().slice(0, 10)
-                                        : ''
-                                }
                             />
                         </Box>
                     </Grid>
@@ -653,11 +642,6 @@ const AddClassInformation = ({
                                             InputLabelProps={{ shrink: true }}
                                             value={endDate}
                                             onChange={(e) => setEndDate(e.target.value)}
-                                            defaultValue={
-                                                data?.event?.end
-                                                    ? `${new Date(data.event.end).getHours().toString().padStart(2, '0')}:${new Date(data.event.end).getMinutes().toString().padStart(2, '0')}`
-                                                    : ''
-                                            }
                                         />
                                     </Collapse>
                                 </Box>
@@ -688,7 +672,6 @@ const AddClassInformation = ({
                                 placeholder="e.g. John Doe"
                                 value={instructor}
                                 onChange={(e) => setInstructor(e.target.value)}
-                                defaultValue={data?.event?.extendedProps?.instructor ?? ''}
                             />
                         </Box>
                     </Grid>
@@ -705,7 +688,6 @@ const AddClassInformation = ({
                                     value={classLevel}
                                     onChange={(e) => setClassLevel(e.target.value)}
                                     label="Class Level"
-                                    defaultValue={data?.event?.extendedProps?.classLevel ?? ''}
                                 >
                                     <MenuItem value="Fundamentals">Fundamentals</MenuItem>
                                     <MenuItem value="Intermediate">Intermediate</MenuItem>

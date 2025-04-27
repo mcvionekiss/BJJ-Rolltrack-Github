@@ -6,7 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
-import { Box, Modal, Typography, Button, IconButton, Chip } from '@mui/material';
+import { Box, Modal, Typography, Button, IconButton, Chip, Tooltip } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
@@ -19,6 +19,8 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeleteIcon from '@mui/icons-material/Delete';
 import './Dashboard.css';
+import Edit from '@mui/icons-material/Edit';
+import { v4 as uuidv4 } from 'uuid';
 
 
 export default function Calendar() {
@@ -104,7 +106,6 @@ export default function Calendar() {
   };
   const [repeat, setRepeat] = useState(false);
 
-
   // State to control the modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -175,6 +176,95 @@ export default function Calendar() {
           </div>
         );
       }
+      
+      // SPECIAL DAY VIEW RENDERING - optimized for the daily view
+      if (currentView === 'timeGridDay') {
+        const bgColor = getLevelColor(extendedProps?.classLevel);
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '6px 8px',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: bgColor,
+            color: '#fff',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            cursor: 'pointer',
+            '&:hover': {
+              transform: 'scale(1.02)',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            },
+          }}>
+            {/* Class Title - Larger and Always Visible */}
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '15px',
+              marginBottom: '6px',
+              textAlign: 'center',
+              overflow: 'visible',
+              wordBreak: 'break-word',
+              hyphens: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              flex: '0 0 auto'
+            }}>
+              {title}
+            </div>
+            
+            {/* Details Section - Simplified for day view */}
+            <div style={{ 
+              paddingLeft: '2px',
+              flex: '1 1 auto',
+              overflow: 'auto'
+            }}>
+              {/* Time */}
+              <div style={{ 
+                fontSize: '13px', 
+                marginBottom: '5px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                overflow: 'visible'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                <span>{formatTime(start)} - {formatTime(end)}</span>
+              </div>
+              
+              {/* Instructor */}
+              {extendedProps?.instructor && (
+                <div style={{ 
+                  fontSize: '13px', 
+                  marginBottom: '5px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  overflow: 'visible',
+                  wordBreak: 'break-word'
+                }}>
+                  <PersonOutlineIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                  <span style={{ wordBreak: 'break-word' }}>{extendedProps.instructor}</span>
+                </div>
+              )}
+              
+              {/* Class Level */}
+              {extendedProps?.classLevel && (
+                <div style={{ 
+                  fontSize: '13px', 
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  overflow: 'visible',
+                  wordBreak: 'break-word'
+                }}>
+                  <GradeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                  <span style={{ wordBreak: 'break-word' }}>{extendedProps.classLevel}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
     
       // Calculate event duration in minutes
       const durationMinutes = end && start ? 
@@ -188,56 +278,91 @@ export default function Calendar() {
       // Get background color based on class properties
       const bgColor = getLevelColor(extendedProps?.classLevel);
 
-      // Always show more details in day view regardless of size
-      const viewAdjustedSize = currentView === 'timeGridDay' 
-        ? 'large' 
-        : isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
+      // For week view, adjust by duration
+      const viewAdjustedSize = isSmallEvent ? 'small' : isMediumEvent ? 'medium' : 'large';
 
       // SMALL EVENT: only show class name and time
       if (viewAdjustedSize === 'small') {
         return (
-          <div style={{
-            borderRadius: '6px',
-            border: '1px solid rgba(0,0,0,0.1)',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            padding: '4px 6px',
-            height: '100%',
-            overflow: 'hidden',
-            backgroundColor: bgColor,
-            color: '#fff',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            transition: 'transform 0.2s ease',
-            cursor: 'pointer',
-          }}>
-            <div style={{ 
-              fontWeight: 'bold', 
-              fontSize: '12px',
-              marginBottom: '2px',
-              whiteSpace: 'nowrap',
+          <Tooltip 
+            title={
+              <Box>
+                <Typography variant="subtitle2">{title}</Typography>
+                <Typography variant="body2" sx={{display: 'flex', alignItems: 'center'}}>
+                  <AccessTimeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                  {formatTime(start)} - {formatTime(end)}
+                </Typography>
+                {extendedProps?.instructor && (
+                  <Typography variant="body2" sx={{display: 'flex', alignItems: 'center'}}>
+                    <PersonOutlineIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                    {extendedProps.instructor}
+                  </Typography>
+                )}
+                {extendedProps?.classLevel && (
+                  <Typography variant="body2" sx={{display: 'flex', alignItems: 'center'}}>
+                    <GradeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                    {extendedProps.classLevel}
+                  </Typography>
+                )}
+              </Box>
+            }
+            arrow
+            placement="top"
+            enterDelay={300}
+            leaveDelay={100}
+          >
+            <div style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(0,0,0,0.1)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              padding: '3px 5px',
+              height: '100%',
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {title}
-            </div>
-            
-            {start && end && (
+              backgroundColor: bgColor,
+              color: '#fff',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            >
               <div style={{ 
-                fontSize: '10px', 
-                opacity: '0.9',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                fontWeight: 'bold', 
+                fontSize: '12px',
+                marginBottom: '4px', // More spacing below title
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                maxHeight: '36px',
+                overflow: 'auto',
+                textAlign: 'center' // Center the title
               }}>
-                {formatTime(start)}
+                {title}
               </div>
-            )}
-          </div>
+              
+              {start && end && (
+                <div style={{ 
+                  fontSize: '10px', 
+                  opacity: '0.9',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  textAlign: 'left' // Left-align the time
+                }}>
+                  {formatTime(start)}
+                </div>
+              )}
+            </div>
+          </Tooltip>
         );
       }
 
-      // MEDIUM EVENT: show class name, time, instructor and level
+      // MEDIUM EVENT: show class name, time, and instructor
       else if (viewAdjustedSize === 'medium') {
         return (
           <div style={{
@@ -251,162 +376,158 @@ export default function Calendar() {
             color: '#fff',
             display: 'flex',
             flexDirection: 'column',
-            transition: 'transform 0.2s ease',
+            justifyContent: 'flex-start',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             cursor: 'pointer',
-          }}>
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+          >
             <div style={{ 
               fontWeight: 'bold', 
-              fontSize: '13px',
-              marginBottom: '3px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              fontSize: '14px',
+              marginBottom: '5px',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              maxHeight: '38px',
+              overflow: 'auto',
+              textAlign: 'center'
             }}>
-              <FitnessCenterIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
               {title}
             </div>
             
-            {start && end && (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'flex-start'
+            }}>
+              {/* Time */}
               <div style={{ 
-                fontSize: '11px', 
-                opacity: '0.9',
+                fontSize: '13px', 
+                marginBottom: '5px',
                 display: 'flex',
-                alignItems: 'center',
-                marginBottom: '2px'
+                alignItems: 'flex-start',
+                overflow: 'visible'
               }}>
-                <AccessTimeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
+                <AccessTimeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
                 <span>{formatTime(start)} - {formatTime(end)}</span>
               </div>
-            )}
-            
-            {extendedProps?.instructor && (
-              <div style={{ 
-                fontSize: '11px', 
-                opacity: '0.9',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                <PersonOutlineIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
-                {extendedProps.instructor}
-              </div>
-            )}
-            
-            {extendedProps?.classLevel && (
-              <div style={{ 
-                fontSize: '11px', 
-                opacity: '0.9',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                <GradeIcon sx={{ fontSize: 11, verticalAlign: 'middle', mr: 0.5 }} />
-                {extendedProps.classLevel}
-              </div>
-            )}
+              
+              {/* Instructor */}
+              {extendedProps?.instructor && (
+                <div style={{ 
+                  fontSize: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  <PersonOutlineIcon sx={{ fontSize: 11, mr: 0.5 }} />
+                  {extendedProps.instructor}
+                </div>
+              )}
+            </div>
           </div>
         );
       }
 
-      // LARGE EVENT: show all available information
-      return (
-        <div style={{
-          borderRadius: '6px',
-          border: '1px solid rgba(0,0,0,0.1)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          padding: '8px 10px',
-          height: '100%',
-          overflow: 'hidden',
-          backgroundColor: bgColor,
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'transform 0.2s ease',
-          cursor: 'pointer',
-        }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            fontSize: '14px',
-            marginBottom: '5px',
-            whiteSpace: 'nowrap',
+      // LARGE EVENT: show all event details
+      else {
+        return (
+          <div style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '6px 8px',
+            height: '100%',
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            <FitnessCenterIcon sx={{ fontSize: 15, verticalAlign: 'middle', mr: 0.5 }} />
-            {title}
+            backgroundColor: bgColor,
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+          >
+            <div style={{ 
+              fontWeight: 'bold', 
+              fontSize: '14px',
+              marginBottom: '6px',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              maxHeight: '42px',
+              overflow: 'auto',
+              textAlign: 'center'
+            }}>
+              {title}
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              {/* Time */}
+              <div style={{ 
+                fontSize: '13px', 
+                marginBottom: '5px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                overflow: 'visible'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 13, mr: 1, mt: 0.2, flexShrink: 0 }} />
+                <span>{formatTime(start)} - {formatTime(end)}</span>
+              </div>
+              
+              {/* Instructor */}
+              {extendedProps?.instructor && (
+                <div style={{ 
+                  fontSize: '12px',
+                  marginBottom: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  <PersonOutlineIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                  {extendedProps.instructor}
+                </div>
+              )}
+              
+              {/* Class Level */}
+              {extendedProps?.classLevel && (
+                <div style={{ 
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  <GradeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                  {extendedProps.classLevel}
+                </div>
+              )}
+            </div>
           </div>
-          
-          {start && end && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '4px'
-            }}>
-              <AccessTimeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              <span>{formatTime(start)} - {formatTime(end)}</span>
-            </div>
-          )}
-          
-          {extendedProps?.instructor && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '3px'
-            }}>
-              <PersonOutlineIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.instructor}
-            </div>
-          )}
-          
-          {extendedProps?.classLevel && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              marginBottom: '3px'
-            }}>
-              <GradeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.classLevel}
-            </div>
-          )}
-          
-          {extendedProps?.age && (
-            <div style={{ 
-              fontSize: '11px', 
-              opacity: '0.9',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              <GroupsIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              {extendedProps.age}
-            </div>
-          )}
-        </div>
-      );
-    } catch (err) {
-      console.error("Error rendering event:", err, eventInfo);
-      // Return a fallback rendering for the event
-      return (
-        <div style={{
-          backgroundColor: '#f44336',
-          color: 'white',
-          padding: '2px 4px',
-          borderRadius: '3px',
-          fontSize: '11px'
-        }}>
-          {eventInfo.event?.title || 'Event Error'}
-        </div>
-      );
+        );
+      }
+    } catch (error) {
+      console.error("Error rendering event content:", error);
+      return (<div>Error</div>);
     }
   }
 
@@ -423,6 +544,9 @@ export default function Calendar() {
     const instructor = form.elements.instructor.value;
     const classLevel = form.elements.classLevel.value;
     const ageGroup = form.elements.age.value;
+    const capacity = form.elements.maxCapacity.value;
+    const id1 = uuidv4();
+
     
     // Get color based on class level
     const color = getLevelColor(classLevel);
@@ -442,17 +566,8 @@ export default function Calendar() {
     const baseEventId = `class-${Date.now()}-single`;
     const baseEvent = {
       id: baseEventId,
-      title,
-      start: `${date}T${startTime}`,
-      end: `${date}T${endTime}`,
-      color,
-      textColor: 'white',
-      extendedProps: {
-        instructor,
-        classLevel,
-        age: ageGroup,
-        duration: calculateDuration(startTime, endTime)
-      }
+      id1,
+
     };
     
     // Add the base event
@@ -474,14 +589,41 @@ export default function Calendar() {
       });
       console.log(`Total selected days: ${selectedDayCount}`);
       
-      // Process each day of the week
+      // First create an event for the base day if it's in the selected days
+      if (recurrence.days[baseDayName]) {
+        console.log(`Creating event for base day: ${baseDayName}`);
+        
+        const eventId = `class-${Date.now()}-${baseDayName}`;
+        
+        const baseEvent = {
+          id: eventId,
+          title,
+          start: `${date}T${startTime}`,
+          end: `${date}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            dayOfWeek: baseDayName,
+            capacity: capacity
+          }
+        };
+        
+        newEvents.push(baseEvent);
+        console.log(`Created recurring event for base day ${baseDayName} on ${date}`);
+      }
+      
+      // Process each day of the week (except the base day which was already handled)
       dayNames.forEach((dayName, dayIndex) => {
         // Skip if this day is not selected or if it's the same as the base day
         if (!recurrence.days[dayName] || dayIndex === baseDayIndex) {
           if (!recurrence.days[dayName]) {
             console.log(`Skipping ${dayName} as it's not selected`);
           } else {
-            console.log(`Skipping ${dayName} as it's the same as the base day (${baseDayName})`);
+            console.log(`Skipping ${dayName} as it's the same as the base day (already processed)`);
           }
           return;
         }
@@ -518,7 +660,8 @@ export default function Calendar() {
             classLevel,
             age: ageGroup,
             duration: calculateDuration(startTime, endTime),
-            dayOfWeek: dayName
+            dayOfWeek: dayName,
+            capacity: capacity
           }
         };
         
@@ -526,6 +669,115 @@ export default function Calendar() {
         newEvents.push(newEvent);
         console.log(`Created recurring event for ${dayName} on ${formattedDate}`);
       });
+    } 
+    // If this is a daily recurring event
+    else if (recurrence && recurrence.type === 'daily') {
+      console.log("Creating daily recurring events");
+      
+      // First, create an event for the base day
+      const baseEventId = `class-${Date.now()}-daily-${formatDateCustom(baseDate, "YYYY-MM-DD")}`;
+      
+      const baseEvent = {
+        id: baseEventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          recurring: 'daily',
+          capacity: capacity
+        }
+      };
+      
+      newEvents.push(baseEvent);
+      console.log(`Created daily recurring event for base day ${formatDateCustom(baseDate, "YYYY-MM-DD")}`);
+      
+      // For memory efficiency and to avoid overwhelming localStorage, 
+      // we'll generate events for a reasonable time period (e.g., 2 weeks)
+      // If an end date is specified, we'll respect that
+      const maxDaysToGenerate = 14; // 2 weeks
+      let daysToGenerate = maxDaysToGenerate;
+      
+      // Check if there's an end date specified
+      if (recurrence.hasEndDate && recurrence.endDate) {
+        const endDateObj = new Date(`${recurrence.endDate}T00:00:00`);
+        const daysDifference = Math.floor((endDateObj - baseDate) / (24 * 60 * 60 * 1000));
+        
+        if (daysDifference > 0) {
+          // Use the smaller of the two: our max days or the days until the end date
+          daysToGenerate = Math.min(daysDifference, maxDaysToGenerate);
+          console.log(`Generating daily events for ${daysToGenerate} days until the end date`);
+        } else {
+          console.log(`End date is on or before the start date, defaulting to ${maxDaysToGenerate} days`);
+        }
+      } else {
+        console.log(`No end date specified, defaulting to ${maxDaysToGenerate} days`);
+      }
+      
+      // Generate events for the specified number of days
+      for (let i = 1; i <= daysToGenerate; i++) {
+        // Clone the base date and add the days
+        const eventDate = new Date(baseDate);
+        eventDate.setDate(eventDate.getDate() + i);
+        
+        // Format as YYYY-MM-DD
+        const formattedDate = formatDateCustom(eventDate, "YYYY-MM-DD");
+        
+        // Create a unique ID including the date to avoid collisions
+        const eventId = `class-${Date.now()}-daily-${formattedDate}`;
+        
+        // Create the event
+        const newEvent = {
+          id: eventId,
+          title,
+          start: `${formattedDate}T${startTime}`,
+          end: `${formattedDate}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            recurring: 'daily',
+            capacity: capacity
+          }
+        };
+        
+        // Add to our collection
+        newEvents.push(newEvent);
+        console.log(`Created daily recurring event for day ${i}: ${formattedDate}`);
+      }
+      
+      console.log(`Generated ${daysToGenerate} days of daily recurring events`);
+    }
+    else {
+      // Not recurring, just create a single event for the selected date
+      const eventId = `class-${Date.now()}-single`;
+      
+      const singleEvent = {
+        id: eventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          capacity: capacity
+        }
+      };
+      
+      newEvents.push(singleEvent);
+      console.log(`Created single event for ${date}`);
     }
     
     // Check for existing events with the same title and date/time to avoid duplicates
@@ -610,6 +862,50 @@ export default function Calendar() {
     }
   };
 
+  // Add a function to handle deleting an event
+  const handleDeleteEvent = (eventId) => {
+    // Ask for confirmation before deleting
+    if (window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
+      // Filter out the event with the given ID
+      const updatedEvents = events.filter(event => event.id !== eventId);
+      
+      // Update the state
+      setEvents(updatedEvents);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      
+      // Close the modal
+      handleCloseModal();
+    }
+  };
+
+  // Add a function to handle deleting all recurring events
+  const handleDeleteRecurringEvents = (eventTitle) => {
+    // Ask for confirmation before deleting all recurring events
+    if (window.confirm('Do you want to delete all occurrences of this recurring class? This action cannot be undone.')) {
+      // Filter out all events with the given title
+      const updatedEvents = events.filter(event => event.title !== eventTitle);
+      
+      // Update the state
+      setEvents(updatedEvents);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      
+      // Close the modal
+      handleCloseModal();
+    }
+  };
+
   return (
     <div className="calendar-container" style={{ 
       width: '100%', 
@@ -618,8 +914,6 @@ export default function Calendar() {
       height: 'calc(100vh - 120px)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '0',
-      margin: '0'
     }}>
       <Box sx={{ 
         display: 'flex', 
@@ -643,33 +937,21 @@ export default function Calendar() {
         >
           Clear All Events
         </Button>
-        <Button 
-          variant="outlined" 
-          startIcon={<FitnessCenterIcon />} 
-          onClick={handleResetToDefaults}
-          size={typeof window !== 'undefined' && windowWidth < 768 ? "small" : "medium"}
-          sx={{ fontSize: typeof window !== 'undefined' && windowWidth < 768 ? '0.75rem' : 'inherit' }}
-        >
-          Reset to Defaults
-        </Button>
       </Box>
-      <div style={{ 
-        flex: 1, 
-        overflow: 'auto',
-        paddingRight: '1px',
-        paddingBottom: '1px',
-        marginBottom: '0'
-      }}>
+
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
           initialView="timeGridWeek"
-          editable="true"
+          editable={true}
           headerToolbar={{
             start: typeof window !== 'undefined' && windowWidth < 768 ? 'prev,next' : 'timeGridDay,timeGridWeek,dayGridMonth today',
             center: typeof window !== 'undefined' && windowWidth < 768 ? 'title' : 'prev title next',
             end: 'addClassButton',
           }}
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
+          scrollTime="08:00:00"
           allDaySlot={false}
           events={events}
           eventContent={renderEventContent}
@@ -694,6 +976,7 @@ export default function Calendar() {
           }}
           titleFormat={{ year: 'numeric', month: 'long' }}
           height="100%"
+          expandRows={true}
           stickyHeaderDates={true}
           slotLabelFormat={{
             hour: '2-digit',
@@ -713,24 +996,33 @@ export default function Calendar() {
           dayMaxEvents={3}
           fixedWeekCount={false}
           // Responsive settings
-          windowResize={(view) => {
+          windowResize={(arg) => {
             // Update our width state
             if (typeof window !== 'undefined') {
               setWindowWidth(window.innerWidth);
             }
             
+            // Check if arg and arg.view exist before proceeding
+            if (!arg || !arg.view) return;
+            
+            const calendar = arg.view.calendar;
+            // Only proceed if calendar exists
+            if (!calendar || typeof calendar.changeView !== 'function') return;
+            
             // Automatically adjust to screen size
-            if (typeof window !== 'undefined' && windowWidth < 768 && view.view.type !== 'timeGridDay') {
-              view.calendar.changeView('timeGridDay');
-            } else if (typeof window !== 'undefined' && windowWidth >= 768 && windowWidth < 1024 && view.view.type !== 'timeGridWeek') {
-              view.calendar.changeView('timeGridWeek');
-            } else if (typeof window !== 'undefined' && windowWidth >= 1024 && view.view.type === 'dayGridMonth') {
-              // Removing incorrect change to timeGridMonth which doesn't exist
-              // view.calendar.changeView('timeGridMonth');
+            if (typeof window !== 'undefined') {
+              const currentWidth = window.innerWidth;
+              const currentViewType = arg.view.type;
+              
+              if (currentWidth < 768 && currentViewType !== 'timeGridDay') {
+                calendar.changeView('timeGridDay');
+              } else if (currentWidth >= 768 && currentWidth < 1024 && currentViewType !== 'timeGridWeek') {
+                calendar.changeView('timeGridWeek');
+              }
+              // No else case needed - we don't need to change to month view automatically
             }
           }}
         />
-      </div>
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
@@ -831,7 +1123,7 @@ export default function Calendar() {
                     <PeopleAltIcon sx={{ color: 'text.secondary', mr: 2 }} />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Capacity</Typography>
-                      <Typography variant="body1">20 students</Typography>
+                      <Typography variant="body1">{selectedEvent.extendedProps?.capacity || '20'} students</Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -847,7 +1139,23 @@ export default function Calendar() {
                   <Button 
                     variant="contained" 
                     startIcon={<EditIcon />}
-                    onClick={() => navigate('/edit-class')}
+                    onClick={() => {
+                      const eventData = {
+                        id: selectedEvent.id,
+                        title: selectedEvent.title,
+                        start: selectedEvent.start,
+                        end: selectedEvent.end,
+                        extendedProps: {
+                          instructor: selectedEvent.extendedProps?.instructor,
+                          classLevel: selectedEvent.extendedProps?.classLevel,
+                          age: selectedEvent.extendedProps?.age,
+                          capacity: selectedEvent.extendedProps?.capacity,
+                          duration: selectedEvent.extendedProps?.duration,
+                          dayOfWeek: selectedEvent.extendedProps?.dayOfWeek
+                        }
+                      };
+                      navigate('/edit-class', { state: { event: eventData } });
+                    }}
                     sx={{ 
                       borderRadius: '8px', 
                       backgroundColor: selectedEvent.extendedProps?.classLevel ? 
@@ -861,6 +1169,43 @@ export default function Calendar() {
                   >
                     Edit
                   </Button>
+                </Box>
+                
+                {/* Delete buttons section */}
+                <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Button 
+                    variant="outlined" 
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => handleDeleteEvent(selectedEvent.id)}
+                    sx={{ 
+                      borderRadius: '8px',
+                      borderColor: 'error.light',
+                      color: 'error.main',
+                      '&:hover': {
+                        backgroundColor: 'error.lighter',
+                        borderColor: 'error.main',
+                      }
+                    }}
+                  >
+                    Delete This Class
+                  </Button>
+                  
+                  {/* Only show the delete all occurrences button if it's a recurring event */}
+                  {selectedEvent.extendedProps?.dayOfWeek && (
+                    <Button 
+                      variant="text" 
+                      color="error"
+                      size="small"
+                      onClick={() => handleDeleteRecurringEvents(selectedEvent.title)}
+                      sx={{ 
+                        borderRadius: '8px',
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      Delete All Occurrences
+                    </Button>
+                  )}
                 </Box>
               </Box>
             </>

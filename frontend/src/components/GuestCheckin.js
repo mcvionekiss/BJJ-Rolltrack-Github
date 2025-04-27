@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import axios from "../utils/axiosConfig";
+import axios from "axios";
 import { useState, useEffect } from "react";
 import {
     Button,
@@ -15,6 +15,7 @@ import {
     FormControlLabel,
     FormGroup
 } from "@mui/material";
+import { API_URL } from "../config";  // Import the API_URL from config
 
 function GuestCheckin() {
     const [formData, setFormData] = useState({
@@ -35,7 +36,7 @@ function GuestCheckin() {
     useEffect(() => {
         const fetchCsrfToken = async () => {
             try {
-                const response = await axios.get("/auth/csrf/", { withCredentials: true });
+                const response = await axios.get(`${API_URL}/auth/csrf/`, { withCredentials: true });
                 setCsrfToken(response.data.csrfToken);
             } catch (error) {
                 console.error("Failed to fetch CSRF token", error);
@@ -79,10 +80,11 @@ function GuestCheckin() {
         setSuccess("");
 
         try {
-            const response = await axios.post("/auth/guest-checkin/", formData, {
+            const response = await axios.post(`${API_URL}/auth/guest-checkin/`, formData, {
                 headers: {
                     "X-CSRFToken": csrfToken
-                }
+                },
+                withCredentials: true
             });
             
             setSuccess("Check-in successful! Redirecting to available classes...");

@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
-from django.utils.timezone import localdate
+from django.utils.timezone import localdate, now, timedelta
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils.decorators import method_decorator
@@ -13,11 +13,26 @@ from .models import GymOwner, Student, Class, Checkin
 from django.utils.timezone import now
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Users, Class, Belts, Roles, ClassAttendance
+import requests
+from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache
+from django.core.cache import cache  # Add caching for faster load times
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from django.views.decorators.http import require_http_methods
+from django.core import serializers
+#googleOauth
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
+import os
+from django.core.mail import send_mail
 from django.conf import settings
 
 # CSRF token endpoint (non-exempt - safe for XHR requests)
@@ -96,8 +111,8 @@ class RegisterView(View):
             username = data.get('email')
             email = data.get('email')
             password = data.get('password')
-            first_name = data.get('firstName', '')
-            last_name = data.get('lastName', '')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
             belt_id = data.get('belt', 1)  # Default to first belt if not provided
             role_id = data.get('role', 1)  # Default to first role if not provided
 
@@ -109,8 +124,20 @@ class RegisterView(View):
                 }, status=400)
 
             # Create new user
-            belt = Belts.objects.get(beltID=belt_id)
-            role = Roles.objects.get(roleID=role_id)
+            try:
+                belt = Belts.objects.get(id=belt_id)
+            except Roles.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Role with ID {belt_id} does not exist.'
+                }, status=400)
+            try:
+                role = Roles.objects.get(id=role_id)
+            except Roles.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Role with ID {role_id} does not exist.'
+                }, status=400)
             
             user = Users.objects.create_user(
                 username=username,
@@ -120,11 +147,12 @@ class RegisterView(View):
                 last_name=last_name,
                 date_enrolled=timezone.now().date(),
                 date_of_birth=timezone.now().date(),  # Default value, should be updated later
-                belt=belt,
-                role=role
+                belt_id=belt,
+                role_id=role
             )
 
             # Log the user in
+            user.backend = "django.contrib.auth.backends.ModelBackend"
             login(request, user)
 
             return JsonResponse({
@@ -610,3 +638,358 @@ def student_attendance_history(request, email=None):
         print(f"Error in student_attendance_history: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def get_templates(request):
+    """
+    GET: Get all templates
+    POST: Create a new template
+    """
+    if request.method == 'GET':
+        try:
+            # Get all templates
+            templates = ClassTemplates.objects.all().select_related('level', 'gym')
+            
+            # Serialize the data
+            data = []
+            for template in templates:
+                level_name = template.level.name if template.level else "All Levels"
+                
+                data.append({
+                    "id": template.id,
+                    "name": template.name,
+                    "description": template.description,
+                    "duration_minutes": template.duration_minutes,
+                    "max_capacity": template.max_capacity,
+                    "level_id": level_name,
+                    "gym_id": template.gym.id if template.gym else None,
+                    "gym_name": template.gym.name if template.gym else None
+                })
+            
+            return JsonResponse(data, safe=False)
+        except Exception as e:
+            import traceback
+            print(f"Error getting templates: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({"error": str(e)}, status=500)
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Get required fields
+            name = data.get('name')
+            level_id = data.get('level_id')
+            
+            if not name:
+                return JsonResponse({"error": "Template name is required"}, status=400)
+            
+            # Get or create level
+            level = None
+            try:
+                if level_id:
+                    try:
+                        # First try to get an existing level
+                        level = ClassLevel.objects.get(name=level_id)
+                        print(f"Found existing level: {level.name}")
+                    except ClassLevel.DoesNotExist:
+                        # If it doesn't exist, make sure we have at least one gym
+                        gym = None
+                        try:
+                            gym = Gym.objects.first()
+                        except:
+                            # Create a default gym if none exists
+                            gym = Gym.objects.create(
+                                name="Default Gym",
+                                email="default@example.com",
+                                phone_number="555-555-5555"
+                            )
+                            print(f"Created default gym: {gym.name}")
+                        
+                        # Now create the level
+                        level = ClassLevel.objects.create(
+                            name=level_id,
+                            description=f'{level_id} level',
+                            gym=gym
+                        )
+                        print(f"Created new level: {level.name}")
+            except Exception as e:
+                print(f"Error handling level: {e}")
+                # Use a default level or continue without one
+            
+            # Make sure we have a gym
+            gym = None
+            try:
+                gym = Gym.objects.first()
+            except:
+                gym = Gym.objects.create(
+                    name="Default Gym",
+                    email="default@example.com",
+                    phone_number="555-555-5555"
+                )
+                print(f"Created default gym: {gym.name}")
+            
+            # Create new template
+            new_template = ClassTemplates.objects.create(
+                name=name,
+                description=data.get('description') or f"{name} template",
+                duration_minutes=data.get('duration_minutes') or 60,
+                max_capacity=data.get('max_capacity') or 20,
+                level=level or ClassLevel.objects.first(),  # Default to first level if not specified
+                gym=gym
+            )
+            
+            print(f"Created new template: {new_template.name}")
+            
+            # Return the new template
+            return JsonResponse({
+                "id": new_template.id,
+                "name": new_template.name,
+                "description": new_template.description,
+                "duration_minutes": new_template.duration_minutes,
+                "max_capacity": new_template.max_capacity,
+                "level_id": new_template.level.name if new_template.level else "All Levels",
+                "gym_id": new_template.gym.id if new_template.gym else None,
+                "gym_name": new_template.gym.name if new_template.gym else None
+            }, status=201)
+        except Exception as e:
+            import traceback
+            print(f"Error creating template: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(['DELETE'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def delete_template(request, template_id):
+    """Delete a template by ID"""
+    try:
+        template = get_object_or_404(ClassTemplates, id=template_id)
+        template.delete()
+        return JsonResponse({"success": True, "message": "Template deleted successfully"})
+    except Exception as e:
+        import traceback
+        print(f"Error deleting template {template_id}: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(['PUT'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def update_template(request, template_id):
+    """Update a template by ID"""
+    try:
+        template = get_object_or_404(ClassTemplates, id=template_id)
+        data = json.loads(request.body)
+        
+        # Update fields
+        if 'name' in data:
+            template.name = data['name']
+        if 'description' in data:
+            template.description = data['description']
+        if 'duration_minutes' in data:
+            template.duration_minutes = data['duration_minutes']
+        if 'max_capacity' in data:
+            template.max_capacity = data['max_capacity']
+        if 'level_id' in data:
+            # Get or create level
+            try:
+                level = ClassLevel.objects.get(name=data['level_id'])
+            except ClassLevel.DoesNotExist:
+                level = ClassLevel.objects.create(
+                    name=data['level_id'],
+                    description=f'{data["level_id"]} level',
+                    gym=template.gym or Gym.objects.first()  # Use the same gym or default
+                )
+            template.level = level
+            
+        # Save the updated template
+        template.save()
+        
+        # Return the updated template
+        return JsonResponse({
+            "id": template.id,
+            "name": template.name,
+            "description": template.description,
+            "duration_minutes": template.duration_minutes,
+            "max_capacity": template.max_capacity,
+            "level_id": template.level.name if template.level else "All Levels",
+            "gym_id": template.gym.id if template.gym else None,
+            "gym_name": template.gym.name if template.gym else None
+        })
+    except Exception as e:
+        import traceback
+        print(f"Error updating template {template_id}: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_gym_hours(request, gym_id=None):
+    """
+    Get gym hours for a specific gym
+    If gym_id is not provided, uses the user's associated gym
+    Returns hours for all days of the week
+    """
+    try:
+        # Determine which gym to use
+        if gym_id:
+            gym = get_object_or_404(Gym, id=gym_id)
+        else:
+            # Use the user's gym if authenticated
+            if request.user.is_authenticated:
+                if hasattr(request.user, 'gym') and request.user.gym:
+                    gym = request.user.gym
+                elif hasattr(request.user, 'gym_id') and request.user.gym_id:
+                    gym = get_object_or_404(Gym, id=request.user.gym_id)
+                else:
+                    # Fallback to first gym if no gym is associated
+                    gym = Gym.objects.first()
+                    if not gym:
+                        return Response({
+                            "success": False,
+                            "message": "No gyms in the system"
+                        }, status=404)
+            else:
+                # Not authenticated, use first gym
+                gym = Gym.objects.first()
+                if not gym:
+                    return Response({
+                        "success": False,
+                        "message": "No gyms in the system"
+                    }, status=404)
+        
+        # Get hours for this gym
+        gym_hours = GymHours.objects.filter(gym=gym).order_by('day')
+        
+        # Format the response
+        hours_data = []
+        for hour in gym_hours:
+            # Format the times as HH:MM strings
+            open_time = hour.open_time.strftime('%H:%M') if hour.open_time else None
+            close_time = hour.close_time.strftime('%H:%M') if hour.close_time else None
+            
+            hours_data.append({
+                "day": hour.day,
+                "open": open_time,
+                "close": close_time,
+                "is_closed": hour.is_closed if hasattr(hour, 'is_closed') else (open_time is None or close_time is None)
+            })
+        
+        return Response({
+            "success": True,
+            "gym_id": gym.id,
+            "gym_name": gym.name,
+            "hours": hours_data
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error getting gym hours: {e}")
+        print(traceback.format_exc())
+        return Response({
+            "success": False,
+            "message": str(e)
+        }, status=500)
+    
+
+User = get_user_model()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+  # ✅ optional but more secure
+@api_view(["POST"])
+def google_auth(request):
+    token_str = request.data.get("id_token")
+    if not token_str:
+        return Response({"error": "ID token required"}, status=400)
+
+    try:
+        # 👇 Secure local verification
+        idinfo = id_token.verify_oauth2_token(token_str, google_requests.Request(), audience=GOOGLE_CLIENT_ID)
+
+        email = idinfo.get("email")
+        first_name = idinfo.get("given_name", "")
+        last_name = idinfo.get("family_name", "")
+        phone = idinfo.get("phone_number", "")  # Optional if returned
+
+        if not email:
+            return Response({"error": "Email not in token"}, status=400)
+
+        user = Users.objects.filter(email=email).first()
+
+        if user:
+            # Already registered → log them in and redirect
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            login(request, user)
+            return Response({
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "firstName": user.first_name,
+                    "lastName": user.last_name,
+                },
+                "new_user": False,
+                "redirect": "/dashboard"
+            })
+        else:
+            # Not registered yet → frontend should route to signup
+            return Response({
+                "new_user": True,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name
+            })
+
+    except ValueError as e:
+        return Response({"error": "Invalid token", "details": str(e)}, status=401)
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def request_password_reset(request):
+    print("request_password_reset() method runs")
+    email = request.data.get("email")
+    user = Users.objects.filter(email=email).first()
+    if not user:
+        return Response({"success": False, "message": "No user with that email."}, status=404)
+
+    try:
+        token = PasswordResetToken.objects.create(
+            user=user,
+            expires_at=now() + timedelta(hours=1)
+        )
+    except Exception as e:
+        print("❌ TOKEN CREATION ERROR:", str(e))
+        return Response({"success": False, "message": "Token creation failed."}, status=500)
+    reset_url = f"http://localhost:3000/reset-password/{token.token}"
+
+    try:
+        send_mail(
+            subject="Reset your RollTrack App password",
+            message=f"Click the link to reset your password: {reset_url}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+        )
+    except Exception as e:
+        print("❌ EMAIL ERROR:", str(e))
+        return Response({"success": False, "message": "Email sending failed."}, status=500)
+
+    return Response({"success": True, "message": "Password reset link sent."})
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request, token):
+    new_password = request.data.get("password")
+    token_obj = PasswordResetToken.objects.filter(token=token).first()
+
+    if not token_obj or token_obj.is_expired():
+        return Response({"success": False, "message": "Invalid or expired token"}, status=400)
+
+    user = token_obj.user
+    user.set_password(new_password)
+    user.save()
+    token_obj.delete()
+    return Response({"success": True, "message": "Password updated successfully"})

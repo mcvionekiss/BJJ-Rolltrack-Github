@@ -6,6 +6,8 @@ import './Dashboard.css';
 import { useEvents } from './EventContext';
 import Calendar from './Calendar';
 import AddClassInformation from './AddClassInformation';
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function AddClass() {
   const { events, setEvents } = useEvents();
@@ -37,6 +39,7 @@ export default function AddClass() {
     const instructor = form.elements.instructor.value;
     const classLevel = form.elements.classLevel.value;
     const ageGroup = form.elements.age.value;
+    const id = uuidv4();
     
     // Get color based on class level
     const color = getLevelColor(classLevel);
@@ -114,7 +117,92 @@ export default function AddClass() {
         newEvents.push(newEvent);
         console.log(`Created event for ${dayName} on ${formattedDate}`);
       });
-    } else {
+    } 
+    // If this is a daily recurring event
+    else if (recurrence && recurrence.type === 'daily') {
+      console.log("Creating daily recurring events");
+      
+      // First, create an event for the base day
+      const baseEventId = `class-${Date.now()}-daily-${formatDate(baseDate)}`;
+      
+      const baseEvent = {
+        id: baseEventId,
+        title,
+        start: `${date}T${startTime}`,
+        end: `${date}T${endTime}`,
+        color,
+        textColor: 'white',
+        extendedProps: {
+          instructor,
+          classLevel,
+          age: ageGroup,
+          duration: calculateDuration(startTime, endTime),
+          recurring: 'daily',
+        }
+      };
+      
+      newEvents.push(baseEvent);
+      console.log(`Created daily recurring event for base day ${formatDate(baseDate)}`);
+      
+      // For memory efficiency and to avoid overwhelming localStorage, 
+      // we'll generate events for a reasonable time period (e.g., 2 weeks)
+      // If an end date is specified, we'll respect that
+      const maxDaysToGenerate = 14; // 2 weeks
+      let daysToGenerate = maxDaysToGenerate;
+      
+      // Check if there's an end date specified
+      if (recurrence.hasEndDate && recurrence.endDate) {
+        const endDateObj = new Date(`${recurrence.endDate}T00:00:00`);
+        const daysDifference = Math.floor((endDateObj - baseDate) / (24 * 60 * 60 * 1000));
+        
+        if (daysDifference > 0) {
+          // Use the smaller of the two: our max days or the days until the end date
+          daysToGenerate = Math.min(daysDifference, maxDaysToGenerate);
+          console.log(`Generating daily events for ${daysToGenerate} days until the end date`);
+        } else {
+          console.log(`End date is on or before the start date, defaulting to ${maxDaysToGenerate} days`);
+        }
+      } else {
+        console.log(`No end date specified, defaulting to ${maxDaysToGenerate} days`);
+      }
+      
+      // Generate events for the specified number of days
+      for (let i = 1; i <= daysToGenerate; i++) {
+        // Clone the base date and add the days
+        const eventDate = new Date(baseDate);
+        eventDate.setDate(eventDate.getDate() + i);
+        
+        // Format as YYYY-MM-DD
+        const formattedDate = formatDate(eventDate);
+        
+        // Create a unique ID including the date to avoid collisions
+        const eventId = `class-${Date.now()}-daily-${formattedDate}`;
+        
+        // Create the event
+        const newEvent = {
+          id: eventId,
+          title,
+          start: `${formattedDate}T${startTime}`,
+          end: `${formattedDate}T${endTime}`,
+          color,
+          textColor: 'white',
+          extendedProps: {
+            instructor,
+            classLevel,
+            age: ageGroup,
+            duration: calculateDuration(startTime, endTime),
+            recurring: 'daily',
+          }
+        };
+        
+        // Add to our collection
+        newEvents.push(newEvent);
+        console.log(`Created daily recurring event for day ${i}: ${formattedDate}`);
+      }
+      
+      console.log(`Generated ${daysToGenerate} days of daily recurring events`);
+    }
+    else {
       // Not recurring, just create a single event for the selected date
       const eventId = `class-${Date.now()}-single`;
       
@@ -225,7 +313,7 @@ export default function AddClass() {
   };
 
   return (
-    <Box display="flex">
+    <Box display="flex" style={{ overflowY: 'scroll', height: '100vh' }}>
       <NavigationMenu onWidthChange={setSidebarWidth} />
       <Box
         component="main"

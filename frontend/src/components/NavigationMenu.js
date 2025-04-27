@@ -10,13 +10,13 @@ import {
     ListItemIcon,
     Typography,
     Tooltip,
-    IconButton
 } from "@mui/material";
 
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import MenuIcon from "@mui/icons-material/Menu";
+import PersonIcon from '@mui/icons-material/Person';
 import logo from '../assets/logo.jpeg';
 
 const NavigationMenu = ({ onWidthChange }) => {
@@ -51,7 +51,8 @@ const NavigationMenu = ({ onWidthChange }) => {
     const menuItems = [
         { text: "Schedule", path: "/dashboard", icon: <CalendarTodayIcon /> },
         { text: "Analytics", path: "/analytics", icon: <BarChartIcon /> },
-        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> }
+        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> },
+        { text: "Profile", path: "/profile", icon: <PersonIcon /> }
     ];
 
     return (
@@ -104,7 +105,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                 {menuItems.map((item, index) => (
                     <Tooltip title={item.text} placement="right" key={index}>
                         <ListItem
-                            button
+                            component="div"
                             onClick={() => navigate(item.path)}
                             sx={{
                                 mb: 1,
@@ -112,7 +113,8 @@ const NavigationMenu = ({ onWidthChange }) => {
                                 backgroundColor: currentPath === item.path ? "#e0e0e0" : "transparent",
                                 "&:hover": {
                                     backgroundColor: "#e0e0e0"
-                                }
+                                },
+                                cursor: "pointer"
                             }}
                         >
                             <ListItemIcon sx={{ color: "#757575", minWidth: "40px" }}>

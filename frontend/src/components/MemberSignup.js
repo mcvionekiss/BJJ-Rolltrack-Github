@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import axios from "../utils/axiosConfig";
+import axios from 'axios';
 import { useState, useEffect } from "react";
 import {
     Button,
@@ -26,6 +26,7 @@ function MemberSignup() {
         phone: "",
         dob: "",
         password: "",
+        confirmPassword: ""
     });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -37,7 +38,7 @@ function MemberSignup() {
         // Fetch CSRF token when component mounts
         const fetchCsrfToken = async () => {
             try {
-                const response = await axios.get("/auth/csrf/", { withCredentials: true });
+                const response = await axios.get("http://localhost:8000/auth/csrf/", { withCredentials: true });
                 setCsrfToken(response.data.csrfToken);
             } catch (error) {
                 console.error("Failed to fetch CSRF token", error);
@@ -79,7 +80,7 @@ function MemberSignup() {
             };
             
             // Call the API with CSRF token
-            const response = await axios.post("/auth/member-signup/", backendFormData, {
+            const response = await axios.post("http://localhost:8000/auth/member-signup/", backendFormData, {
                 headers: {
                     "X-CSRFToken": csrfToken
                 }
@@ -275,7 +276,7 @@ function MemberSignup() {
                 <FormControl 
                     variant="outlined" 
                     fullWidth
-                    error={formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword}
+                    error={Boolean(formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword)}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -287,7 +288,7 @@ function MemberSignup() {
                         id="confirmPassword"
                         name="confirmPassword"
                         type={showPassword ? 'text' : 'password'}
-                        value={formData.confirmPassword || ''}
+                        value={formData.confirmPassword}
                         onChange={handleChange}
                         required
                         endAdornment={

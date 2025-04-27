@@ -20,7 +20,7 @@ import {
     Divider
 } from "@mui/material";
 import logo from '../assets/logo.jpeg';
-import GoogleIcon from '@mui/icons-material/Google';
+import GoogleSignIn from "../components/GoogleSignIn";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -99,12 +99,7 @@ function Login() {
     };
 
     const handleSignUp = () => {
-        navigate("/register"); // ✅ Redirects to the Register page
-    };
-
-    const handleGoogleLogin = () => {
-        // Redirect to the Google OAuth URL
-        window.location.href = "http://localhost:8000/accounts/google/login/";
+        navigate("/signup"); // ✅ Redirects to the Register page
     };
 
     return (
@@ -176,34 +171,6 @@ function Login() {
                             required
                         />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-                        <Divider sx={{ flexGrow: 1 }} />
-                        <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
-                            or
-                        </Typography>
-                        <Divider sx={{ flexGrow: 1 }} />
-                    </Box>
-
-                    {/* Google Sign In Button */}
-                    <Button
-                        fullWidth
-                        variant="outlined"
-                        startIcon={<GoogleIcon />}
-                        onClick={handleGoogleLogin}
-                        sx={{
-                            mt: 2,
-                            mb: 3,
-                            py: 1.5,
-                            borderColor: 'gray',
-                            '&:hover': {
-                                borderColor: 'black',
-                                backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                            }
-                        }}
-                    >
-                        Continue with Google
-                    </Button>
-
                         {/* Remember Me & Forgot Password */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
                             <FormControlLabel
@@ -216,7 +183,7 @@ function Login() {
                                 }
                                 label="Remember me"
                             />
-                            <Link href="/forgot" underline="hover">
+                            <Link href="/forgot-password" underline="hover">
                                 Forgot password?
                             </Link>
                         </Box>
@@ -231,6 +198,11 @@ function Login() {
                         >
                             {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign in"}
                         </Button>
+
+                        {/* 🔹 Google Sign-In Button */}
+                        <Box sx={{ mt: 2 }}>
+                            <GoogleSignIn />
+                        </Box>
                     </form>
 
                     {/* Sign Up Link */}

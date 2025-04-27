@@ -28,6 +28,30 @@ import TemplateIcon from '@mui/icons-material/Description';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import axios from 'axios';
 
+// Update this to your actual API URL
+const API_BASE_URL = 'http://localhost:8000';
+
+// Configure axios defaults globally
+axios.defaults.withCredentials = false;
+
+// Helper function to map API template to frontend format
+const mapApiTemplateToFrontend = (apiTemplate) => {
+  return {
+    id: apiTemplate.id,
+    name: apiTemplate.name,
+    instructor: apiTemplate.instructor || '',
+    level_id: apiTemplate.level_id || 'Fundamentals',
+    duration_minutes: apiTemplate.duration_minutes || 60,
+    max_capacity: apiTemplate.max_capacity || 20,
+    description: apiTemplate.description || '',
+    age: apiTemplate.age || 'Adult',
+    // Add recurrence properties if they exist in the API template
+    isRecurring: apiTemplate.is_recurring || false,
+    recurrenceType: apiTemplate.recurrence_type || 'weekly',
+    recurrenceDays: apiTemplate.recurrence_days || null
+  };
+};
+
 const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -47,28 +71,29 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
     setLoading(true);
     setError(null);
     try {
-      // In production this would use your actual API endpoint
-      // For now, use mock data
-      // Simulating API delay for realism
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Try to fetch from the API
+      const response = await axios.get(`${API_BASE_URL}/api/templates/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      const apiTemplates = response.data;
       
-      // Mock data for development
+      // Convert API templates to frontend format
+      const frontendTemplates = apiTemplates.map(mapApiTemplateToFrontend);
+      
+      setTemplates(frontendTemplates);
+      console.log('Templates loaded from API:', frontendTemplates);
+    } catch (err) {
+      console.error('Error fetching templates from API:', err);
+      // Fallback to mock data for development
       const mockTemplates = [
         { id: 1, name: 'Adult Fundamentals', level_id: 'Fundamentals', instructor: 'John Smith', duration_minutes: 60, max_capacity: 20, age: 'Adult' },
         { id: 2, name: 'Adult Advanced', level_id: 'Advanced', instructor: 'Sarah Johnson', duration_minutes: 90, max_capacity: 15, age: 'Adult' },
         { id: 3, name: 'Kids Beginners', level_id: 'Fundamentals', instructor: 'Mike Davis', duration_minutes: 45, max_capacity: 15, age: 'Child' }
       ];
-      
       setTemplates(mockTemplates);
-    } catch (err) {
-      console.error('Error fetching templates:', err);
-      // Don't show error to users, just provide the mock data anyway
-      const fallbackTemplates = [
-        { id: 1, name: 'Adult Fundamentals', level_id: 'Fundamentals', instructor: 'John Smith', duration_minutes: 60, max_capacity: 20, age: 'Adult' },
-        { id: 2, name: 'Adult Advanced', level_id: 'Advanced', instructor: 'Sarah Johnson', duration_minutes: 90, max_capacity: 15, age: 'Adult' },
-        { id: 3, name: 'Kids Beginners', level_id: 'Fundamentals', instructor: 'Mike Davis', duration_minutes: 45, max_capacity: 15, age: 'Child' }
-      ];
-      setTemplates(fallbackTemplates);
     } finally {
       setLoading(false);
     }
@@ -112,22 +137,40 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
       // Create template object from current form data
       const templateData = {
         name: newTemplateName,
-        ...formData,
+        instructor: formData.instructor || '',
+        level_id: formData.classLevel || 'Fundamentals',
+        max_capacity: parseInt(formData.maxCapacity) || 20,
+        duration_minutes: calculateDurationMinutes(formData.startTime, formData.endTime),
+        age: formData.age || 'Adult',
+        description: `${newTemplateName} class template`,
+        // Add recurrence info if present in formData
+        is_recurring: formData.isRecurring || false,
+        recurrence_type: formData.recurrenceType || 'weekly',
+        recurrence_days: formData.recurrenceDays || null
       };
+            
+      // Try to save to the API
+      const response = await axios.post(`${API_BASE_URL}/api/templates/`, templateData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      const apiTemplate = response.data;
       
-      // For now, simulate response
-      const newTemplate = {
-        id: templates.length + 1,
-        ...templateData
-      };
+      // Convert to frontend format
+      const newTemplate = mapApiTemplateToFrontend(apiTemplate);
       
-      setTemplates([...templates, newTemplate]);
+      console.log('Template saved to API:', newTemplate);
+      
+      // Add to local state
+      setTemplates(prev => [...prev, newTemplate]);
       setSelectedTemplate(newTemplate.id);
       setSaveDialogOpen(false);
       setNewTemplateName('');
       
       // Show success message
-      setSuccessMessage(`Template "${newTemplateName}" saved successfully`);
+      setSuccessMessage(`Template "${newTemplateName}" saved successfully to database`);
       setShowSuccessAlert(true);
       
       // Automatically hide the success message after 3 seconds
@@ -135,11 +178,41 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
         setShowSuccessAlert(false);
       }, 3000);
     } catch (err) {
-      console.error('Error saving template:', err);
-      setError('Failed to save template');
+      console.error('Error saving template to API:', err);
+      
+      // Extract the error message
+      const errorMsg = err.response?.data?.error || err.message;
+      setError(`Failed to save template: ${errorMsg}`);
+      
+      // Show error message
+      setSuccessMessage(`Error: ${errorMsg || 'Failed to save template'}`);
+      setShowSuccessAlert(true);
+      
+      // Automatically hide the error message after 5 seconds
+      setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 5000);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to calculate duration in minutes from start and end times
+  const calculateDurationMinutes = (startTime, endTime) => {
+    if (!startTime || !endTime) return 60; // Default to 60 minutes
+    
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    
+    let hours = endHour - startHour;
+    let minutes = endMinute - startMinute;
+    
+    if (minutes < 0) {
+      minutes += 60;
+      hours -= 1;
+    }
+    
+    return hours * 60 + minutes;
   };
 
   const handleDeleteTemplate = async (templateId) => {
@@ -149,6 +222,14 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
 
     setLoading(true);
     try {
+      // Delete from API
+      await axios.delete(`${API_BASE_URL}/api/templates/${templateId}/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
       // Update local state
       const templateToDelete = templates.find(t => t.id === templateId);
       setTemplates(templates.filter(t => t.id !== templateId));
@@ -158,7 +239,7 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
       
       // Show success message
       if (templateToDelete) {
-        setSuccessMessage(`Template "${templateToDelete.name}" deleted`);
+        setSuccessMessage(`Template "${templateToDelete.name}" deleted from database`);
         setShowSuccessAlert(true);
         
         // Automatically hide the success message after 3 seconds
@@ -167,8 +248,20 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
         }, 3000);
       }
     } catch (err) {
-      console.error('Error deleting template:', err);
-      setError('Failed to delete template');
+      console.error('Error deleting template from API:', err);
+      
+      // Extract the error message
+      const errorMsg = err.response?.data?.error || err.message;
+      setError(`Failed to delete template: ${errorMsg}`);
+      
+      // Show error message
+      setSuccessMessage(`Error: ${errorMsg || 'Failed to delete template'}`);
+      setShowSuccessAlert(true);
+      
+      // Automatically hide the error message after 5 seconds
+      setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 5000);
     } finally {
       setLoading(false);
     }
@@ -310,7 +403,7 @@ const ClassTemplateSelector = ({ onSelectTemplate, formData, disabled }) => {
       >
         <Alert 
           onClose={() => setShowSuccessAlert(false)} 
-          severity="success" 
+          severity={error ? "error" : "success"}
           sx={{ width: '100%' }}
         >
           {successMessage}

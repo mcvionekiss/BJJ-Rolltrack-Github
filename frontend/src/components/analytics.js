@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     Container,
     Paper, 
@@ -187,7 +187,6 @@ function Analytics() {
     const theme = useTheme();
     const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const isSmScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const isMdScreen = useMediaQuery(theme.breakpoints.down('lg'));
     
     // Set chart height based on screen size
     const getChartHeight = () => {
@@ -248,7 +247,7 @@ function Analytics() {
             >
                 {/* Attendance Stats Cards */}
                 <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ mb: { xs: 3, sm: 4, md: 6 }, width: '100%' }}>
-                    <Grid item xs={12} md={4}>
+                    <Grid>
                         <AttendanceStatsCard
                             title="Daily Attendance"
                             value="80"
@@ -257,7 +256,7 @@ function Analytics() {
                             data={sparklineData.daily}
                         />
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid>
                         <AttendanceStatsCard
                             title="Weekly Attendance"
                             value="400"
@@ -266,7 +265,7 @@ function Analytics() {
                             data={sparklineData.weekly}
                         />
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid>
                         <AttendanceStatsCard
                             title="Monthly Attendance"
                             value="1,600"

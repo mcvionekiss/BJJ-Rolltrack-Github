@@ -996,20 +996,30 @@ export default function Calendar() {
           dayMaxEvents={3}
           fixedWeekCount={false}
           // Responsive settings
-          windowResize={(view) => {
+          windowResize={(arg) => {
             // Update our width state
             if (typeof window !== 'undefined') {
               setWindowWidth(window.innerWidth);
             }
             
+            // Check if arg and arg.view exist before proceeding
+            if (!arg || !arg.view) return;
+            
+            const calendar = arg.view.calendar;
+            // Only proceed if calendar exists
+            if (!calendar || typeof calendar.changeView !== 'function') return;
+            
             // Automatically adjust to screen size
-            if (typeof window !== 'undefined' && windowWidth < 768 && view.view.type !== 'timeGridDay') {
-              view.calendar.changeView('timeGridDay');
-            } else if (typeof window !== 'undefined' && windowWidth >= 768 && windowWidth < 1024 && view.view.type !== 'timeGridWeek') {
-              view.calendar.changeView('timeGridWeek');
-            } else if (typeof window !== 'undefined' && windowWidth >= 1024 && view.view.type === 'dayGridMonth') {
-              // Removing incorrect change to timeGridMonth which doesn't exist
-              // view.calendar.changeView('timeGridMonth');
+            if (typeof window !== 'undefined') {
+              const currentWidth = window.innerWidth;
+              const currentViewType = arg.view.type;
+              
+              if (currentWidth < 768 && currentViewType !== 'timeGridDay') {
+                calendar.changeView('timeGridDay');
+              } else if (currentWidth >= 768 && currentWidth < 1024 && currentViewType !== 'timeGridWeek') {
+                calendar.changeView('timeGridWeek');
+              }
+              // No else case needed - we don't need to change to month view automatically
             }
           }}
         />

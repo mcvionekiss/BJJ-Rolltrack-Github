@@ -85,10 +85,10 @@ export default function Register() {
     });
 
     const passwordMessages = {
-        minLength: "At least 8 characters!",
-        specialChar: "At least one special character!",
-        number: "At least one number!",
-        capital: "At least one uppercase letter!",
+        minLength: "Your password must be at least 8 characters long.",
+        specialChar: "Your password must contain at least one special character.",
+        number: "Your password must contain at least one number.",
+        capital: "Your password must contain at least one uppercase letter.",
     };
 
     const [activeStep, setActiveStep] = useState(0);
@@ -102,7 +102,6 @@ export default function Register() {
         gym: "",
       });
     const [isGoogleSignup, setIsGoogleSignup] = useState(false);
-    const navigate = useNavigate();
 
     useEffect(() => {
         fetchCsrfToken(setCsrfToken);

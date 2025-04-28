@@ -1,39 +1,51 @@
-from django.contrib.auth import authenticate, login, logout
+# Django imports
+from django.conf import settings
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.core import serializers
+from django.core.cache import cache
+from django.core.mail import send_mail
 from django.http import JsonResponse
-from django.utils.timezone import localdate, now, timedelta
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
-from django.utils.decorators import method_decorator
-from django.views import View
-from django.contrib.auth.decorators import login_required
-import json
-import logging
-import time
-from .models import GymOwner, Student, Class, Checkin
-from django.utils.timezone import now
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-import requests
-from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken
-from django.utils import timezone
-from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache  # Add caching for faster load times
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.utils.timezone import localdate, now, timedelta
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+
+# Rest framework imports
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from django.views.decorators.http import require_http_methods
-from django.core import serializers
-#googleOauth
+
+# Google auth imports
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
+
+# Python standard library imports
+import json
+import logging
 import os
-from django.core.mail import send_mail
-from django.conf import settings
+import time
+import requests
+
+# Local imports
+from .models import (
+    Belts, 
+    Class, 
+    ClassAttendance, 
+    ClassLevel, 
+    ClassTemplates, 
+    Gym, 
+    GymHours, 
+    PasswordResetToken, 
+    Roles, 
+    Users
+)
 
 # CSRF token endpoint (non-exempt - safe for XHR requests)
 def get_csrf_token(request):

@@ -1,20 +1,32 @@
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import path, re_path, include
 from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.decorators.cache import cache_page
+
+# Authentication views
 from server.views import (
-    (
-    LoginView, LogoutView, RegisterView, get_csrf_token, 
-   
-    CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, 
-   
-    check_student, available_classes_today, class_details, checkin, 
-    add_class, student_attendance_history, get_gym_hours, google_auth, request_password_reset, reset_password,
-    # Add new template views
-    get_templates, delete_template, update_template
+    LoginView, LogoutView, RegisterView, get_csrf_token,
+    MemberSignupView, GuestCheckinView, google_auth,
+    request_password_reset, reset_password
 )
+
+# Check-in related views
+from server.views import (
+    CheckinView, CheckinSelectionView, check_student,
+    checkin
+)
+
+# Class and attendance related views
+from server.views import (
+    available_classes_today, class_details, add_class,
+    student_attendance_history, get_gym_hours
+)
+
+# Template management views
+from server.views import (
+    get_templates, delete_template, update_template
 )
 
 # API URLs grouped together for better organization

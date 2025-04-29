@@ -15,6 +15,10 @@ function CheckinSuccess() {
     const className = location.state?.className || "Class";
     const checkinTime = location.state?.checkinTime ? new Date(location.state.checkinTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
     const classDate = location.state?.date ? new Date(location.state.date).toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'}) : "";
+    const gymId = location.state?.gymId || ""; // Retrieve gymId from location state
+    
+    // Log for debugging
+    console.log("CheckinSuccess - Retrieved gymId:", gymId);
 
     return (
         <Fade in={true} timeout={800}>
@@ -119,7 +123,7 @@ function CheckinSuccess() {
                             }
                         }}
                         onClick={() => navigate("/available-classes", {
-                            state: { email: studentEmail }
+                            state: { email: studentEmail, gymId: gymId }
                         })}
                     >
                         Check Into Another Class
@@ -143,7 +147,7 @@ function CheckinSuccess() {
                                 transform: 'translateY(-2px)'
                             }
                         }}
-                        onClick={() => navigate("/checkin")}
+                        onClick={() => navigate(`/checkin${gymId ? `?gym_id=${gymId}` : ''}`)}
                     >
                         Done
                     </Button>

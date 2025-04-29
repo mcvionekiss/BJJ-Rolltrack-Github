@@ -18,6 +18,9 @@ import config from "../config";
 // Icons
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 
+// Ensure cookies are included with requests
+axios.defaults.withCredentials = true;
+
 // Utility function to format date
 const formatDate = (date) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
@@ -37,14 +40,40 @@ function ClassDetails() {
     const studentEmail = location.state?.email || "";
     const studentName = location.state?.studentName || "";
     const isGuest = location.state?.isGuest || false;
+    const gymId = location.state?.gymId || ""; // Get gymId from location state
     const [classDetails, setClassDetails] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
     const [checkingIn, setCheckingIn] = useState(false);
+    const [csrfToken, setCsrfToken] = useState("");
+
+    // Log for debugging
+    console.log("ClassDetails - Retrieved gymId:", gymId, "Email:", studentEmail, "Guest:", isGuest);
+    
+    // Fetch CSRF token when component mounts
+    useEffect(() => {
+        const fetchCsrfToken = async () => {
+            try {
+                console.log("Fetching CSRF token...");
+                const response = await axios.get(config.endpoints.auth.csrf);
+                const token = response.data.csrfToken;
+                setCsrfToken(token);
+                console.log("CSRF token fetched successfully");
+            } catch (error) {
+                console.error("Error fetching CSRF token:", error);
+                setError("Error fetching CSRF token. Please refresh the page.");
+            }
+        };
+        
+        fetchCsrfToken();
+    }, []);
 
     useEffect(() => {
         setError("");
         setLoading(true);
+        
+        // Log for debugging
+        console.log(`Fetching class details for ID: ${id}, Gym ID: ${gymId}`);
         
         axios.get(config.endpoints.api.classDetails(id))
             .then(response => {
@@ -65,7 +94,7 @@ function ClassDetails() {
             .finally(() => {
                 setLoading(false);
             });
-    }, [id]);
+    }, [id, gymId]);
 
     const handleCheckIn = async () => {
         if (!studentEmail) {
@@ -73,11 +102,16 @@ function ClassDetails() {
             return;
         }
         
+        if (!csrfToken) {
+            setError("Security token not available. Please refresh the page.");
+            return;
+        }
+        
         setCheckingIn(true);
         setError("");
         
         try {
-            console.log(`Sending check-in request for class ID: ${id} and email: ${studentEmail}`);
+            console.log(`Sending check-in request for class ID: ${id}, email: ${studentEmail}, gym ID: ${gymId}`);
             
             // Handle differently if it's a guest
             if (isGuest) {
@@ -90,7 +124,8 @@ function ClassDetails() {
                     email: studentEmail,
                     checkinTime: new Date().toISOString(),
                     date: classDetails.date,
-                    isGuest: true
+                    isGuest: true,
+                    gymId: gymId
                 };
                 
                 console.log("Navigating to success page with guest data:", checkinData);
@@ -98,11 +133,22 @@ function ClassDetails() {
                 return;
             }
             
+            // Configure headers with CSRF token
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            };
+            
             // Regular student check-in process
-            const response = await axios.post(config.endpoints.api.checkin, {
-                email: studentEmail,
-                classID: id  // This is the id from useParams()
-            });
+            const response = await axios.post(
+                config.endpoints.api.checkin, 
+                {
+                    email: studentEmail,
+                    classID: id,  // This is the id from useParams()
+                    gym_id: gymId  // Changed to gym_id to match backend parameter name
+                },
+                { headers }
+            );
 
             console.log("Check-in response:", response.data);
 
@@ -112,11 +158,12 @@ function ClassDetails() {
                     className: classDetails.name,
                     email: studentEmail,
                     checkinTime: new Date().toISOString(),
-                    date: classDetails.date
+                    date: classDetails.date,
+                    gymId: gymId
                 };
                 
                 console.log("Navigating to success page with data:", checkinData);
-                navigate("/checkin-success", { state: { ...checkinData, email: studentEmail } });
+                navigate("/checkin-success", { state: { ...checkinData, email: studentEmail, gymId: gymId } });
             } else {
                 console.error("Check-in failed:", response.data.message);
                 setError(response.data.message || "Check-in failed. Please try again.");
@@ -149,7 +196,8 @@ function ClassDetails() {
             state: { 
                 email: studentEmail,
                 studentName: studentName,
-                isGuest: isGuest
+                isGuest: isGuest,
+                gymId: gymId  // Include gymId when navigating back
             } 
         });
     };

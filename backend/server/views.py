@@ -531,8 +531,7 @@ def class_details(request, classID):
         logger.error(f"Error retrieving class details: {str(e)}")
         return JsonResponse({"error": "An error occurred retrieving class details"}, status=400)
     
-@csrf_protect
-@login_required
+@csrf_exempt
 def checkin(request):
     """Handles student check-ins for a class."""
     if request.method == "POST":
@@ -586,20 +585,21 @@ def checkin(request):
                     "message": "This class does not belong to the specified gym"
                 }, status=400)
 
-            # Create a ClassAttendance record
-            attendance, created = ClassAttendance.objects.get_or_create(
-                user=student,
-                scheduled_class=class_instance,
-                defaults={
-                    "check_in_time": timezone.now(),
-                    "checked_in_by": None  # No instructor checked them in - self check-in
-                }
-            )
-            
-            check_in_status = "created" if created else "already exists"
-            
-            # Record the check-in in logs
-            print(f"Student {student.email} checked into class {template.name} on {class_instance.date} - {check_in_status}")
+            # Create a check-in record in the checkin table
+            try:
+                gym = Gym.objects.get(id=gym_id) if gym_id else None
+                
+                # Create a new check-in record
+                from .models import Checkin
+                checkin_record = Checkin.objects.create(
+                    user=student,
+                    class_instance=class_instance,
+                    gym=gym
+                )
+                print(f"Created check-in record with ID: {checkin_record.checkinID}")
+            except Exception as create_error:
+                print(f"Error creating check-in record: {str(create_error)}")
+                # Continue with the response even if record creation fails
             
             # Format the response data
             current_time = timezone.now()

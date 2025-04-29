@@ -22,6 +22,7 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AddIcon from '@mui/icons-material/Add';
 import NavigationMenu from "./NavigationMenu";
 
 // Mock data for clients
@@ -79,13 +80,40 @@ const mockClients = [
 ];
 
 function ClientsPage() {
-    const [searchQuery, setSearchQuery] = React.useState('');
-    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [anchorEl, setAnchorEl] = useState(null);
     const [sidebarWidth, setSidebarWidth] = useState(250);
     const [filter, setFilter] = useState('id');
     const [filterAnchorEl, setFilterAnchorEl] = useState(null);
     const [editClient, setEditClient] = useState(null);
     const [filteredClients, setFilteredClients] = useState(mockClients);
+    const [addClientOpen, setAddClientOpen] = useState(false);
+    const [newClient, setNewClient] = useState({
+        email: '',
+        name: '',
+        age: '',
+        gender: '',
+        skillLevel: 'Beginner',
+        subscription: 'New'
+    });
+
+    const [errors, setErrors] = useState({
+        email: false,
+        name: false,
+        age: false,
+        gender: false
+    });
+
+    const validateForm = () => {
+        const newErrors = {
+            email: !newClient.email,
+            name: !newClient.name,
+            age: !newClient.age,
+            gender: !newClient.gender
+        };
+        setErrors(newErrors);
+        return !Object.values(newErrors).some(error => error);
+    };
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -116,8 +144,35 @@ function ClientsPage() {
         const confirmDelete = window.confirm('Are you sure you want to delete this client?');
         if (confirmDelete) {
             const updatedClients = filteredClients.filter(client => client.id !== clientId);
-            console.log('Deleted client ID:', clientId);
-            // You would also update your state or backend here
+            setFilteredClients(updatedClients);
+        }
+    };
+
+    const handleAddClient = () => {
+        if (validateForm()) {
+            const newId = Math.max(...mockClients.map(client => client.id)) + 1;
+            const clientToAdd = {
+                ...newClient,
+                id: newId,
+                contact: newClient.email,
+                lastTrainingDate: new Date().toISOString().split('T')[0]
+            };
+            setFilteredClients([...filteredClients, clientToAdd]);
+            setAddClientOpen(false);
+            setNewClient({
+                email: '',
+                name: '',
+                age: '',
+                gender: '',
+                skillLevel: 'Beginner',
+                subscription: 'New'
+            });
+            setErrors({
+                email: false,
+                name: false,
+                age: false,
+                gender: false
+            });
         }
     };
 
@@ -142,9 +197,23 @@ function ClientsPage() {
                 }}
             >
                 <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 5 }}>
-                    <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
-                        Clients
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Typography variant="h5" fontWeight="bold">
+                            Clients
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => setAddClientOpen(true)}
+                            sx={{
+                                backgroundColor: "black",
+                                color: "white",
+                                "&:hover": { backgroundColor: "#333" }
+                            }}
+                        >
+                            Add Client
+                        </Button>
+                    </Box>
 
                     {/* Search and Filter Bar */}
                     <Box sx={{
@@ -265,24 +334,174 @@ function ClientsPage() {
                         <MenuItem onClick={() => { handleDelete(anchorEl.client.id); handleMenuClose(); }}>Delete</MenuItem>
                     </Menu>
 
+                    {/* Add Client Modal */}
+                    <Dialog open={addClientOpen} onClose={() => setAddClientOpen(false)}>
+                        <DialogTitle>Add New Client</DialogTitle>
+                        <DialogContent>
+                            <TextField
+                                label="Email"
+                                fullWidth
+                                margin="dense"
+                                value={newClient.email}
+                                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                                required
+                                error={errors.email}
+                                helperText={errors.email ? "Email is required" : ""}
+                            />
+                            <TextField
+                                label="Name"
+                                fullWidth
+                                margin="dense"
+                                value={newClient.name}
+                                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                                required
+                                error={errors.name}
+                                helperText={errors.name ? "Name is required" : ""}
+                            />
+                            <TextField
+                                label="Age"
+                                type="number"
+                                fullWidth
+                                margin="dense"
+                                value={newClient.age}
+                                onChange={(e) => setNewClient({ ...newClient, age: e.target.value })}
+                                required
+                                error={errors.age}
+                                helperText={errors.age ? "Age is required" : ""}
+                                InputProps={{ inputProps: { min: 0 } }}
+                            />
+                            <TextField
+                                label="Gender"
+                                fullWidth
+                                margin="dense"
+                                value={newClient.gender}
+                                onChange={(e) => setNewClient({ ...newClient, gender: e.target.value })}
+                                required
+                                error={errors.gender}
+                                helperText={errors.gender ? "Gender is required" : ""}
+                            />
+                            <TextField
+                                label="Skill Level"
+                                fullWidth
+                                margin="dense"
+                                value={newClient.skillLevel}
+                                onChange={(e) => setNewClient({ ...newClient, skillLevel: e.target.value })}
+                                select
+                                SelectProps={{
+                                    native: true,
+                                }}
+                            >
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </TextField>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setAddClientOpen(false)}>Cancel</Button>
+                            <Button 
+                                onClick={handleAddClient}
+                                disabled={!newClient.email || !newClient.name || !newClient.age || !newClient.gender}
+                                sx={{
+                                    backgroundColor: "black",
+                                    color: "white",
+                                    "&:hover": { backgroundColor: "#333" }
+                                }}
+                            >
+                                Add Client
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
                     {/* Edit Client Modal */}
                     <Dialog open={Boolean(editClient)} onClose={() => setEditClient(null)}>
                         <DialogTitle>Edit Client</DialogTitle>
                         <DialogContent>
-                            <TextField label="Name" fullWidth margin="dense" value={editClient?.name || ''} onChange={(e) => setEditClient({ ...editClient, name: e.target.value })} />
-                            <TextField label="Age" type="number" fullWidth margin="dense" value={editClient?.age || ''} onChange={(e) => setEditClient({ ...editClient, age: parseInt(e.target.value) })} />
-                            <TextField label="Gender" fullWidth margin="dense" value={editClient?.gender || ''} onChange={(e) => setEditClient({ ...editClient, gender: e.target.value })} />
-                            <TextField label="Contact" fullWidth margin="dense" value={editClient?.contact || ''} onChange={(e) => setEditClient({ ...editClient, contact: e.target.value })} />
-                            <TextField label="Skill Level" fullWidth margin="dense" value={editClient?.skillLevel || ''} onChange={(e) => setEditClient({ ...editClient, skillLevel: e.target.value })} />
-                            <TextField label="Last Training Date" type="date" fullWidth margin="dense" value={editClient?.lastTrainingDate || ''} onChange={(e) => setEditClient({ ...editClient, lastTrainingDate: e.target.value })} InputLabelProps={{ shrink: true }} />
-                            <TextField label="Subscription" fullWidth margin="dense" value={editClient?.subscription || ''} onChange={(e) => setEditClient({ ...editClient, subscription: e.target.value })} />
+                            <TextField 
+                                label="Name" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.name || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, name: e.target.value })} 
+                                required
+                            />
+                            <TextField 
+                                label="Age" 
+                                type="number" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.age || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, age: parseInt(e.target.value) })} 
+                                required
+                                InputProps={{ inputProps: { min: 0 } }}
+                            />
+                            <TextField 
+                                label="Gender" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.gender || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, gender: e.target.value })} 
+                                required
+                            />
+                            <TextField 
+                                label="Contact" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.contact || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, contact: e.target.value })} 
+                                required
+                            />
+                            <TextField 
+                                label="Skill Level" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.skillLevel || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, skillLevel: e.target.value })} 
+                                select
+                                SelectProps={{
+                                    native: true,
+                                }}
+                            >
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </TextField>
+                            <TextField 
+                                label="Last Training Date" 
+                                type="date" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.lastTrainingDate || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, lastTrainingDate: e.target.value })} 
+                                InputLabelProps={{ shrink: true }} 
+                                required
+                            />
+                            <TextField 
+                                label="Subscription" 
+                                fullWidth 
+                                margin="dense" 
+                                value={editClient?.subscription || ''} 
+                                onChange={(e) => setEditClient({ ...editClient, subscription: e.target.value })} 
+                                required
+                            />
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setEditClient(null)}>Cancel</Button>
-                            <Button onClick={() => {
-                                console.log('Updated client:', editClient);
-                                setEditClient(null);
-                            }} color="primary">Save</Button>
+                            <Button 
+                                onClick={() => {
+                                    const updatedClients = filteredClients.map(client => 
+                                        client.id === editClient.id ? editClient : client
+                                    );
+                                    setFilteredClients(updatedClients);
+                                    setEditClient(null);
+                                }}
+                                sx={{
+                                    backgroundColor: "black",
+                                    color: "white",
+                                    "&:hover": { backgroundColor: "#333" }
+                                }}
+                            >
+                                Save
+                            </Button>
                         </DialogActions>
                     </Dialog>
                 </Paper>

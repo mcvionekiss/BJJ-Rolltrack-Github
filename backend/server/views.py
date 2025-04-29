@@ -423,19 +423,29 @@ def check_student(request):
 def available_classes_today(request):
     """Fetch only today's available classes for check-in."""
     today = localdate()  # Get today's date
+    gym_id = request.GET.get('gym_id')  # Get gym_id from query parameters
 
     try:
-        # Try to get cached data first
-        cached_classes = cache.get(f"available_classes_{today}")
+        # Try to get cached data first, with gym_id in the cache key
+        cache_key = f"available_classes_{today}_{gym_id}" if gym_id else f"available_classes_{today}"
+        cached_classes = cache.get(cache_key)
         if cached_classes:
             return JsonResponse({"success": True, "classes": cached_classes}, status=200)
 
-        # Query classes with required fields for today
-        classes = Class.objects.filter(
+        # Base query - filter by date and not canceled
+        query = Class.objects.filter(
             date=today,
             is_canceled=0,  # Only get non-canceled classes
             template__isnull=False,  # Only classes with a template
-        ).select_related('template', 'template__level').order_by("start_time")
+        )
+        
+        # Add gym filter if gym_id is provided
+        if gym_id:
+            print(f"Filtering classes for gym_id: {gym_id}")
+            query = query.filter(template__gym_id=gym_id)
+        
+        # Get the classes with related data
+        classes = query.select_related('template', 'template__level').order_by("start_time")
 
         data = []
         for cls in classes:
@@ -444,6 +454,9 @@ def available_classes_today(request):
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
                 
+                # Get current attendance count
+                attendance_count = cls.classattendance_set.count() if hasattr(cls, 'classattendance_set') else 0
+                
                 data.append({
                     "id": cls.id,
                     "name": template.name,
@@ -451,8 +464,10 @@ def available_classes_today(request):
                     "endTime": cls.end_time.strftime("%H:%M"),
                     "level": level_name,
                     "maxCapacity": template.max_capacity,
+                    "currentAttendance": attendance_count,
                     "description": template.description,
-                    "notes": cls.notes
+                    "notes": cls.notes,
+                    "gymId": template.gym_id if hasattr(template, 'gym_id') else None
                 })
             except Exception as e:
                 # Log error but continue processing other classes
@@ -460,7 +475,7 @@ def available_classes_today(request):
                 continue
 
         # Store in cache for 30 seconds
-        cache.set(f"available_classes_{today}", data, timeout=30)
+        cache.set(cache_key, data, timeout=30)
 
         return JsonResponse({"success": True, "classes": data}, status=200)
     
@@ -483,6 +498,9 @@ def class_details(request, classID):
         
         template = class_instance.template
         level = template.level if hasattr(template, 'level') else None
+        
+        # Get attendance count
+        attendance_count = class_instance.classattendance_set.count() if hasattr(class_instance, 'classattendance_set') else 0
             
         data = {
             "success": True,
@@ -495,7 +513,13 @@ def class_details(request, classID):
             "notes": class_instance.notes or "",
             "description": template.description or "",
             "maxCapacity": template.max_capacity,
+            "currentAttendance": attendance_count,
+            "gymId": template.gym_id if hasattr(template, 'gym') else None,
         }
+        
+        # Add gym details if available
+        if hasattr(template, 'gym') and template.gym:
+            data["gymName"] = template.gym.name
         
         # Add level info if available
         if level:
@@ -519,6 +543,7 @@ def checkin(request):
             data = json.loads(request.body)
             email = data.get("email")
             class_id = data.get("classID")  # We still accept classID from frontend
+            gym_id = data.get("gym_id")  # Get gym_id from request
             
             if not email or not class_id:
                 return JsonResponse({
@@ -556,6 +581,13 @@ def checkin(request):
                     "success": False, 
                     "message": "Class template not found"
                 }, status=404)
+                
+            # Validate that the class belongs to the specified gym if gym_id is provided
+            if gym_id and str(template.gym_id) != str(gym_id):
+                return JsonResponse({
+                    "success": False,
+                    "message": "This class does not belong to the specified gym"
+                }, status=400)
 
             # Create a ClassAttendance record
             attendance, created = ClassAttendance.objects.get_or_create(

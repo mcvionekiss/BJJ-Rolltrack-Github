@@ -6,6 +6,7 @@ import NavigationMenu from "../NavigationMenu.js";
 import Calendar from './Calendar'
 import './Dashboard.css';
 import WelcomePage from '../WelcomePage';
+import config from "../../config";
 
 function Dashboard() {
     const navigate = useNavigate();

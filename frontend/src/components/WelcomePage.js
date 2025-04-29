@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Typography, Box, Paper, Modal } from "@mui/material";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import "./WelcomePage.css"; // Create this CSS file for styling
+import config from "../config";
 
 const WelcomePage = ({ gymId, open, onClose }) => {
     const [qrUrl, setQrUrl] = useState(null);
@@ -11,7 +12,7 @@ const WelcomePage = ({ gymId, open, onClose }) => {
             // Call backend endpoint to generate QR code and get the image URL
             // This assumes you have a backend endpoint that runs the script and serves the image
             // For local dev, you could have the image saved in /public and just set the URL
-            setQrUrl(`http://localhost:8000/api/generate-qr/${gymId}/`);
+            setQrUrl(config.endpoints.api.generateQR(gymId));
             // Or, if you have an API: `/api/generate-qr?gym_id=${gymId}`
         }
     }, [gymId]);

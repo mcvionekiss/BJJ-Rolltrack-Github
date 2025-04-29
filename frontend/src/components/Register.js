@@ -39,7 +39,7 @@ const fetchCsrfToken = async (setCsrfToken) => {
 };
 
 const addGym = async (gymData, csrfToken) => {
-    const response = await axios.post("http://localhost:8000/auth/add-gym/", gymData);
+    const response = await axios.post(config.endpoints.auth.addGym, gymData);
     console.log("🟢 Gym added successfully", response.data);
     console.log("🟢 Gym ID: ", response.data.gym.id);
     return response.data.gym.id;  // Return the gym ID
@@ -67,10 +67,11 @@ const registerUser = async (userData, csrfToken) => {
       });
 };
 
-const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
+const steps = ["Personal Information", "Gym Details", "Schedule Details", "Waiver Setup", "Confirmation"];
 const stepperSteps = steps;
 
 export default function Register() {
+    const navigate = useNavigate();
     const [gymId, setGymId] = useState(null);
     const [formData, setFormData] = useState({
         firstName: "",
@@ -99,7 +100,7 @@ export default function Register() {
         capital: "Your password must contain at least one uppercase letter.",
     };
 
-    const [activeStep, setActiveStep] = useState(0);
+    const [activeStep, setActiveStep] = useState(1);
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -474,6 +475,7 @@ export default function Register() {
                         )}
 
                         {activeStep < 4 && (
+                            console.log(activeStep),
                             <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
                                 {activeStep > 0 && (
                                     <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>
@@ -488,7 +490,7 @@ export default function Register() {
                                     }}
                                     disabled={loading}
                                 >
-                                    {loading ? "Submitting..." : activeStep === steps.length - 2 ? "Submit" : "Continue"}
+                                    {loading ? "Submitting..." : activeStep === steps.length - 1 ? "Submit" : "Continue"}
                                 </Button>
                             </Box>
                         )}

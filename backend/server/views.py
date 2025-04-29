@@ -1099,7 +1099,9 @@ def add_gym(request):
 def generate_qr(request, gym_id):
     try:
         # Generate QR code data
-        qr_data = f"http://localhost:3000/checkin-selection?gym_id={gym_id}"
+        # Use the frontend URL from settings instead of hardcoding
+        frontend_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:3000"
+        qr_data = f"{frontend_url}/checkin-selection?gym_id={gym_id}"
         qr = qrcode.QRCode(
             version=6,
             error_correction=qrcode.constants.ERROR_CORRECT_H,

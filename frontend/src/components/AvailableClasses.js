@@ -12,6 +12,7 @@ import {
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import GroupIcon from "@mui/icons-material/Group";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import config from "../config";
 
 // Utility function to format the date
 const formatDate = (date) => {
@@ -67,7 +68,7 @@ function AvailableClasses() {
         setLoading(true);
         setError("");
         
-        axios.get("http://localhost:8000/api/available_classes_today/")
+        axios.get(config.endpoints.api.availableClasses)
             .then(response => {
                 console.log("API Response:", response.data);
                 if (response.data.success && response.data.classes) {

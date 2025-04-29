@@ -10,11 +10,13 @@ import {
     Alert,
     CircularProgress
 } from "@mui/material";
+import config from '../config';
 
 function Checkin() {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [studentInfo, setStudentInfo] = useState(null);
     const navigate = useNavigate();
     
     // Log component mount
@@ -50,22 +52,20 @@ function Checkin() {
         try {
             console.log(`🔶 Making API request to check_student with email: ${email}`);
             const startTime = performance.now();
-            const response = await axios.post("http://localhost:8000/api/check_student/", { email });
+            const response = await axios.post(config.endpoints.api.checkStudent, { email });
             const endTime = performance.now();
             
-            console.log(`🔶 API response received in ${(endTime - startTime).toFixed(2)}ms`);
-            console.log("🔶 API response data:", response.data);
-
-            if (response.data.exists) {
+            if (response.data.success) {
                 console.log(`✅ Student found: ${email}`, {
-                    studentData: response.data,
+                    studentData: response.data.student,
                     timestamp: new Date().toISOString()
                 });
                 console.log(`🔶 Navigating to /available-classes with email: ${email}`);
+                setStudentInfo(response.data.student);
                 navigate("/available-classes", { state: { email } });
             } else {
                 console.warn(`⚠️ Student exists=false for email: ${email}`);
-                setError("Email not found. Please try again or sign up as a new member.");
+                setError(response.data.message || "Email not found. Please try again or sign up as a new member.");
             }
         } catch (error) {
             console.error("🔴 Student not found:", {
@@ -76,20 +76,15 @@ function Checkin() {
                 fullError: error
             });
             
-            // Handle different error types
             if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
                 if (error.response.status === 404) {
                     setError("Email not found. Please try again or sign up as a new member.");
                 } else {
                     setError(error.response.data.message || "Error checking student. Please try again.");
                 }
             } else if (error.request) {
-                // The request was made but no response was received
                 setError("Could not connect to server. Please check your connection and try again.");
             } else {
-                // Something happened in setting up the request that triggered an Error
                 setError("An unexpected error occurred. Please try again later.");
             }
             

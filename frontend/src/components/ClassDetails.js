@@ -13,6 +13,7 @@ import {
     CircularProgress
 } from "@mui/material";
 import banner from "../assets/banner.png";
+import config from "../config";
 
 // Icons
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
@@ -45,7 +46,7 @@ function ClassDetails() {
         setError("");
         setLoading(true);
         
-        axios.get(`http://localhost:8000/api/class_details/${id}/`)
+        axios.get(config.endpoints.api.classDetails(id))
             .then(response => {
                 if (response.data.success) {
                     setClassDetails(response.data);
@@ -98,7 +99,7 @@ function ClassDetails() {
             }
             
             // Regular student check-in process
-            const response = await axios.post("http://localhost:8000/api/checkin/", {
+            const response = await axios.post(config.endpoints.api.checkin, {
                 email: studentEmail,
                 classID: id  // This is the id from useParams()
             });

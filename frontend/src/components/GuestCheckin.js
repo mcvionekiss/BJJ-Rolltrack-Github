@@ -15,7 +15,7 @@ import {
     FormControlLabel,
     FormGroup
 } from "@mui/material";
-import { API_URL } from "../config";  // Import the API_URL from config
+import config from "../config";
 
 function GuestCheckin() {
     const [formData, setFormData] = useState({
@@ -36,7 +36,7 @@ function GuestCheckin() {
     useEffect(() => {
         const fetchCsrfToken = async () => {
             try {
-                const response = await axios.get(`${API_URL}/auth/csrf/`, { withCredentials: true });
+                const response = await axios.get(config.endpoints.auth.csrf, { withCredentials: true });
                 setCsrfToken(response.data.csrfToken);
             } catch (error) {
                 console.error("Failed to fetch CSRF token", error);
@@ -80,7 +80,7 @@ function GuestCheckin() {
         setSuccess("");
 
         try {
-            const response = await axios.post(`${API_URL}/auth/guest-checkin/`, formData, {
+            const response = await axios.post(config.endpoints.auth.guestCheckin, formData, {
                 headers: {
                     "X-CSRFToken": csrfToken
                 },

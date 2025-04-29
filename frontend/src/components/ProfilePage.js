@@ -17,6 +17,7 @@ import {
     Logout as LogoutIcon
 } from "@mui/icons-material";
 import NavigationMenu from "./NavigationMenu";
+import config from "../config";
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -38,7 +39,7 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (profileData.gym && profileData.gym.id) {
-            setQrUrl(`http://localhost:8000/api/generate-qr/${profileData.gym.id}/`);
+            setQrUrl(config.endpoints.api.generateQR(profileData.gym.id));
         }
     }, [profileData.gym]);
 

@@ -110,13 +110,18 @@ function CheckinSelection() {
                     size="large"
                     onClick={() => handleNavigation("/checkin")}
                     fullWidth
-                    sx={{ 
+                    sx={{
                         py: 1.5,
-                        backgroundColor: "black", 
+                        borderRadius: "30px",
+                        backgroundColor: "black",
                         color: "white",
-                        borderRadius: 2,
+                        fontWeight: 600,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                        transition: 'all 0.3s ease',
                         "&:hover": { 
-                            backgroundColor: "#333"
+                            backgroundColor: "#333",
+                            boxShadow: '0 6px 12px rgba(0,0,0,0.25)',
+                            transform: 'translateY(-2px)'
                         }
                     }}
                 >
@@ -128,13 +133,18 @@ function CheckinSelection() {
                     size="large"
                     onClick={() => handleNavigation("/member-signup")}
                     fullWidth
-                    sx={{ 
+                    sx={{
                         py: 1.5,
-                        backgroundColor: "black", 
+                        borderRadius: "30px",
+                        backgroundColor: "black",
                         color: "white",
-                        borderRadius: 2,
+                        fontWeight: 600,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                        transition: 'all 0.3s ease',
                         "&:hover": { 
-                            backgroundColor: "#333"
+                            backgroundColor: "#333",
+                            boxShadow: '0 6px 12px rgba(0,0,0,0.25)',
+                            transform: 'translateY(-2px)'
                         }
                     }}
                 >
@@ -151,18 +161,21 @@ function CheckinSelection() {
                 size="large"
                 onClick={() => handleNavigation("/guest-checkin")}
                 fullWidth
-                sx={{ 
+                sx={{
                     py: 1.5,
-                    borderColor: "black", 
-                    color: "black",
-                    borderRadius: 2,
+                    borderColor: "black",
+                    borderRadius: "30px",
                     borderWidth: 2,
+                    color: "black",
                     maxWidth: '400px',
+                    fontWeight: 600,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                    transition: 'all 0.3s ease-in-out',
                     "&:hover": { 
-                        backgroundColor: "black", 
+                        backgroundColor: "black",
                         color: "white",
-                        borderColor: "black",
-                        borderWidth: 2
+                        boxShadow: '0 6px 12px rgba(0,0,0,0.25)',
+                        transform: 'translateY(-2px)'
                     }
                 }}
             >

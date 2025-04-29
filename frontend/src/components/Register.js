@@ -36,6 +36,13 @@ const fetchCsrfToken = async (setCsrfToken) => {
     }
 };
 
+const addGym = async (gymData, csrfToken) => {
+    const response = await axios.post("http://localhost:8000/auth/add-gym/", gymData);
+    console.log("🟢 Gym added successfully", response.data);
+    console.log("🟢 Gym ID: ", response.data.gym.id);
+    return response.data.gym.id;  // Return the gym ID
+};
+
 const registerUser = async (userData, csrfToken) => {
     const payload = {
         first_name: userData.firstName,
@@ -58,10 +65,11 @@ const registerUser = async (userData, csrfToken) => {
       });
 };
 
-const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation", "Welcome"];
-const stepperSteps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
+const steps = ["Personal Information", "Gym Details", "Schedule Details", "Confirmation"];
+const stepperSteps = steps;
 
 export default function Register() {
+    const [gymId, setGymId] = useState(null);
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -176,7 +184,40 @@ export default function Register() {
         try {
             const response = await registerUser(formData, csrfToken);
             console.log("🟢 Registration successful", response.data);
-            setActiveStep(activeStep + 1); // Move to Welcome Page step
+            // setActiveStep(activeStep + 1); // Remove Welcome Page step
+
+            // Add gym data if provided
+            if (formData.gymName) {
+                // Map day strings to numbers
+                const dayMap = {
+                    "SUN": 0,
+                    "MON": 1,
+                    "TUE": 2,
+                    "WED": 3,
+                    "THU": 4,
+                    "FRI": 5,
+                    "SAT": 6,
+                };
+                const scheduleForBackend = (formData.schedule || []).map(entry => ({
+                    ...entry,
+                    day: dayMap[entry.day] !== undefined ? dayMap[entry.day] : entry.day
+                }));
+                const gymData = {
+                    gymName: formData.gymName,
+                    gymEmail: formData.gymEmail,
+                    gymPhoneNumber: formData.gymPhoneNumber,
+                    address: formData.address,
+                    city: formData.city,
+                    state: formData.state,
+                    schedule: scheduleForBackend,  // Use mapped schedule
+                };
+                const createdGymId = await addGym(gymData, csrfToken);  // Get the gym ID
+                setGymId(createdGymId);  // Store the gym ID in state
+                navigate("/dashboard", { state: { gymId: createdGymId, showWelcome: true } });
+            } else {
+                navigate("/dashboard");
+            }
+
         } catch (error) {
             console.error("🔴 Registration failed", error.response?.data || error);
             setError(error.response?.data?.message || "Registration failed. Please try again.");
@@ -409,8 +450,6 @@ export default function Register() {
                                 onSubmit={handleSubmit}
                             />
                         )}
-
-                        {activeStep === 4 && (<WelcomePage />)}
 
                         {error && (
                             <Typography color="error" align="center" sx={{ marginBottom: 2 }}>

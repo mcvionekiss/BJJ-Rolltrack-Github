@@ -8,6 +8,7 @@ import {
     Grid2,
     Card,
     Button,
+    CircularProgress
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import GroupIcon from "@mui/icons-material/Group";
@@ -47,15 +48,18 @@ const getWeekDays = () => {
 function AvailableClasses() {
     const [classes, setClasses] = useState([]);
     const [error, setError] = useState("");
+    const [gymName, setGymName] = useState("");
+    const [gymAddress, setGymAddress] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
     const [weekDays, setWeekDays] = useState(getWeekDays());
     const [retryCount, setRetryCount] = useState(0);
 
-    // Retrieve student email from the previous page
+    // Retrieve student email and gym ID from the previous page
     const studentEmail = location.state?.email || "";
     const studentName = location.state?.studentName || "";
     const isGuest = location.state?.isGuest || false;
+    const gymId = location.state?.gymId || "";
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -64,11 +68,45 @@ function AvailableClasses() {
             console.log(`Guest ${studentName} has checked in and is viewing available classes`);
         }
 
+        // Log the gymId for debugging
+        console.log(`🔷 Using Gym ID: ${gymId || 'Not provided'}`);
+
+        // Fetch gym details if we have a gymId
+        const fetchGymDetails = async () => {
+            if (gymId) {
+                try {
+                    const response = await axios.get(config.endpoints.api.gymHours(gymId));
+                    if (response.data.success) {
+                        setGymName(response.data.gym_name);
+                        // If the API returns address information, set it here
+                        setGymAddress(response.data.address || "");
+                        console.log(`🔷 Fetched gym name: ${response.data.gym_name}`);
+                    }
+                } catch (err) {
+                    console.error("Error fetching gym details:", err);
+                    setGymName("BJJ Dojo"); // Default fallback
+                }
+            } else {
+                setGymName("BJJ Dojo"); // Default fallback
+            }
+        };
+
+        fetchGymDetails();
+    }, [gymId, isGuest, studentName]);
+
+    useEffect(() => {
         // Fetch available classes for the current week
         setLoading(true);
         setError("");
         
-        axios.get(config.endpoints.api.availableClasses)
+        // Modify the API call to include gymId if available
+        const classesEndpoint = gymId 
+            ? `${config.endpoints.api.availableClasses}?gym_id=${gymId}`
+            : config.endpoints.api.availableClasses;
+            
+        console.log(`🔷 Fetching classes from: ${classesEndpoint}`);
+        
+        axios.get(classesEndpoint)
             .then(response => {
                 console.log("API Response:", response.data);
                 if (response.data.success && response.data.classes) {
@@ -107,17 +145,23 @@ function AvailableClasses() {
                     }, 1000 * (retryCount + 1)); // Exponential backoff
                 }
             });
-    }, [retryCount]);
+    }, [retryCount, gymId]);
 
     const handleClassSelect = (classId) => {
-        console.log("Selected class ID:", classId);
+        console.log(`Selected class ID: ${classId}, Gym ID: ${gymId}`);
         navigate(`/class-details/${classId}`, { 
             state: { 
                 email: studentEmail,
                 studentName: studentName,
-                isGuest: isGuest
+                isGuest: isGuest,
+                gymId: gymId
             } 
         });
+    };
+
+    // Handle back button with gym_id preservation
+    const handleBack = () => {
+        navigate(`/checkin${gymId ? `?gym_id=${gymId}` : ''}`);
     };
 
     // Get today's date formatted
@@ -127,11 +171,11 @@ function AvailableClasses() {
         <Container maxWidth="sm" sx={{ mt: 4, pb: 4 }}>
             <Box display="flex" alignItems="center" mb={2}>
                 <ArrowBackIosIcon
-                    onClick={() => navigate("/checkin")}
+                    onClick={handleBack}
                     sx={{ cursor: "pointer", color: "#757575" }}
                 />
                 <Typography variant="h5" fontWeight="bold" sx={{ ml: 1 }}>
-                    Elite Jiu-Jitsu Academy
+                    {gymName || "Loading..."}
                 </Typography>
             </Box>
 
@@ -142,9 +186,11 @@ function AvailableClasses() {
                 justifyContent="center"
                 textAlign="center"
             >
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    628 S Pacific Coast Hwy, Redondo Beach, California
-                </Typography>
+                {gymAddress && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {gymAddress}
+                    </Typography>
+                )}
                 
                 {isGuest && studentName && (
                     <Typography 
@@ -210,6 +256,7 @@ function AvailableClasses() {
                     minHeight="40vh"
                     textAlign="center"
                 >
+                    <CircularProgress size={40} sx={{ mb: 2 }} />
                     <Typography variant="h6" color="text.secondary">
                         Loading classes...
                     </Typography>

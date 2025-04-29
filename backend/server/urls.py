@@ -4,6 +4,7 @@ from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.decorators.cache import cache_page
+from django.views.decorators.csrf import csrf_exempt
 
 # Authentication views
 from server.views import (

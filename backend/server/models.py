@@ -197,23 +197,22 @@ class RepeatingClasses(models.Model):
     def __str__(self):
         return f"{self.name} ({self.startTime} - {self.endTime})"
 
-# """
+class Checkin(models.Model):
+    """
+    Model for tracking student check-ins for classes.
+    """
+    checkinID = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='checkins')
+    class_instance = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="checkins")
+    gym = models.ForeignKey(Gym, on_delete=models.DO_NOTHING, null=True)
+    checkinTime = models.DateTimeField(auto_now_add=True)
 
-# class Checkin(models.Model):
-#     """
-#     #Tracks student check-ins for classes.
-#     """
-#     checkinID = models.AutoField(primary_key=True)
-#     student = models.ForeignKey("Student", on_delete=models.CASCADE, db_column="studentID")
-#     class_instance = models.ForeignKey("Class", on_delete=models.CASCADE, db_column="classID", related_name="checkins")
-#     checkinTime = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = "checkin"
+        unique_together = (('user', 'class_instance'),)
 
-#     class Meta:
-#         db_table = "checkin"
-
-#     def __str__(self):
-#         return f"{self.student.name} checked into {self.class_instance.name} on {self.checkinTime}"
-# """
+    def __str__(self):
+        return f"{self.user.email} checked into {self.class_instance.template.name if hasattr(self.class_instance, 'template') else 'Class'} on {self.checkinTime}"
 
 class GymAddress(models.Model):
     """

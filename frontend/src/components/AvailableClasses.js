@@ -101,7 +101,7 @@ function AvailableClasses() {
         
         // Modify the API call to include gymId if available
         const classesEndpoint = gymId 
-            ? `${config.endpoints.api.availableClasses}?gym_id=${gymId}`
+            ? `${config.endpoints.api.availableClasses(gymId)}`
             : config.endpoints.api.availableClasses;
             
         console.log(`🔷 Fetching classes from: ${classesEndpoint}`);

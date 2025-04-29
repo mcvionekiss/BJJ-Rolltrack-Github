@@ -19,11 +19,6 @@ const EditClass = () => {
         const sameTitle = events.filter(e => e.title === state.event.title);
         console.log(`Found ${sameTitle.length} events with title "${state.event.title}"`);
     }
-    
-    const [age, setAge] = React.useState('');
-    const handleChange = (event) => {
-        setAge(event.target.value);
-    };
 
     const [sidebarWidth, setSidebarWidth] = useState(250);
 

@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Box } from "@mui/material";
 import NavigationMenu from "../NavigationMenu.js";
 import Calendar from './Calendar'
 import './Dashboard.css';
+import WelcomePage from '../WelcomePage';
 
 function Dashboard() {
     const navigate = useNavigate();
     const [csrfToken, setCsrfToken] = useState("");
     const [sidebarWidth, setSidebarWidth] = useState(250);
+    const location = useLocation();
+    const [showWelcome, setShowWelcome] = useState(location.state?.showWelcome || false);
+    const gymId = location.state?.gymId;
 
     // ✅ Fetch CSRF token before making logout requests
     useEffect(() => {
@@ -51,6 +55,7 @@ function Dashboard() {
                     marginLeft: `${sidebarWidth}px`
                 }}
             >
+                <WelcomePage open={showWelcome} gymId={gymId} onClose={() => setShowWelcome(false)} />
                 <Box style={{ marginLeft: '50px', marginRight: '50px' }}>
                     <Calendar style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </Box>

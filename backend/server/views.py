@@ -73,7 +73,20 @@ from .models import (
 # CSRF token endpoint (non-exempt - safe for XHR requests)
 def get_csrf_token(request):
     """Returns a CSRF token for the frontend to use."""
-    return JsonResponse({"csrfToken": get_token(request)})
+    token = get_token(request)
+    response = JsonResponse({"csrfToken": token})
+    # Ensure the cookie is accessible to JavaScript
+    response["Access-Control-Allow-Credentials"] = "true"
+    # Ensure headers are exposed to the frontend
+    response["Access-Control-Expose-Headers"] = "Set-Cookie"
+    
+    # Check if we're in a development environment, adjust cookie settings
+    if settings.DEBUG:
+        # In development, we need to allow credentials across origins
+        response["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        
+    print(f"Generated new CSRF token: {token}")
+    return response
 
 # Rate limiting for login attempts
 def throttle_login(view_func):
@@ -340,7 +353,7 @@ class MemberSignupView(View):
                 'message': str(e)
             }, status=400)
 
-@csrf_protect
+@csrf_exempt
 @login_required
 def check_student(request):
     logger = logging.getLogger(__name__)
@@ -358,37 +371,49 @@ def check_student(request):
             start_time = time.time()
             data = json.loads(request.body)
             email = data.get("email")
-            logger.info(f"[{request_id}] Parsed request body. Email to check: {email}")
+            gym_id = data.get("gym_id")  # Get gym_id from request
+            
+            logger.info(f"[{request_id}] Parsed request body. Email to check: {email}, Gym ID: {gym_id}")
             
             # Check if student exists
             logger.debug(f"[{request_id}] Querying database for student with email: {email}")
             query_start_time = time.time()
-            student_exists = Users.objects.filter(email=email).exists()
+            student = Users.objects.filter(email=email).first()
             query_time = time.time() - query_start_time
             logger.debug(f"[{request_id}] Database query completed in {query_time:.4f}s")
             
             # Prepare response
-            if student_exists:
+            if student:
                 logger.info(f"[{request_id}] Student found with email: {email}")
-                response = {"exists": True, "message": "Student found"}
+                response = {
+                    "success": True, 
+                    "exists": True, 
+                    "message": "Student found",
+                    "student": {
+                        "id": student.id,
+                        "email": student.email,
+                        "firstName": student.first_name,
+                        "lastName": student.last_name,
+                    }
+                }
                 status_code = 200
             else:
                 logger.warning(f"[{request_id}] Student not found with email: {email}")
-                response = {"exists": False, "message": "Student not found"}
+                response = {"success": False, "exists": False, "message": "Student not found"}
                 status_code = 404
             
             # Log response details
             total_time = time.time() - start_time
-            logger.info(f"[{request_id}] Returning response with status: {status_code}, exists: {student_exists}, total processing time: {total_time:.4f}s")
+            logger.info(f"[{request_id}] Returning response with status: {status_code}, exists: {student is not None}, total processing time: {total_time:.4f}s")
             
             return JsonResponse(response, status=status_code)
 
         except json.JSONDecodeError as e:
             logger.error(f"[{request_id}] JSON decode error: {str(e)}")
-            return JsonResponse({"exists": False, "message": f"Invalid JSON: {str(e)}"}, status=400)
+            return JsonResponse({"success": False, "exists": False, "message": f"Invalid JSON: {str(e)}"}, status=400)
         except Exception as e:
             logger.error(f"[{request_id}] Unexpected error in check_student: {str(e)}", exc_info=True)
-            return JsonResponse({"exists": False, "message": "An error occurred while processing your request"}, status=400)
+            return JsonResponse({"success": False, "exists": False, "message": "An error occurred while processing your request"}, status=400)
     else:
         logger.warning(f"[{request_id}] Method not allowed: {request.method}")
         return JsonResponse({"error": "Method not allowed"}, status=405)

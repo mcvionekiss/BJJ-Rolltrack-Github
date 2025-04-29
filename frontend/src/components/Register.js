@@ -60,6 +60,8 @@ const registerUser = async (userData, csrfToken) => {
         gym_phone_number: userData.gymPhoneNumber,
         schedule: userData.schedule,
       };
+
+      console.log(payload);
     
       return axios.post(config.endpoints.auth.register, payload, {
         withCredentials: true,
@@ -100,7 +102,7 @@ export default function Register() {
         capital: "Your password must contain at least one uppercase letter.",
     };
 
-    const [activeStep, setActiveStep] = useState(1);
+    const [activeStep, setActiveStep] = useState(0);
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -190,7 +192,6 @@ export default function Register() {
         try {
             const response = await registerUser(formData, csrfToken);
             console.log("🟢 Registration successful", response.data);
-            // setActiveStep(activeStep + 1); // Remove Welcome Page step
 
             // Add gym data if provided
             if (formData.gymName) {
@@ -475,7 +476,6 @@ export default function Register() {
                         )}
 
                         {activeStep < 4 && (
-                            console.log(activeStep),
                             <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
                                 {activeStep > 0 && (
                                     <Button onClick={() => setActiveStep(activeStep - 1)} variant="outlined">Back</Button>

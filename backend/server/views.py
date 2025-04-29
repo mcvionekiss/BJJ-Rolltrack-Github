@@ -17,7 +17,7 @@ import json
 import logging
 import time
 import requests
-from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken, GymAddress
+from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken, GymAddress, GymsOwners
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
@@ -54,6 +54,7 @@ import sys
 import qrcode
 from PIL import Image
 import io
+
 
 # Local imports
 from .models import (
@@ -1044,6 +1045,13 @@ def add_gym(request):
             state = data.get("state")
             schedule = data.get("schedule")
             
+            # Get user ID from request.user (if authenticated) or from data
+            user_id = None
+            if request.user.is_authenticated:
+                user_id = request.user.id
+            elif data.get("userId"):
+                user_id = data.get("userId")
+            
             if not all([name, email, phone_number, address, city, state]):
                 return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
 
@@ -1078,6 +1086,25 @@ def add_gym(request):
                         is_closed=is_closed,
                         gym=new_gym
                     )
+            
+            # Associate user with the gym if user is authenticated
+            if user_id:
+                try:
+                    # Update user to be a gym owner
+                    user = Users.objects.get(id=user_id)
+                    user.is_gym_owner = True
+                    user.save()
+                    
+                    # Create the gym owner association
+                    GymsOwners.objects.create(
+                        user=user,
+                        gym=new_gym
+                    )
+                    print(f"Created gym owner association for user {user_id} and gym {new_gym.id}")
+                except Users.DoesNotExist:
+                    print(f"User with ID {user_id} not found, could not create gym owner association")
+                except Exception as e:
+                    print(f"Error creating gym owner association: {str(e)}")
 
             return JsonResponse({
                 "success": True,

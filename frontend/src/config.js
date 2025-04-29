@@ -2,9 +2,7 @@
 // This file provides hardcoded URLs instead of environment variables
 
 // Use hardcoded localhost URL for simplified testing
-const API_URL = 'http://localhost:8000';
-// If testing from other devices on your network, uncomment and use your machine's IP:
-// const API_URL = 'http://YOUR_IP_ADDRESS:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/';
 
 // Export configuration with all API endpoints
 const config = {
@@ -20,10 +18,19 @@ const config = {
       checkStudent: `${API_URL}/api/check_student/`,
       availableClasses: `${API_URL}/api/available_classes_today/`,
       classDetails: (classID) => `${API_URL}/api/class_details/${classID}/`,
-      checkin: `${API_URL}/api/checkin/`
+      checkin: `${API_URL}/api/checkin/`,
+      addGym: `${API_URL}/auth/add-gym/`,
+      generateQR: (gymID) => `${API_URL}/auth/generate-qr/${gymID}/`,
+      getTemplates: `${API_URL}/api/templates/`,
+      checkinSelection: (gymID) => `${API_URL}/auth/checkin-selection/?gym_id=${gymID}`,
+      guestCheckin: `${API_URL}/auth/guest-checkin/`,
+      memberSignup: `${API_URL}/auth/member-signup/`,
+      gymHours: (gymID) => `${API_URL}/api/gym-hours/${gymID}/`,
+      gymHours: `${API_URL}/api/gym-hours/`,
+      getGymHours: `${API_URL}/api/gym-hours/`,
     }
   },
-  
+
   // Testing-specific settings
   testing: {
     bypassAuth: false,  // Set to true to bypass authentication in frontend for testing

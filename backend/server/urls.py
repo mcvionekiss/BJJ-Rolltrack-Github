@@ -33,7 +33,7 @@ from server.views import (
 # API URLs grouped together for better organization
 api_patterns = [
     path("check_student/", check_student, name="check_student"),
-    path("available_classes_today/", cache_page(60)(available_classes_today), name="available_classes_today"),
+    path("available_classes_today/<int:gym_id>/", cache_page(60)(available_classes_today), name="available_classes_today"),
     path("class_details/<int:classID>/", class_details, name="class_details"),
     path("checkin/", checkin, name="checkin"),
     path("add_class/", add_class, name="add_class"),
@@ -87,7 +87,7 @@ urlpatterns = [
     path("auth/guest-checkin/", GuestCheckinView.as_view(), name="guest_checkin"),
     path("auth/add-gym/", add_gym, name="add_gym"),
     path("api/check_student/", check_student, name="check_student"),
-    path("api/available_classes_today/", available_classes_today, name="available_classes_today"),
+    path("api/available_classes_today/<int:gym_id>/", available_classes_today, name="available_classes_today"),
     path("api/class_details/<int:classID>/", class_details, name="class_details"),
     path("api/checkin/", checkin, name="checkin"),
     path("api/generate-qr/<int:gym_id>/", generate_qr, name="generate_qr"),

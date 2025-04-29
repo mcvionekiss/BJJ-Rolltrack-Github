@@ -35,5 +35,4 @@ services:
       - /app/frontend/node_modules
     depends_on:
       - backend
-    # Run in development mode for easier debugging
-    command: npm start
+    # Use Dockerfile's default command (npm start)

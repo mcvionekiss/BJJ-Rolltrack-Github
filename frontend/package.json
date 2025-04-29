@@ -34,8 +34,8 @@
     "web-vitals": "^4.2.4"
   },
   "scripts": {
-    "start": "GENERATE_SOURCEMAP=true react-scripts start | tee logs/npm-start.log",
-    "build": "GENERATE_SOURCEMAP=true react-scripts build | tee logs/npm-build.log",
+    "start": "react-scripts start | tee logs/npm-start.log",
+    "build": "react-scripts build | tee logs/npm-build.log",
     "test": "react-scripts test --verbose | tee logs/npm-test.log",
     "eject": "react-scripts eject",
     "prestart": "mkdir -p logs",

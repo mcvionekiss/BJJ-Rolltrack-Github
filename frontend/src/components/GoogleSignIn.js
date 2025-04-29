@@ -24,8 +24,8 @@ const GoogleSignIn = () => {
 
     try {
       const csrfToken = await getCsrfToken();
-      // Use API_URL from config and append the auth/google path
-      const response = await axios.post(`${config.apiUrl}auth/google/`, 
+      // Use consistent endpoint pattern from config
+      const response = await axios.post(`${config.apiUrl}/auth/google/`,
       { id_token },
       {
         withCredentials: true,

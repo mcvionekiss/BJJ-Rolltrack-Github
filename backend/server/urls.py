@@ -5,9 +5,9 @@ from server.views import (
     LoginView, LogoutView, RegisterView, get_csrf_token, 
     CheckinView, MemberSignupView, GuestCheckinView, CheckinSelectionView, 
     check_student, available_classes_today, class_details, checkin, 
-    student_attendance_history, get_gym_hours, google_auth, request_password_reset, reset_password,
+    student_attendance_history, get_gym_hours, google_auth, request_password_reset, reset_password, add_gym,
     # Add new template views
-    get_templates, delete_template, update_template
+    get_templates, delete_template, update_template, generate_qr
 )
 
 urlpatterns = [
@@ -17,13 +17,16 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/checkin-selection/", CheckinSelectionView.as_view(), name="checkin_selection"),
+    path("auth/checkin-selection/<int:gym_id>/", CheckinSelectionView.as_view(), name="checkin_selection_with_gym"),
     path("auth/checkin/", CheckinView.as_view(), name="checkin"),
     path("auth/member-signup/", MemberSignupView.as_view(), name="member_signup"),
     path("auth/guest-checkin/", GuestCheckinView.as_view(), name="guest_checkin"),
+    path("auth/add-gym/", add_gym, name="add_gym"),
     path("api/check_student/", check_student, name="check_student"),
     path("api/available_classes_today/", available_classes_today, name="available_classes_today"),
     path("api/class_details/<int:classID>/", class_details, name="class_details"),
     path("api/checkin/", checkin, name="checkin"),
+    path("api/generate-qr/<int:gym_id>/", generate_qr, name="generate_qr"),
     path("api/attendance/history/", student_attendance_history, name="student_attendance_history"),
     path("api/attendance/history/<str:email>/", student_attendance_history, name="student_attendance_history_by_email"),
     path("api/gym-hours/", get_gym_hours, name="gym_hours"),

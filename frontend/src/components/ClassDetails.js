@@ -339,7 +339,7 @@ function ClassDetails() {
                                 py: 1.5,
                                 backgroundColor: "black", 
                                 color: "white",
-                                borderRadius: 2,
+                                borderRadius: "30px",
                                 "&:hover": { 
                                     backgroundColor: "#333"
                                 }

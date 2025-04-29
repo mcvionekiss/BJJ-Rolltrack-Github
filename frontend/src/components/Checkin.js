@@ -214,7 +214,7 @@ function Checkin() {
                     disabled={loading}
                     sx={{
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: "30px",
                         }
                     }}
                 />
@@ -228,7 +228,7 @@ function Checkin() {
                         py: 1.5,
                         backgroundColor: "black", 
                         color: "white",
-                        borderRadius: 2,
+                        borderRadius: "30px",
                         "&:hover": { 
                             backgroundColor: "#333"
                         }

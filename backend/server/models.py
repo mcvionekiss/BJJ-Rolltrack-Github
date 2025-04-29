@@ -80,6 +80,20 @@ class Gym(models.Model):
     def __str__(self):
         return self.name
 
+class GymsOwners(models.Model):
+    """
+    Junction table for many-to-many relationship between Users and Gym
+    """
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "gyms_owners"
+        unique_together = ("user", "gym")
+
+    def __str__(self):
+        return f"{self.user.username} - {self.gym.name}"
 
 # """
 # class GymOwnersGym(models.Model):  # ✅ Fixed inheritance

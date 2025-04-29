@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { TextField, List, ListItem, Paper } from "@mui/material";
+import { TextField, List, ListItem, Paper, CircularProgress } from "@mui/material";
 import axios from "axios";
 
 
@@ -9,6 +9,7 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
     const [stateQuery, setStateQuery] = useState(stateValue || ""); // State field state
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [loading, setLoading] = useState(false); // New loading state
     const suggestionBoxRef = useRef(null);
 
     useEffect(() => {
@@ -24,12 +25,17 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
     }, [stateValue]);
 
     useEffect(() => {
-        if (addressQuery.length > 2 && showSuggestions) { // <- Only trigger if user already opened suggestions
-            fetchSuggestions(addressQuery);
-        }
+        const debounceFetch = setTimeout(() => {
+            if (addressQuery.length > 2 && showSuggestions) {
+                fetchSuggestions(addressQuery);
+            }
+        }, 300); // Debounce time
+
+        return () => clearTimeout(debounceFetch);
     }, [addressQuery, showSuggestions]);
 
     const fetchSuggestions = async (input) => {
+        setLoading(true); // Set loading to true
         try {
             const response = await axios.get(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${input}&addressdetails=1&countrycodes=us`
@@ -37,6 +43,8 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
             setSuggestions(response.data);
         } catch (error) {
             console.error("Error fetching address suggestions:", error);
+        } finally {
+            setLoading(false); // Set loading to false
         }
     };
 
@@ -91,6 +99,8 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
                 required
             />
             
+            {loading && <CircularProgress size={24} style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />}
+            
             {showSuggestions && suggestions.length > 0 && (
                 <Paper
                     ref={suggestionBoxRef}
@@ -115,6 +125,13 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
                                 {suggestion.display_name}
                             </ListItem>
                         ))}
+                    </List>
+                </Paper>
+            )}
+            {showSuggestions && suggestions.length === 0 && !loading && (
+                <Paper style={{ position: "absolute", zIndex: 2, width: "100%" }}>
+                    <List>
+                        <ListItem>No suggestions available</ListItem>
                     </List>
                 </Paper>
             )}

@@ -205,12 +205,13 @@ class GymAddress(models.Model):
     """
     Model representing a Gym Address
     """
-    addressID = models.AutoField(primary_key=True)
-    street1 = models.CharField(max_length=100)
-    street2 = models.CharField(max_length=100, blank = True)
+    id = models.AutoField(primary_key=True)
+    street_line1 = models.CharField(max_length=100)
+    street_line2 = models.CharField(max_length=100, blank=True)
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
-    zipcode = models.IntegerField()
+    postal_code = models.CharField(max_length=20, blank=True)
+    country = models.CharField(max_length=100, blank=True)
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
 
     class Meta:
@@ -221,9 +222,10 @@ class GymHours(models.Model):
     Model representing Gym Hours
     """
     hoursID = models.AutoField(primary_key=True)
-    day = models.IntegerField()
+    day_of_week = models.IntegerField()
     open_time = models.TimeField(null=True)
     close_time = models.TimeField(null=True)
+    is_closed = models.BooleanField(default=False)
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
 
     class Meta:

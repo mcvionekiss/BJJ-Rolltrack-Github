@@ -6,6 +6,20 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.contrib.auth import authenticate, login, logout
+from django.http import JsonResponse, FileResponse, HttpResponse
+from django.utils.timezone import localdate, now, timedelta
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.utils.decorators import method_decorator
+from django.views import View
+import json
+import logging
+import time
+import requests
+from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken, GymAddress
+from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -32,6 +46,14 @@ import logging
 import os
 import time
 import requests
+from django.core.mail import send_mail
+from django.conf import settings
+import subprocess
+import tempfile
+import sys
+import qrcode
+from PIL import Image
+import io
 
 # Local imports
 from .models import (
@@ -1005,3 +1027,122 @@ def reset_password(request, token):
     user.save()
     token_obj.delete()
     return Response({"success": True, "message": "Password updated successfully"})
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_gym(request):
+    """API endpoint to add a new gym to the database."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            name = data.get("gymName")
+            email = data.get("gymEmail")
+            phone_number = data.get("gymPhoneNumber")
+            address = data.get("address")
+            city = data.get("city")
+            state = data.get("state")
+            schedule = data.get("schedule")
+            
+            if not all([name, email, phone_number, address, city, state]):
+                return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
+
+            new_gym = Gym.objects.create(
+                name=name,
+                email=email,
+                phone_number=phone_number
+            )
+
+            # Create the gym address
+            gym_address = GymAddress.objects.create(
+                street_line1=data.get("address"),
+                street_line2=data.get("address2", ""),  # if you have a second address line
+                city=data.get("city"),
+                state=data.get("state"),
+                postal_code=data.get("postal_code", ""),
+                country=data.get("country", ""),
+                gym=new_gym
+            )
+
+            # Create gym hours if provided
+            if schedule:
+                for entry in schedule:
+                    day = entry.get("day")
+                    open_time = entry.get("open_time")
+                    close_time = entry.get("close_time")
+                    is_closed = entry.get("is_closed", False)
+                    GymHours.objects.create(
+                        day_of_week=day,
+                        open_time=open_time,
+                        close_time=close_time,
+                        is_closed=is_closed,
+                        gym=new_gym
+                    )
+
+            return JsonResponse({
+                "success": True,
+                "message": "Gym added successfully",
+                "gym": {
+                    "id": new_gym.id,
+                    "name": new_gym.name,
+                    "email": new_gym.email,
+                    "phone_number": new_gym.phone_number
+                }
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=400)
+    else:
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+@csrf_exempt
+def generate_qr(request, gym_id):
+    try:
+        # Generate QR code data
+        qr_data = f"http://localhost:3000/checkin-selection?gym_id={gym_id}"
+        qr = qrcode.QRCode(
+            version=6,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=10,
+            border=4
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill="black", back_color="white").convert("RGBA")
+
+        # --- Add the logo ---
+        # Path to your logo
+        logo_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "frontend", "src", "assets", "logo.jpeg"
+        )
+        if os.path.exists(logo_path):
+            logo = Image.open(logo_path).convert("RGBA")
+            # Resize logo to fit in the QR code
+            logo_size = (qr_img.size[0] // 4, qr_img.size[1] // 4)
+            logo = logo.resize(logo_size, Image.LANCZOS)
+
+            # Create a white border around the logo
+            border_size = 10
+            bordered_logo_size = (logo_size[0] + border_size * 2, logo_size[1] + border_size * 2)
+            bordered_logo = Image.new("RGBA", bordered_logo_size, "white")
+            bordered_logo.paste(logo, (border_size, border_size), logo)
+
+            # Center the logo on the QR code
+            pos = (
+                (qr_img.size[0] - bordered_logo.size[0]) // 2,
+                (qr_img.size[1] - bordered_logo.size[1]) // 2
+            )
+            mask = bordered_logo.split()[3] if bordered_logo.mode == "RGBA" else None
+            qr_img.paste(bordered_logo, pos, mask)
+        # --- End logo addition ---
+
+        # Save to in-memory buffer
+        buffer = io.BytesIO()
+        qr_img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        return HttpResponse(buffer, content_type="image/png")
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+

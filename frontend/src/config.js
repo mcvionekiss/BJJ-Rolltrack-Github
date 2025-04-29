@@ -1,8 +1,15 @@
-// frontend/src/config.js - Simplified configuration for testing
-// This file provides hardcoded URLs instead of environment variables
+// frontend/src/config.js - Dynamic configuration for development and testing
+// This file provides flexible URL configuration that works with both localhost and IP addresses
 
-// Use hardcoded localhost URL for simplified testing
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/';
+// Parse API URL from environment variable or use localhost as fallback
+// Remove trailing slashes for consistency
+const parseApiUrl = (url) => {
+  if (!url) return 'http://localhost:8000/';
+  return url.endsWith('/') ? url : `${url}/`;
+};
+
+// Use environment variable with dynamic fallback
+const API_URL = parseApiUrl(process.env.REACT_APP_API_URL || window.location.origin.replace(/:\d+$/, '') + ':8000/');
 
 // Export configuration with all API endpoints
 const config = {

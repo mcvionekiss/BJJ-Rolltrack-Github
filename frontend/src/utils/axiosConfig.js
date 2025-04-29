@@ -3,7 +3,7 @@ import config from '../config';
 
 // Create a pre-configured axios instance with default settings
 const instance = axios.create({
-  baseURL: config.apiBaseUrl || 'http://localhost:8000/api/',
+  baseURL: config.apiUrl || 'http://localhost:8000/api/',
   timeout: 10000,
   withCredentials: true, // Enable sending cookies with requests
   headers: {

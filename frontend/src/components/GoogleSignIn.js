@@ -2,21 +2,30 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
+import config from "../config";
 
 const GoogleSignIn = () => {
   const navigate = useNavigate();
   const getCsrfToken = async () => {
-    const res = await axios.get("http://localhost:8000/auth/csrf/", {
-      withCredentials: true,
-    });
-    return res.data.csrfToken;
+    try {
+      // Use config object for consistent URL patterns
+      const res = await axios.get(config.endpoints.auth.csrf, {
+        withCredentials: true,
+      });
+      return res.data.csrfToken;
+    } catch (err) {
+      console.error("Failed to fetch CSRF token:", err);
+      return null;
+    }
   };
+  
   const handleSuccess = async (credentialResponse) => {
     const id_token = credentialResponse.credential;
 
     try {
       const csrfToken = await getCsrfToken();
-      const response = await axios.post("http://localhost:8000/auth/google/", 
+      // Use API_URL from config and append the auth/google path
+      const response = await axios.post(`${config.apiUrl}auth/google/`, 
       { id_token },
       {
         withCredentials: true,

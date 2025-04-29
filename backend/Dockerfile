@@ -16,16 +16,15 @@ RUN pip --version && \
     pip install gunicorn
 
 # Copy the entire project
-COPY /backend .
+COPY backend/ .
 
 # Create directory for static files
-RUN mkdir -p staticfiles && \
-    chmod +x ./docker-entrypoint.sh
+RUN mkdir -p staticfiles
 
 # Default to production, can be overridden at runtime
 ENV PIPELINE=production
 
 EXPOSE 8000
 
-# Use entrypoint script for startup tasks (migrations, collectstatic)
-ENTRYPOINT ["/app/backend/docker-entrypoint.sh"]
+# Use a direct server command instead of entrypoint script
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

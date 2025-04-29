@@ -24,6 +24,7 @@ import GoogleSignIn from "../components/GoogleSignIn";
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
+        // Use config object for consistent URL patterns
         const response = await axios.get(config.endpoints.auth.csrf, { withCredentials: true });
         setCsrfToken(response.data.csrfToken);
     } catch (error) {

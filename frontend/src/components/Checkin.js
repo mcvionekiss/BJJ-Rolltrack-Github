@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import {
@@ -18,15 +18,21 @@ function Checkin() {
     const [loading, setLoading] = useState(false);
     const [studentInfo, setStudentInfo] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    // Get gym_id from URL query parameters
+    const queryParams = new URLSearchParams(location.search);
+    const gymId = queryParams.get("gym_id");
     
     // Log component mount
     useEffect(() => {
         console.log("🔷 Checkin component mounted");
+        console.log(`🔷 Gym ID from URL: ${gymId || 'Not provided'}`);
         
         return () => {
             console.log("🔷 Checkin component unmounted");
         };
-    }, []);
+    }, [gymId]);
     
     // Log email state changes
     useEffect(() => {
@@ -60,9 +66,13 @@ function Checkin() {
                     studentData: response.data.student,
                     timestamp: new Date().toISOString()
                 });
-                console.log(`🔶 Navigating to /available-classes with email: ${email}`);
+                console.log(`🔶 Navigating to /available-classes with email: ${email} and gymId: ${gymId}`);
                 setStudentInfo(response.data.student);
-                navigate("/available-classes", { state: { email } });
+                
+                // Pass both email and gym_id to the next page
+                navigate("/available-classes", { 
+                    state: { email, gymId } 
+                });
             } else {
                 console.warn(`⚠️ Student exists=false for email: ${email}`);
                 setError(response.data.message || "Email not found. Please try again or sign up as a new member.");
@@ -92,6 +102,11 @@ function Checkin() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle back button click with gym_id preservation
+    const handleBack = () => {
+        navigate(`/checkin-selection${gymId ? `?gym_id=${gymId}` : ''}`);
     };
 
     return (
@@ -193,7 +208,7 @@ function Checkin() {
                 
                 <Button
                     variant="text"
-                    onClick={() => navigate("/checkin-selection")}
+                    onClick={handleBack}
                     disabled={loading}
                     sx={{ 
                         mt: 1,

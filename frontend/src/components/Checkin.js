@@ -51,13 +51,6 @@ function Checkin() {
             console.log("🔷 Checkin component unmounted");
         };
     }, [gymId]);
-    
-    // Log email state changes
-    useEffect(() => {
-        if (email) {
-            console.log(`🔹 Email state updated: ${email}`);
-        }
-    }, [email]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

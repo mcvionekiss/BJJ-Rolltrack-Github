@@ -898,7 +898,7 @@ def get_gym_hours(request, gym_id=None):
                     }, status=404)
         
         # Get hours for this gym
-        gym_hours = GymHours.objects.filter(gym=gym).order_by('day')
+        gym_hours = GymHours.objects.filter(gym=gym).order_by('day_of_week')
         
         # Format the response
         hours_data = []
@@ -908,7 +908,7 @@ def get_gym_hours(request, gym_id=None):
             close_time = hour.close_time.strftime('%H:%M') if hour.close_time else None
             
             hours_data.append({
-                "day": hour.day,
+                "day": hour.day_of_week,
                 "open": open_time,
                 "close": close_time,
                 "is_closed": hour.is_closed if hasattr(hour, 'is_closed') else (open_time is None or close_time is None)
@@ -1075,12 +1075,12 @@ def add_gym(request):
             # Create gym hours if provided
             if schedule:
                 for entry in schedule:
-                    day = entry.get("day")
+                    day_of_week = entry.get("day")
                     open_time = entry.get("open_time")
                     close_time = entry.get("close_time")
                     is_closed = entry.get("is_closed", False)
                     GymHours.objects.create(
-                        day_of_week=day,
+                        day_of_week=day_of_week,
                         open_time=open_time,
                         close_time=close_time,
                         is_closed=is_closed,

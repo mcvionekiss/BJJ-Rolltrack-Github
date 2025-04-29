@@ -1,16 +1,75 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     Button,
     Divider,
     Container,
     Stack,
-    Typography
+    Typography,
+    CircularProgress
 } from "@mui/material";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import config from "../config";
 
 function CheckinSelection() {
-    // TODO: Change to the actual gym name
-    const GYM_NAME = "Elite Jiu-Jitsu";
+    const [gymName, setGymName] = useState(""); 
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    // Get gym_id from URL query parameters
+    const queryParams = new URLSearchParams(location.search);
+    const gymId = queryParams.get("gym_id");
+    
+    useEffect(() => {
+        const fetchGymDetails = async () => {
+            if (!gymId) {
+                setGymName("BJJ Dojo");
+                setLoading(false);
+                return;
+            }
+            
+            try {
+                const response = await axios.get(config.endpoints.api.gymHours(gymId));
+                if (response.data.success) {
+                    setGymName(response.data.gym_name);
+                } else {
+                    setGymName("BJJ Dojo");
+                    setError("Could not fetch gym details");
+                }
+            } catch (err) {
+                console.error("Error fetching gym details:", err);
+                setGymName("BJJ Dojo");
+                setError("Could not fetch gym details");
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchGymDetails();
+    }, [gymId]);
+
+    const handleNavigation = (path) => {
+        // Preserve the gym_id parameter when navigating
+        navigate(`${path}${gymId ? `?gym_id=${gymId}` : ''}`);
+    };
+
+    if (loading) {
+        return (
+            <Container 
+                maxWidth="sm" 
+                sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    minHeight: '100vh'
+                }}
+            >
+                <CircularProgress />
+            </Container>
+        );
+    }
 
     return (
         <Container 
@@ -34,7 +93,7 @@ function CheckinSelection() {
                     color: "#333"
                 }}
             >
-                Welcome to {GYM_NAME}
+                Welcome to {gymName}
             </Typography>
             
             <Typography 
@@ -49,7 +108,7 @@ function CheckinSelection() {
                 <Button 
                     variant="contained" 
                     size="large"
-                    onClick={() => navigate("/checkin")}
+                    onClick={() => handleNavigation("/checkin")}
                     fullWidth
                     sx={{ 
                         py: 1.5,
@@ -67,7 +126,7 @@ function CheckinSelection() {
                 <Button 
                     variant="contained" 
                     size="large"
-                    onClick={() => navigate("/member-signup")}
+                    onClick={() => handleNavigation("/member-signup")}
                     fullWidth
                     sx={{ 
                         py: 1.5,
@@ -90,7 +149,7 @@ function CheckinSelection() {
             <Button 
                 variant="outlined" 
                 size="large"
-                onClick={() => navigate("/guest-checkin")}
+                onClick={() => handleNavigation("/guest-checkin")}
                 fullWidth
                 sx={{ 
                     py: 1.5,
@@ -109,6 +168,16 @@ function CheckinSelection() {
             >
                 Guest Check-In
             </Button>
+            
+            {error && (
+                <Typography 
+                    variant="body2" 
+                    color="error" 
+                    sx={{ mt: 3 }}
+                >
+                    {error}
+                </Typography>
+            )}
         </Container>
     );
 }

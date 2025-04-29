@@ -12,10 +12,14 @@ import {
 } from "@mui/material";
 import config from '../config';
 
+// Ensure cookies are included with requests
+axios.defaults.withCredentials = true;
+
 function Checkin() {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [csrfToken, setCsrfToken] = useState("");
     const [studentInfo, setStudentInfo] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
@@ -24,10 +28,24 @@ function Checkin() {
     const queryParams = new URLSearchParams(location.search);
     const gymId = queryParams.get("gym_id");
     
-    // Log component mount
+    // Fetch CSRF token on component mount
     useEffect(() => {
         console.log("🔷 Checkin component mounted");
         console.log(`🔷 Gym ID from URL: ${gymId || 'Not provided'}`);
+        
+        const fetchCsrfToken = async () => {
+            try {
+                const response = await axios.get(config.endpoints.auth.csrf);
+                const token = response.data.csrfToken;
+                setCsrfToken(token);
+                console.log("🔷 CSRF token fetched successfully:", token);
+            } catch (error) {
+                console.error("🔴 Error fetching CSRF token:", error);
+                setError("Error fetching CSRF token. Please refresh the page.");
+            }
+        };
+        
+        fetchCsrfToken();
         
         return () => {
             console.log("🔷 Checkin component unmounted");
@@ -50,16 +68,31 @@ function Checkin() {
             return;
         }
         
-        console.log(`🔶 Form submitted with email: ${email}`);
+        if (!csrfToken) {
+            setError("An error occurred. Please refresh the page.");
+            return;
+        }
+        
         setError(""); // Clear previous errors
         setLoading(true);
-        console.log("🔶 Previous errors cleared");
 
         try {
-            console.log(`🔶 Making API request to check_student with email: ${email}`);
-            const startTime = performance.now();
-            const response = await axios.post(config.endpoints.api.checkStudent, { email });
-            const endTime = performance.now();
+            console.log(`🔶 Making API request to check_student with email: ${email} and gymId: ${gymId}`);
+            
+            // Configure headers with CSRF token
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            };
+            
+            const response = await axios.post(
+                config.endpoints.api.checkStudent, 
+                { 
+                    email,
+                    gym_id: gymId  // Include the gym_id in the request
+                },
+                { headers }
+            );
             
             if (response.data.success) {
                 console.log(`✅ Student found: ${email}`, {
@@ -89,6 +122,16 @@ function Checkin() {
             if (error.response) {
                 if (error.response.status === 404) {
                     setError("Email not found. Please try again or sign up as a new member.");
+                } else if (error.response.status === 403) {
+                    setError("CSRF verification failed. Please refresh the page and try again.");
+                    // Try to fetch a new CSRF token
+                    try {
+                        const response = await axios.get(config.endpoints.auth.csrf);
+                        setCsrfToken(response.data.csrfToken);
+                        console.log("🔷 New CSRF token fetched after error");
+                    } catch (e) {
+                        console.error("Failed to fetch new CSRF token", e);
+                    }
                 } else {
                     setError(error.response.data.message || "Error checking student. Please try again.");
                 }
@@ -187,7 +230,7 @@ function Checkin() {
                     type="submit"
                     variant="contained"
                     size="large"
-                    disabled={loading}
+                    disabled={loading || !csrfToken}
                     sx={{ 
                         py: 1.5,
                         backgroundColor: "black", 
@@ -203,7 +246,7 @@ function Checkin() {
                             <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
                             Checking...
                         </Box>
-                    ) : "Continue"}
+                    ) : !csrfToken ? "Loading..." : "Continue"}
                 </Button>
                 
                 <Button

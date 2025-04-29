@@ -235,7 +235,7 @@ class GymHours(models.Model):
     """
     Model representing Gym Hours
     """
-    hoursID = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     day_of_week = models.IntegerField()
     open_time = models.TimeField(null=True)
     close_time = models.TimeField(null=True)

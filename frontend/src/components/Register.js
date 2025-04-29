@@ -192,6 +192,7 @@ export default function Register() {
         try {
             const response = await registerUser(formData, csrfToken);
             console.log("🟢 Registration successful", response.data);
+            const userId = response.data.user?.id;
 
             // Add gym data if provided
             if (formData.gymName) {
@@ -217,6 +218,7 @@ export default function Register() {
                     city: formData.city,
                     state: formData.state,
                     schedule: scheduleForBackend,  // Use mapped schedule
+                    userId: userId  // Include user ID for backend association
                 };
                 const createdGymId = await addGym(gymData, csrfToken);  // Get the gym ID
                 setGymId(createdGymId);  // Store the gym ID in state

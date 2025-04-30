@@ -48,7 +48,12 @@ function ClassDetails() {
     const [csrfToken, setCsrfToken] = useState("");
 
     // Log for debugging
-    console.log("ClassDetails - Retrieved gymId:", gymId, "Email:", studentEmail, "Guest:", isGuest);
+    console.log("ClassDetails - Retrieved data:", {
+        studentName,
+        email: studentEmail,
+        isGuest,
+        gymId
+    });
     
     // Fetch CSRF token when component mounts
     useEffect(() => {
@@ -113,39 +118,20 @@ function ClassDetails() {
         try {
             console.log(`Sending check-in request for class ID: ${id}, email: ${studentEmail}, gym ID: ${gymId}`);
             
-            // Handle differently if it's a guest
-            if (isGuest) {
-                // For guests, we'll skip the backend check-in process
-                console.log("Processing guest check-in");
-                
-                const checkinData = {
-                    studentName: studentName || studentEmail.split('@')[0],
-                    className: classDetails.name,
-                    email: studentEmail,
-                    checkinTime: new Date().toISOString(),
-                    date: classDetails.date,
-                    isGuest: true,
-                    gymId: gymId
-                };
-                
-                console.log("Navigating to success page with guest data:", checkinData);
-                navigate("/checkin-success", { state: checkinData });
-                return;
-            }
-            
             // Configure headers with CSRF token
             const headers = {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             };
             
-            // Regular student check-in process
+            // Check-in process for both guests and regular students
             const response = await axios.post(
                 config.endpoints.api.checkin, 
                 {
                     email: studentEmail,
                     classID: id,  // This is the id from useParams()
-                    gym_id: gymId  // Changed to gym_id to match backend parameter name
+                    gym_id: gymId,  // Changed to gym_id to match backend parameter name
+                    isGuest: isGuest // Flag to indicate if this is a guest check-in
                 },
                 { headers }
             );
@@ -153,17 +139,33 @@ function ClassDetails() {
             console.log("Check-in response:", response.data);
 
             if (response.data.success) {
+                // Get either the server-provided name or use existing name or fallback to email
+                const displayName = 
+                    response.data.checkin?.guestName || 
+                    response.data.checkin?.studentName || 
+                    studentName || 
+                    studentEmail.split('@')[0];
+                
                 const checkinData = response.data.checkin || {
-                    studentName: studentEmail.split('@')[0],
+                    studentName: displayName,
                     className: classDetails.name,
                     email: studentEmail,
                     checkinTime: new Date().toISOString(),
                     date: classDetails.date,
-                    gymId: gymId
+                    gymId: gymId,
+                    isGuest: isGuest
                 };
                 
                 console.log("Navigating to success page with data:", checkinData);
-                navigate("/checkin-success", { state: { ...checkinData, email: studentEmail, gymId: gymId } });
+                navigate("/checkin-success", { 
+                    state: { 
+                        ...checkinData, 
+                        email: studentEmail, 
+                        studentName: displayName, // Ensure name is explicitly set
+                        gymId: gymId,
+                        isGuest: isGuest
+                    } 
+                });
             } else {
                 console.error("Check-in failed:", response.data.message);
                 setError(response.data.message || "Check-in failed. Please try again.");

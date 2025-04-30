@@ -16,9 +16,15 @@ function CheckinSuccess() {
     const checkinTime = location.state?.checkinTime ? new Date(location.state.checkinTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
     const classDate = location.state?.date ? new Date(location.state.date).toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'}) : "";
     const gymId = location.state?.gymId || ""; // Retrieve gymId from location state
+    const isGuest = location.state?.isGuest || false; // Track if the user is a guest
     
     // Log for debugging
-    console.log("CheckinSuccess - Retrieved gymId:", gymId);
+    console.log("CheckinSuccess - Retrieved data:", {
+        studentName,
+        studentEmail,
+        gymId,
+        isGuest
+    });
 
     return (
         <Fade in={true} timeout={800}>
@@ -122,9 +128,23 @@ function CheckinSuccess() {
                                 transform: 'translateY(-2px)'
                             }
                         }}
-                        onClick={() => navigate("/available-classes", {
-                            state: { email: studentEmail, gymId: gymId }
-                        })}
+                        onClick={() => {
+                            // Enhanced navigation with full state preservation
+                            navigate("/available-classes", {
+                                state: { 
+                                    email: studentEmail, 
+                                    studentName: studentName, // Ensure name is passed
+                                    gymId: gymId,
+                                    isGuest: isGuest
+                                }
+                            });
+                            console.log("Navigating to available classes with:", {
+                                email: studentEmail,
+                                studentName,
+                                isGuest,
+                                gymId
+                            });
+                        }}
                     >
                         Check Into Another Class
                     </Button>

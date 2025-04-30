@@ -62,6 +62,14 @@ function AvailableClasses() {
     const gymId = location.state?.gymId || "";
     const [loading, setLoading] = useState(true);
 
+    // Enhanced logging
+    console.log("AvailableClasses - User data:", {
+        email: studentEmail,
+        name: studentName,
+        isGuest,
+        gymId
+    });
+
     useEffect(() => {
         // Show welcome message for guests
         if (isGuest && studentName) {
@@ -148,11 +156,15 @@ function AvailableClasses() {
     }, [retryCount, gymId]);
 
     const handleClassSelect = (classId) => {
-        console.log(`Selected class ID: ${classId}, Gym ID: ${gymId}`);
+        // Ensure we have a valid name for the student
+        const displayName = studentName || (studentEmail ? studentEmail.split('@')[0] : "Guest");
+        
+        console.log(`Selected class ID: ${classId}, Name: ${displayName}, Guest: ${isGuest}, Gym ID: ${gymId}`);
+        
         navigate(`/class-details/${classId}`, { 
             state: { 
                 email: studentEmail,
-                studentName: studentName,
+                studentName: displayName, // Use validated name
                 isGuest: isGuest,
                 gymId: gymId
             } 

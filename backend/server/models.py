@@ -308,3 +308,45 @@ class PasswordResetToken(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.expires_at
+
+class GuestVisit(models.Model):
+    """
+    Model for storing information about guest visits
+    """
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    experience_level = models.CharField(max_length=50)
+    referral_source = models.CharField(max_length=50)
+    first_time_visit = models.BooleanField(default=True)
+    marketing_consent = models.BooleanField(default=False)
+    other_dojos = models.TextField(blank=True, null=True)
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = "guest_visits"
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['gym']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.email}) at {self.gym.name}"
+
+class GuestCheckin(models.Model):
+    """
+    Model for tracking guest check-ins to classes
+    """
+    id = models.BigAutoField(primary_key=True)
+    guest = models.ForeignKey(GuestVisit, on_delete=models.CASCADE, related_name='checkins')
+    class_instance = models.ForeignKey('Class', on_delete=models.CASCADE, related_name='guest_checkins')
+    checkin_time = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = "guest_checkins"
+        unique_together = (('guest', 'class_instance'),)
+    
+    def __str__(self):
+        return f"{self.guest.name} checked into {self.class_instance.template.name if hasattr(self.class_instance, 'template') else 'Class'} on {self.checkin_time}"

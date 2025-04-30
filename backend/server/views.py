@@ -112,6 +112,7 @@ class LoginView(View):
             data = json.loads(request.body)
             email = data.get("email")
             password = data.get("password")
+            gym_id = data.get("gymId")  # Get gym_id from request if provided
 
             # Find user by email
             try:
@@ -122,7 +123,55 @@ class LoginView(View):
             # Authenticate user with their email and password
             user = authenticate(username=user.username, password=password)
 
-            if user:
+            if not user:
+                return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+                
+            # If gym_id is provided, check if the user has access to this gym
+            if gym_id:
+                # Check if user has membership for this gym in the gym_memberships table
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT COUNT(*) FROM gym_memberships 
+                        WHERE user_id = %s AND gym_id = %s AND active = %s
+                    """, [user.id, gym_id, True])
+                    
+                    has_membership = cursor.fetchone()[0] > 0
+                
+                if not has_membership:
+                    return JsonResponse({
+                        "success": False,
+                        "message": "You don't have access to this gym"
+                    }, status=403)
+                    
+                # If user has access, get the gym details
+                try:
+                    gym = Gym.objects.get(id=gym_id)
+                    gym_name = gym.name
+                except Gym.DoesNotExist:
+                    gym_name = None
+                    
+                # Login the user
+                login(request, user)
+                
+                # Return successful response with gym info
+                return JsonResponse({
+                    "success": True,
+                    "message": "Login successful",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "firstName": user.first_name,
+                        "lastName": user.last_name,
+                    },
+                    "gym": {
+                        "id": gym_id,
+                        "name": gym_name
+                    }
+                })
+            else:
+                # No gym_id provided, just login the user
                 login(request, user)
                 return JsonResponse({
                     "success": True,
@@ -135,8 +184,6 @@ class LoginView(View):
                         "lastName": user.last_name,
                     }
                 })
-            else:
-                return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
         except Exception as e:
             logger = logging.getLogger('django.security')
@@ -297,12 +344,20 @@ class MemberSignupView(View):
             password = data.get('password')
             belt_id = data.get('belt', 1)  # Default to first belt if not provided
             role_id = data.get('role', 1)  # Default to first role if not provided
+            gym_id = data.get('gymId')  # Get gym ID from request
 
             # Validate required fields
             if not all([first_name, last_name, email, phone, dob, password]):
                 return JsonResponse({
                     'success': False,
                     'message': 'All fields are required'
+                }, status=400)
+                
+            # Validate gym_id is provided
+            if not gym_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Gym ID is required'
                 }, status=400)
 
             # Check if email already exists
@@ -329,18 +384,51 @@ class MemberSignupView(View):
                 phone_number=phone,
                 is_gym_owner=False
             )
-
-            return JsonResponse({
-                'success': True,
-                'message': 'Member registration successful',
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'first_name': user.first_name,
-                    'lastName': user.last_name
-                }
-            })
+            
+            # Associate user with the gym by creating a gym membership record
+            try:
+                gym = Gym.objects.get(id=gym_id)
+                
+                # Create the gym membership entry in the "gym_memberships" table
+                # Using the structure visible in the schema image: id, join_date, active, gym_id, user_id
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO gym_memberships (join_date, active, gym_id, user_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, [
+                        timezone.now().date(),  # join_date
+                        True,                   # active
+                        gym_id,                 # gym_id
+                        user.id                 # user_id
+                    ])
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Member registration successful',
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'lastName': user.last_name,
+                        'gym_id': gym_id
+                    }
+                })
+            except Gym.DoesNotExist:
+                # If gym doesn't exist, delete the user we just created
+                user.delete()
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid gym ID'
+                }, status=400)
+            except Exception as e:
+                # If there's an error creating the gym membership, delete the user and return an error
+                user.delete()
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error creating gym membership: {str(e)}'
+                }, status=400)
 
         except json.JSONDecodeError:
             return JsonResponse({

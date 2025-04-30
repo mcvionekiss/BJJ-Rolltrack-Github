@@ -291,6 +291,7 @@ class ClassAttendance(models.Model):
     checked_in_by = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True, related_name='checked_in_attendances')
     user = models.ForeignKey(Users, models.DO_NOTHING, related_name='attendances')
     scheduled_class = models.ForeignKey(Class, models.DO_NOTHING)
+    gym = models.ForeignKey(Gym, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
         db_table = 'class_attendance'

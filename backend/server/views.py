@@ -1263,7 +1263,9 @@ def request_password_reset(request):
     except Exception as e:
         print("❌ TOKEN CREATION ERROR:", str(e))
         return Response({"success": False, "message": "Token creation failed."}, status=500)
-    reset_url = f"http://localhost:3000/reset-password/{token.token}"
+
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+    reset_url = f"{frontend_url}/reset-password/{token.token}"
 
     try:
         send_mail(

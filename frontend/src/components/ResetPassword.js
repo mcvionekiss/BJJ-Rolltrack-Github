@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import PasswordChecklist from "react-password-checklist"; // Make sure you installed this
 import logo from '../assets/logo.jpeg';
+import config from "../config";
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -40,9 +41,23 @@ const ResetPassword = () => {
       return;
     }
     try {
-      const res = await axios.post(`http://localhost:8000/auth/reset-password/${token}/`, {
-        password,
+      // Step 1: Get CSRF token
+      const csrfRes = await axios.get(config.endpoints.auth.csrf, {
+        withCredentials: true,
       });
+      const csrfToken = csrfRes.data.csrfToken;
+
+      // Step 2: Send POST request with CSRF token
+      const res = await axios.post(
+        config.endpoints.auth.resetPassword(token),
+        { password },
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
       setMessage(res.data.message);
 
       if (res.data.message && res.data.message.toLowerCase().includes("success")) {

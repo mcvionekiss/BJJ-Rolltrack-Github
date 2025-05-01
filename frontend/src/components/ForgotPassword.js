@@ -3,6 +3,7 @@ import { Box, Button, Container, TextField, Typography, Paper, AppBar, Toolbar }
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.jpeg'; 
 import axios from 'axios';
+import config from "../config";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -11,7 +12,22 @@ const ForgotPassword = () => {
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/auth/request-password-reset/', { email });
+      // Get CSRF Token
+      const csrfRes = await axios.get(config.endpoints.auth.csrf, {
+        withCredentials: true,
+      });
+      const csrfToken = csrfRes.data.csrfToken;
+      // Send password reset request
+      const res = await axios.post(
+        `${config.apiUrl}/auth/request-password-reset/`,
+        { email },
+        {
+          headers: {
+            'X-CSRFToken': csrfToken
+          },
+          withCredentials: true
+        }
+      );
       setMessage(res.data.message);
     } catch (err) {
       setMessage(err.response?.data?.message || "Something went wrong.");

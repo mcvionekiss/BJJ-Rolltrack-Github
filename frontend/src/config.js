@@ -35,6 +35,7 @@ const config = {
       logout: `${BASE_URL}/auth/logout/`,
       login: `${BASE_URL}/auth/login/`,
       csrf: `${BASE_URL}/auth/csrf/`,
+      resetPassword: (token) => `${BASE_URL}/auth/reset-password/${token}/`,
     },
     api: {
       classDetails: (classID) => `${BASE_URL}/api/class_details/${classID}/`,

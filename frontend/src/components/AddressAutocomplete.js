@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TextField, List, ListItem, Paper, CircularProgress } from "@mui/material";
 import axios from "axios";
+import config from "../config";
 
 
 export default function AddressAutocomplete({ onAddressSelect, addressValue, cityValue, stateValue }) {
@@ -38,7 +39,7 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
         setLoading(true); // Set loading to true
         try {
             const response = await axios.get(
-                `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/api/search-address?q=${input}`
+                `${config.apiUrl}/api/search-address?q=${input}`
             );
             setSuggestions(response.data);
         } catch (error) {

@@ -3,11 +3,12 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode"; // Optional
 import { GoogleLogin } from "@react-oauth/google";
+import config from "../config";
 
 const GoogleSignUpButton = () => {
   const navigate = useNavigate();
   const getCsrfToken = async () => {
-    const res = await axios.get("http://localhost:8000/auth/csrf/", {
+    const res = await axios.get(config.endpoints.auth.csrf, {
       withCredentials: true,
     });
     return res.data.csrfToken;
@@ -19,7 +20,7 @@ const GoogleSignUpButton = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:8000/auth/google/",
+        `${config.apiUrl}/auth/google/`,
         { id_token },
         {
         headers: {

@@ -84,8 +84,10 @@ const ProfilePage = () => {
                 maxWidth: "1400px",
                 marginLeft: `${sidebarWidth}px`,
                 transition: "margin-left 0.3s ease-in-out",
+                height: '100vh',
+                overflowY: 'auto'
             }}>
-                <Paper elevation={4} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 5, borderRadius: 5, boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.10)' }}>
+                <Paper elevation={4} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 0, borderRadius: 5, boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.10)' }}>
                     {/* Header Section */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                         <Typography variant="h4" fontWeight="bold" sx={{ letterSpacing: 1 }}>

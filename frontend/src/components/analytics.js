@@ -399,7 +399,7 @@ function Analytics() {
     };
 
     return (
-        <Box display="flex">
+        <Box display="flex" sx={{height: '100vh', overflowY: 'auto',}}>
             <NavigationMenu onWidthChange={setSidebarWidth} />
             <Container disableGutters maxWidth={false}
                 sx={{

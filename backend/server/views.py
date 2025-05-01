@@ -1101,7 +1101,7 @@ def get_all_classes_analysis_for_yesterday(request):
         total_count = 0
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1147,7 +1147,7 @@ def get_all_classes_analysis_for_week(request):
         count = 0
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1194,7 +1194,7 @@ def get_all_classes_analysis_for_last_week(request):
         count = 0
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1240,7 +1240,7 @@ def get_all_classes_analysis_for_month(request):
         count = 0
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1287,7 +1287,7 @@ def get_all_classes_analysis_for_last_month(request):
         count = 0
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1332,7 +1332,7 @@ def get_every_class_for_today_with_attendance(request):
         total_attendance = 0
         for cls in classes:
             try:
-                #attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1387,7 +1387,7 @@ def get_all_category_classes_analysis_for_today(request):
         advanced_count = 20
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1450,7 +1450,7 @@ def get_all_category_classes_analysis_for_weekly(request):
         advanced_count = 0
         for cls in classes:
             try:
-                attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
@@ -1513,7 +1513,7 @@ def get_all_category_classes_analysis_for_monthly(request):
         advanced_count = 0
         for cls in classes:
             try:
-                #attendance = ClassAttendance.objects.filter(id=cls.id).all().count()
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"

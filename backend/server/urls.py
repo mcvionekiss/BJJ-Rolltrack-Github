@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from server.views import (
     LoginView, LogoutView, RegisterView, generate_qr, get_csrf_token,
     MemberSignupView, google_auth,
-    request_password_reset, reset_password, add_gym
+    request_password_reset, reset_password, add_gym, AddressSearchProxyView
 )
 
 # Check-in related views
@@ -113,7 +113,8 @@ urlpatterns = [
     path("api/total-category-attendance-week/",get_all_category_classes_analysis_for_weekly, name="get_all_category_classes_analysis_for_weekly"),
     path("api/total-category-attendance-month/",get_all_category_classes_analysis_for_monthly, name="get_all_category_classes_analysis_for_monthly"),
     path("api/get-every-class-for-today-with-attendance/",get_every_class_for_today_with_attendance, name="get_every_class_for_today_with_attendance"),
-    
+    path("api/search-address/", AddressSearchProxyView.as_view(), name="search_address"),
+
     # Add template API endpoints
     path("api/templates/", get_templates, name="get_templates"),
     path("api/templates/<int:template_id>/", delete_template, name="delete_template"),

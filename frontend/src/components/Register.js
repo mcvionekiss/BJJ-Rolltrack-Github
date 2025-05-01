@@ -38,14 +38,32 @@ const fetchCsrfToken = async (setCsrfToken) => {
     }
 };
 
-const addGym = async (gymData, csrfToken) => {
-    const response = await axios.post(config.endpoints.auth.addGym, gymData);
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    if (match) return match[2];
+    return null;
+}
+
+const addGym = async (gymData) => {
+    const csrfToken = getCookie('csrftoken');  // Read it directly from cookie
+    const response = await axios.post(
+        config.endpoints.auth.addGym,
+        gymData,
+        {
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json"
+            },
+            withCredentials: true  // ensures cookies are sent, including the sessionid and csrftoken
+        }
+    );
     console.log("🟢 Gym added successfully", response.data);
     console.log("🟢 Gym ID: ", response.data.gym.id);
     return response.data.gym.id;  // Return the gym ID
 };
 
-const registerUser = async (userData, csrfToken) => {
+const registerUser = async (userData) => {
+    const csrfToken = getCookie('csrftoken');
     const payload = {
         first_name: userData.firstName,
         last_name: userData.lastName,
@@ -190,7 +208,7 @@ export default function Register() {
         console.log("Submitting with data:", formData, "and CSRF:", csrfToken);
     
         try {
-            const response = await registerUser(formData, csrfToken);
+            const response = await registerUser(formData);
             console.log("🟢 Registration successful", response.data);
             const userId = response.data.user?.id;
 
@@ -220,7 +238,7 @@ export default function Register() {
                     schedule: scheduleForBackend,  // Use mapped schedule
                     userId: userId  // Include user ID for backend association
                 };
-                const createdGymId = await addGym(gymData, csrfToken);  // Get the gym ID
+                const createdGymId = await addGym(gymData);  // Get the gym ID
                 setGymId(createdGymId);  // Store the gym ID in state
                 navigate("/dashboard", { state: { gymId: createdGymId, showWelcome: true } });
             } else {

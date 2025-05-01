@@ -38,7 +38,7 @@ export default function AddressAutocomplete({ onAddressSelect, addressValue, cit
         setLoading(true); // Set loading to true
         try {
             const response = await axios.get(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${input}&addressdetails=1&countrycodes=us`
+                `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/api/search-address?q=${input}`
             );
             setSuggestions(response.data);
         } catch (error) {

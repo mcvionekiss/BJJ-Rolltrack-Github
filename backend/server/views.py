@@ -209,7 +209,7 @@ class RegisterView(View):
             first_name = data.get('first_name', '')
             last_name = data.get('last_name', '')
             belt_id = data.get('belt', 1)  # Default to first belt if not provided
-            role_id = data.get('role', 1)  # Default to first role if not provided
+            role_id = data.get('role', 2)  # Default to 2: gym_owner
 
             # Check if email already exists
             if Users.objects.filter(email=email).exists():
@@ -234,6 +234,8 @@ class RegisterView(View):
                     'message': f'Role with ID {role_id} does not exist.'
                 }, status=400)
             
+            is_gym_owner = (role.id == 2)
+            
             user = Users.objects.create_user(
                 username=username,
                 email=email,
@@ -243,7 +245,8 @@ class RegisterView(View):
                 date_enrolled=timezone.now().date(),
                 date_of_birth=timezone.now().date(),  # Default value, should be updated later
                 belt_id=belt,
-                role_id=role
+                role_id=role,
+                is_gym_owner=is_gym_owner
             )
 
             # Log the user in
@@ -1298,7 +1301,7 @@ def add_gym(request):
     """API endpoint to add a new gym to the database."""
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
+            data = request.data
             name = data.get("gymName")
             email = data.get("gymEmail")
             phone_number = data.get("gymPhoneNumber")
@@ -1909,3 +1912,24 @@ def get_all_category_classes_analysis_for_monthly(request):
         print(f"Error in available_classes_today: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+    
+class AddressSearchProxyView(View):
+    def get(self, request):
+        query = request.GET.get("q", "")
+        if not query:
+            return JsonResponse({"error": "Missing query"}, status=400)
+
+        try:
+            response = requests.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "format": "json",
+                    "q": query,
+                    "addressdetails": 1,
+                    "countrycodes": "us"
+                },
+                headers={"User-Agent": "RollTrackApp/1.0"}  # Required by Nominatim
+            )
+            return JsonResponse(response.json(), safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)

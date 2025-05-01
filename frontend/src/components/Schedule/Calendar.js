@@ -1128,14 +1128,7 @@ export default function Calendar() {
                   </Box>
                 </Box>
                 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Button 
-                    variant="outlined" 
-                    onClick={handleCloseModal}
-                    sx={{ borderRadius: '8px', flex: 1, mr: 1 }}
-                  >
-                    Close
-                  </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                   <Button 
                     variant="contained" 
                     startIcon={<EditIcon />}
@@ -1164,35 +1157,45 @@ export default function Calendar() {
                         backgroundColor: selectedEvent.extendedProps?.classLevel ? 
                           getLevelColor(selectedEvent.extendedProps.classLevel) + 'dd' : '#3788d8dd',
                       },
-                      flex: 1
+                      flex: 1,
+                      mr: 1
                     }}
                   >
-                    Edit
-                  </Button>
-                </Box>
-                
-                {/* Delete buttons section */}
-                <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Button 
-                    variant="outlined" 
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => handleDeleteEvent(selectedEvent.id)}
-                    sx={{ 
-                      borderRadius: '8px',
-                      borderColor: 'error.light',
-                      color: 'error.main',
-                      '&:hover': {
-                        backgroundColor: 'error.lighter',
-                        borderColor: 'error.main',
-                      }
-                    }}
-                  >
-                    Delete This Class
+                    EDIT
                   </Button>
                   
-                  {/* Only show the delete all occurrences button if it's a recurring event */}
-                  {selectedEvent.extendedProps?.dayOfWeek && (
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDeleteEvent(selectedEvent.id)}
+                    sx={{
+                      backgroundColor: 'error.lighter',
+                      borderRadius: '8px',
+                      border: '1px solid',
+                      borderColor: 'error.light',
+                      width: 40,
+                      height: 40,
+                      '& svg': {
+                        color: 'error.main', // Default icon color
+                        transition: 'color 0.2s ease'
+                      },
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: 'error.main', // Full red background on hover
+                        borderColor: 'error.dark',
+                        '& svg': {
+                          color: 'white' // White icon on hover
+                        }
+                      }
+                    }}
+                    aria-label="delete class"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                
+                {/* Only show the delete all occurrences button if it's a recurring event */}
+                {selectedEvent.extendedProps?.dayOfWeek && (
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button 
                       variant="text" 
                       color="error"
@@ -1205,8 +1208,8 @@ export default function Calendar() {
                     >
                       Delete All Occurrences
                     </Button>
-                  )}
-                </Box>
+                  </Box>
+                )}
               </Box>
             </>
           ) : (

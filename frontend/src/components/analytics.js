@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
 import { 
     Container,
     Paper, 
@@ -29,104 +30,19 @@ import {
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import NavigationMenu from "./NavigationMenu";
 
-// Mock data for sparklines
-const sparklineData = {
-    daily: [
-        { value: 65 }, { value: 72 }, { value: 68 }, { value: 75 }, 
-        { value: 69 }, { value: 78 }, { value: 80 }
-    ],
-    weekly: [
-        { value: 320 }, { value: 350 }, { value: 365 }, { value: 380 }, 
-        { value: 340 }, { value: 390 }, { value: 400 }
-    ],
-    monthly: [
-        { value: 1200 }, { value: 1400 }, { value: 1350 }, { value: 1450 }, 
-        { value: 1480 }, { value: 1550 }, { value: 1600 }
-    ]
+import config from "../config";
+import ConfirmRegistration from './ConfirmRegistration';
+
+const fetchCsrfToken = async (setCsrfToken) => {
+    try {
+        const response = await axios.get(config.endpoints.auth.csrf, {
+            withCredentials: true,
+        });
+        setCsrfToken(response.data.csrfToken);
+    } catch (error) {
+        console.error("Failed to fetch CSRF token", error);
+    }
 };
-
-// Mock data for different time ranges
-const mockDayData = [
-    {
-        name: 'CHILDREN',
-        Fundamental: 45,
-        Beginner: 35,
-        Intermediate: 25,
-        Advanced: 20,
-    },
-    {
-        name: 'TEENAGERS',
-        Fundamental: 15,
-        Beginner: 25,
-        Intermediate: 40,
-        Advanced: 30,
-    },
-    {
-        name: 'ADULT',
-        Fundamental: 10,
-        Beginner: 35,
-        Intermediate: 45,
-        Advanced: 30,
-    },
-];
-
-const mockWeekData = [
-    {
-        name: 'CHILDREN',
-        Fundamental: 150,
-        Beginner: 120,
-        Intermediate: 80,
-        Advanced: 50,
-    },
-    {
-        name: 'TEENAGERS',
-        Fundamental: 60,
-        Beginner: 100,
-        Intermediate: 140,
-        Advanced: 90,
-    },
-    {
-        name: 'ADULT',
-        Fundamental: 40,
-        Beginner: 110,
-        Intermediate: 160,
-        Advanced: 120,
-    },
-];
-
-const mockMonthData = [
-    {
-        name: 'CHILDREN',
-        Fundamental: 600,
-        Beginner: 450,
-        Intermediate: 300,
-        Advanced: 200,
-    },
-    {
-        name: 'TEENAGERS',
-        Fundamental: 250,
-        Beginner: 400,
-        Intermediate: 550,
-        Advanced: 400,
-    },
-    {
-        name: 'ADULT',
-        Fundamental: 180,
-        Beginner: 480,
-        Intermediate: 620,
-        Advanced: 500,
-    },
-];
-
-// Mock data for today's classes
-const mockClassData = [
-    { name: 'Tiny Champs', checkIns: 15, time: '10:00 AM' },
-    { name: 'Advanced Teens', checkIns: 30, time: '3:30 PM' },
-    { name: 'Adult Fundamentals', checkIns: 25, time: '5:00 PM' },
-    { name: 'Adult Advanced', checkIns: 20, time: '6:00 PM' },
-    { name: 'Kids Age 5-7', checkIns: 10, time: '7:00 PM' },
-    { name: 'Kids Age 8-10', checkIns: 15, time: '8:00 PM' },
-];
 
 // Attendance Stats Card Component
 const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => (
@@ -181,12 +97,248 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
     </Paper>
 );
 
+const getdata = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.todayAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getyesterdaydata = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.yesterdayAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getweeklydata = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.weeklyAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getlastweekdata = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.lastWeekAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getmonthlydata = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.monthlyAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getlastmonthdata = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.lastMonthAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const gettodaycategory = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.todayCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+
+};
+
+const getweekcategory = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.weekCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+
+};
+
+const getmonthcategory = async (csrfToken) => {
+    return axios.get(
+        config.endpoints.api.monthCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+        }
+    );
+
+};
+
 function Analytics() {
+    const [csrfToken, setCsrfToken] = useState("");
     const [timeRange, setTimeRange] = useState('day');
     const [sidebarWidth, setSidebarWidth] = useState(250);
     const theme = useTheme();
     const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const isSmScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const [mockClassData, setMockClassData] = useState([])
+    const [dailyAttendanceCount, setDailyAttendanceCount] = useState(0)
+    const [yesterdayAttendanceCount, setYesterdayAttendanceCount] = useState(0)
+    const [WeeklyAttendanceCount, setWeeklyAttendanceCount] = useState(0)
+    const [LastWeekAttendanceCount, setLastWeekAttendanceCount] = useState(0)
+    const [MonthlyAttendanceCount, setMonthlyAttendanceCount] = useState(0)
+    const [LastMonthAttendanceCount, setLastMonthAttendanceCount] = useState(0)
+    const [TodayCategory, setTodayCategory] = useState([])
+    const [WeekCategory, setWeekCategory] = useState([])
+    const [MonthCategory, setMonthCategory] = useState([])
+
+    // ✅ Fetch CSRF token when the component mounts
+    useEffect(() => {
+        fetchCsrfToken(setCsrfToken);
+    }, []);
+
+    const getDailyData = async (csrfToken) => {
+        try {
+            const response = await getdata(csrfToken);
+
+            console.log(response)
+            setMockClassData(response.data.classes)
+            setDailyAttendanceCount(response.data.total_attendance_for_today)
+
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getYesterdayData = async (csrfToken) => {
+        try {
+            const response = await getyesterdaydata(csrfToken);
+
+            setYesterdayAttendanceCount(response.data.yesterdays_count)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getWeeklyData = async (csrfToken) => {
+        try {
+            const response = await getweeklydata(csrfToken);
+
+            setWeeklyAttendanceCount(response.data.weekly_count)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getLastWeekData = async (csrfToken) => {
+        try {
+            const response = await getlastweekdata(csrfToken);
+
+            setLastWeekAttendanceCount(response.data.weekly_count)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getMonthlyData = async (csrfToken) => {
+        try {
+            const response = await getmonthlydata(csrfToken);
+
+            setMonthlyAttendanceCount(response.data.monthly_count)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getLastMonthData = async (csrfToken) => {
+        try {
+            const response = await getlastmonthdata(csrfToken);
+
+            setLastMonthAttendanceCount(response.data.monthly_count)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const getDailyCategoryData = async (csrfToken) => {
+        try {
+            const response = await gettodaycategory(csrfToken);
+
+            const arr = []
+
+            arr.push(response.data.data)
+
+            setTodayCategory(arr)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+
+    }
+
+    const getWeekCategoryData = async (csrfToken) => {
+        try {
+            const response = await getweekcategory(csrfToken);
+
+            const arr = []
+
+            arr.push(response.data.data)
+
+            setWeekCategory(arr)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+
+    }
+
+    const getMonthCategoryData = async (csrfToken) => {
+        try {
+            const response = await getmonthcategory(csrfToken);
+
+            const arr = []
+
+            arr.push(response.data.data)
+
+            setMonthCategory(arr)
+
+            console.log(response)
+        } catch (error) {
+            console.log(error)
+        }
+
+    }
+
+    useEffect(() => {
+        getDailyData()
+        getYesterdayData()
+        getWeeklyData()
+        getLastWeekData()
+        getMonthlyData()
+        getLastMonthData()
+        getDailyCategoryData()
+        getWeekCategoryData()
+        getMonthCategoryData()
+    }, []);
     
     // Set chart height based on screen size
     const getChartHeight = () => {
@@ -219,11 +371,11 @@ function Analytics() {
     const getChartData = (timeRange) => {
         switch (timeRange) {
             case 'week':
-                return mockWeekData;
+                return WeekCategory;
             case 'month':
-                return mockMonthData;
+                return MonthCategory;
             default:
-                return mockDayData;
+                return TodayCategory;
         }
     };
 
@@ -250,28 +402,28 @@ function Analytics() {
                     <Grid>
                         <AttendanceStatsCard
                             title="Daily Attendance"
-                            value="80"
-                            percentage="1.08"
+                            value={dailyAttendanceCount}
+                            percentage={dailyAttendanceCount > 0 ? (dailyAttendanceCount - yesterdayAttendanceCount) / dailyAttendanceCount : 100}
                             timePeriod="Since yesterday"
-                            data={sparklineData.daily}
+                            data={dailyAttendanceCount}
                         />
                     </Grid>
                     <Grid>
                         <AttendanceStatsCard
                             title="Weekly Attendance"
-                            value="400"
-                            percentage="2.85"
+                            value={WeeklyAttendanceCount}
+                            percentage={WeeklyAttendanceCount > 0 ? (WeeklyAttendanceCount - LastWeekAttendanceCount) / WeeklyAttendanceCount : 100}
                             timePeriod="Since last week"
-                            data={sparklineData.weekly}
+                            data={WeeklyAttendanceCount}
                         />
                     </Grid>
                     <Grid>
                         <AttendanceStatsCard
                             title="Monthly Attendance"
-                            value="1,600"
-                            percentage="5.38"
+                            value={MonthlyAttendanceCount}
+                            percentage={MonthlyAttendanceCount > 0 ? (MonthlyAttendanceCount - LastMonthAttendanceCount) / MonthlyAttendanceCount : 100}
                             timePeriod="Since last month"
-                            data={sparklineData.monthly}
+                            data={MonthlyAttendanceCount}
                         />
                     </Grid>
                 </Grid>
@@ -367,11 +519,9 @@ function Analytics() {
                                     maxBarSize={getMaxBarSize()}
                                 >
                                     <XAxis
-                                        dataKey="name"
-                                        axisLine={false}
+                                        dataKey={false}
                                         tickLine={false}
                                         dy={10}
-                                        interval={0}
                                         tick={{ fontSize: getTickFontSize() }}
                                     />
                                     <YAxis
@@ -392,7 +542,7 @@ function Analytics() {
                                             fontSize: isXsScreen ? '0.75rem' : '0.875rem'
                                         }}
                                     />
-                                    <Bar dataKey="Fundamental" fill="#e0e0e0" />
+                                    <Bar dataKey="Fundamental" fill="#bdbdbd" />
                                     <Bar dataKey="Beginner" fill="#bdbdbd" />
                                     <Bar dataKey="Intermediate" fill="#9e9e9e" />
                                     <Bar dataKey="Advanced" fill="#757575" />

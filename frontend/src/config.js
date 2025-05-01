@@ -45,6 +45,15 @@ const config = {
       getTemplates: `${BASE_URL}/api/templates/`,
       getGymHours: `${BASE_URL}/api/gym-hours/`,
       checkin: `${BASE_URL}/api/checkin/`,
+      todayAttendance: `${BASE_URL}/api/get-every-class-for-today-with-attendance/`,
+      yesterdayAttendance: `${BASE_URL}/api/total-yesterday-attendance/`,
+      weeklyAttendance: `${BASE_URL}/api/total-weekly-attendance/`,
+      lastWeekAttendance: `${BASE_URL}/api/total-last-week-attendance/`,
+      monthlyAttendance: `${BASE_URL}/api/total-monthly-attendance/`,
+      lastMonthAttendance: `${BASE_URL}/api/total-last-month-attendance/`,
+      todayCategoryAttendance: `${BASE_URL}/api/total-category-attendance-today/`,
+      weekCategoryAttendance: `${BASE_URL}/api/total-category-attendance-week/`,
+      monthCategoryAttendance: `${BASE_URL}/api/total-category-attendance-month/`,
     }
   },
 

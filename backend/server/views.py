@@ -1437,3 +1437,475 @@ def generate_qr(request, gym_id):
     except Exception as e:
         return JsonResponse({"success": False, "message": str(e)}, status=500)
 
+@api_view(['GET'])
+def get_all_classes_analysis_for_yesterday(request):
+    """Fetch only today's available classes for check-in."""
+    yesterday = localdate() - timedelta(hours=24) # Get yesterday's date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=yesterday,
+            date__lt=localdate(),
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        total_count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+
+                total_count = total_count + attendance
+                
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, "yesterdays_count" : total_count}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_classes_analysis_for_week(request):
+    """Fetch only today's available classes for check-in."""
+    week = localdate()  - timedelta(days=7) # Get week date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=week,
+            date__lte=localdate(),
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                #count = attendance.all()
+                
+                count = count + attendance
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, "weekly_count": count}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_classes_analysis_for_last_week(request):
+    """Fetch only today's available classes for check-in."""
+    this_week = localdate()  - timedelta(days=7) # Get week date
+    last_week = localdate()  - timedelta(days=14) # Get week date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=last_week,
+            date__lt=this_week,
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                #count = attendance.all()
+
+                count = count + attendance
+                
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, "weekly_count": count}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_classes_analysis_for_month(request):
+    """Fetch only today's available classes for check-in."""
+    month = localdate()  - timedelta(days=30) # Get month date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=month,
+            date__lte=localdate(),
+        )
+
+        data = []
+        count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                
+                count = count + attendance
+
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, "monthly_count": count}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_classes_analysis_for_last_month(request):
+    """Fetch only today's available classes for check-in."""
+    this_month = localdate()  - timedelta(days=90) # Get month date
+    last_month = localdate()  - timedelta(days=120) # Get month date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=last_month,
+            date__lte=this_month,
+            template__isnull=False,  # Only classes with a template
+        )
+
+        data = []
+        count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                
+                count = count + attendance
+
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, "monthly_count": count}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_every_class_for_today_with_attendance(request):
+    """Fetch only today's available classes for check-in."""
+    today = localdate()  # Get today's date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date=today,
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        total_attendance = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                #total_attendance = total_attendance + attendance
+                
+                data.append({
+                    "id": cls.id,
+                    "name": template.name,
+                    "checkIns" : total_attendance,
+                    "time" : cls.start_time
+                })
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        #data.append("attendance" : total_attendance)
+
+        return JsonResponse({"success": True, "classes": data, "total_attendance_for_today": total_attendance}, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_category_classes_analysis_for_today(request):
+    """Fetch only today's available classes for check-in."""
+    today = localdate() # Get today's date
+
+    try:
+        # Try to get cached data first
+        cached_classes = cache.get(f"available_classes_{today}")
+        if cached_classes:
+            return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date=today,
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        fundamental_count = 5
+        beginner_count = 10
+        intermediate_count = 15
+        advanced_count = 20
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                
+                if(template.level.name == "Fundamental"):
+                    fundamental_count = fundamental_count + attendance
+                if(template.level.name == "Beginner"):
+                    beginner_count = beginner_count + attendance
+                if(template.level.name == "Intermediate"):
+                    intermediate_count = intermediate_count + attendance
+                if(template.level.name == "Advanced"):
+                    advanced_count = advanced_count + attendance
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, 
+        "data": {
+        "name" : "today",
+        "Fundamental" : fundamental_count, 
+        "Beginner" : beginner_count, 
+        "Intermediate" : intermediate_count, 
+        "Advanced" : advanced_count 
+        },
+        }, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_category_classes_analysis_for_weekly(request):
+    """Fetch only today's available classes for check-in."""
+    week = localdate() - timedelta(days=7) # Get today's date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=week,
+            date__lte=localdate(),
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        fundamental_count = 0
+        beginner_count = 0
+        intermediate_count = 0
+        advanced_count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+                
+                if(template.level.name == "Fundamental"):
+                    fundamental_count = fundamental_count + attendance
+                if(template.level.name == "Beginner"):
+                    beginner_count = beginner_count + attendance
+                if(template.level.name == "Intermediate"):
+                    intermediate_count = intermediate_count + attendance
+                if(template.level.name == "Advanced"):
+                    advanced_count = advanced_count + attendance
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, 
+        "data": {
+        "name" : "today",
+        "Fundamental" : fundamental_count, 
+        "Beginner" : beginner_count, 
+        "Intermediate" : intermediate_count, 
+        "Advanced" : advanced_count 
+        },
+        }, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_category_classes_analysis_for_monthly(request):
+    """Fetch only today's available classes for check-in."""
+    month = localdate() - timedelta(days=30) # Get today's date
+
+    try:
+        # Try to get cached data first
+        #cached_classes = cache.get(f"available_classes_{today}")
+        #if cached_classes:
+        #    return JsonResponse({"success": True, "classes": cached_classes}, status=200)
+
+        # Query classes with required fields for today
+        classes = Class.objects.filter(
+            date__gte=month,
+            date__lte=localdate(),
+            template__isnull=False,  # Only classes with a template
+        ).select_related('template', 'template__level').order_by("start_time")
+
+        data = []
+        fundamental_count = 0
+        beginner_count = 0
+        intermediate_count = 0
+        advanced_count = 0
+        for cls in classes:
+            try:
+                attendance = Checkin.objects.filter(id=cls.id).all().count()
+                # Get template and level information
+                template = cls.template
+                level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
+
+                if(template.level.name == "Fundamental"):
+                    fundamental_count = fundamental_count + attendance
+                if(template.level.name == "Beginner"):
+                    beginner_count = beginner_count + attendance
+                if(template.level.name == "Intermediate"):
+                    intermediate_count = intermediate_count + attendance
+                if(template.level.name == "Advanced"):
+                    advanced_count = advanced_count + attendance
+                
+            except Exception as e:
+                # Log error but continue processing other classes
+                print(f"Error processing class {cls.id}: {str(e)}")
+                continue
+
+        # Store in cache for 30 seconds
+        #cache.set(f"available_classes_{today}", data, timeout=30)
+
+        return JsonResponse({"success": True, 
+        "data": {
+        "name" : "today",
+        "Fundamental" : fundamental_count, 
+        "Beginner" : beginner_count, 
+        "Intermediate" : intermediate_count, 
+        "Advanced" : advanced_count 
+        },
+        }, status=200)
+    
+    except Exception as e:
+        # Log the detailed error
+        import traceback
+        print(f"Error in available_classes_today: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)

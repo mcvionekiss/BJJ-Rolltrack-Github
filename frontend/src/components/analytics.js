@@ -28,6 +28,7 @@ import {
     Legend
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NavigationMenu from "./NavigationMenu";
 
 import config from "../config";
@@ -86,10 +87,22 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
             </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUpIcon color="success" />
-            <Typography color="success.main">
-                {percentage}%
-            </Typography>
+            {
+                percentage > 0 ?
+                <div>
+                    <TrendingUpIcon color="success" />
+                    <Typography color="success.main">
+                        {percentage}%
+                    </Typography>
+                </div>
+                :
+                <div>
+                    <TrendingDownIcon color="error" />
+                    <Typography color="error.main">
+                        {percentage}%
+                    </Typography>
+                </div>
+            }
             <Typography color="text.secondary">
                 {timePeriod}
             </Typography>
@@ -403,7 +416,7 @@ function Analytics() {
                         <AttendanceStatsCard
                             title="Daily Attendance"
                             value={dailyAttendanceCount}
-                            percentage={dailyAttendanceCount > 0 ? (dailyAttendanceCount - yesterdayAttendanceCount) / dailyAttendanceCount : 100}
+                            percentage={yesterdayAttendanceCount > 0 ? (dailyAttendanceCount - yesterdayAttendanceCount) / yesterdayAttendanceCount : -100}
                             timePeriod="Since yesterday"
                             data={dailyAttendanceCount}
                         />
@@ -412,7 +425,7 @@ function Analytics() {
                         <AttendanceStatsCard
                             title="Weekly Attendance"
                             value={WeeklyAttendanceCount}
-                            percentage={WeeklyAttendanceCount > 0 ? (WeeklyAttendanceCount - LastWeekAttendanceCount) / WeeklyAttendanceCount : 100}
+                            percentage={LastWeekAttendanceCount > 0 ? (WeeklyAttendanceCount - LastWeekAttendanceCount) / LastWeekAttendanceCount : 100}
                             timePeriod="Since last week"
                             data={WeeklyAttendanceCount}
                         />
@@ -421,7 +434,7 @@ function Analytics() {
                         <AttendanceStatsCard
                             title="Monthly Attendance"
                             value={MonthlyAttendanceCount}
-                            percentage={MonthlyAttendanceCount > 0 ? (MonthlyAttendanceCount - LastMonthAttendanceCount) / MonthlyAttendanceCount : 100}
+                            percentage={LastMonthAttendanceCount > 0 ? (MonthlyAttendanceCount - LastMonthAttendanceCount) / LastMonthAttendanceCount : 100}
                             timePeriod="Since last month"
                             data={MonthlyAttendanceCount}
                         />

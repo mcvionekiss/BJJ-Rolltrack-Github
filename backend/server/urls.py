@@ -7,7 +7,12 @@ from server.views import (
     check_student, available_classes_today, class_details, checkin, 
     student_attendance_history, get_gym_hours, google_auth, request_password_reset, reset_password, add_gym,
     # Add new template views
-    get_templates, delete_template, update_template, generate_qr
+    get_templates, delete_template, update_template, generate_qr,
+    # Analytics
+    get_every_class_for_today_with_attendance, get_all_classes_analysis_for_yesterday,
+    get_all_classes_analysis_for_week, get_all_classes_analysis_for_last_week,
+    get_all_classes_analysis_for_month, get_all_classes_analysis_for_last_month,
+    get_all_category_classes_analysis_for_today, get_all_category_classes_analysis_for_weekly, get_all_category_classes_analysis_for_monthly
 )
 
 urlpatterns = [
@@ -31,6 +36,15 @@ urlpatterns = [
     path("api/attendance/history/<str:email>/", student_attendance_history, name="student_attendance_history_by_email"),
     path("api/gym-hours/", get_gym_hours, name="gym_hours"),
     path("api/gym-hours/<int:gym_id>/", get_gym_hours, name="gym_hours_by_id"),
+    path("api/total-yesterday-attendance/",get_all_classes_analysis_for_yesterday, name="get_all_classes_analysis_for_yesterday"),
+    path("api/total-weekly-attendance/",get_all_classes_analysis_for_week, name="get_all_classes_analysis_for_week"),
+    path("api/total-last-week-attendance/",get_all_classes_analysis_for_last_week, name="get_all_classes_analysis_for_last_week"),
+    path("api/total-monthly-attendance/",get_all_classes_analysis_for_month, name="get_all_classes_analysis_for_month"),
+    path("api/total-last-month-attendance/",get_all_classes_analysis_for_last_month, name="get_all_classes_analysis_for_last_month"),
+    path("api/total-category-attendance-today/",get_all_category_classes_analysis_for_today, name="get_all_category_classes_analysis_for_today"),
+    path("api/total-category-attendance-week/",get_all_category_classes_analysis_for_weekly, name="get_all_category_classes_analysis_for_weekly"),
+    path("api/total-category-attendance-month/",get_all_category_classes_analysis_for_monthly, name="get_all_category_classes_analysis_for_monthly"),
+    path("api/get-every-class-for-today-with-attendance/",get_every_class_for_today_with_attendance, name="get_every_class_for_today_with_attendance"),
     
     # Add template API endpoints
     path("api/templates/", get_templates, name="get_templates"),

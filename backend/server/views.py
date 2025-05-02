@@ -1935,3 +1935,37 @@ class AddressSearchProxyView(View):
             return JsonResponse(response.json(), safe=False)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
+        
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    user = request.user
+
+    # Get the user's associated gym
+    gym_owner_link = GymsOwners.objects.filter(user=user).first()
+    gym = gym_owner_link.gym if gym_owner_link else None
+
+    # Try to get the gym's address
+    address_obj = GymAddress.objects.filter(gym=gym).first() if gym else None
+
+    if address_obj:
+        address = f"{address_obj.street_line1}, {address_obj.city}, {address_obj.state} {address_obj.postal_code}"
+    else:
+        address = ""
+
+    return Response({
+        "user": {
+            "id": user.id,
+            "firstName": user.first_name,
+            "lastName": user.last_name,
+            "email": user.email,
+            "phoneNumber": user.phone_number,
+        },
+        "gym": {
+            "id": gym.id if gym else None,
+            "name": gym.name if gym else "",
+            "address": address,
+            "phone": gym.phone_number if gym else "",
+            "email": gym.email if gym else ""
+        }
+    })

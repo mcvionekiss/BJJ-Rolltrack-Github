@@ -9,8 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 # Authentication views
 from server.views import (
     LoginView, LogoutView, RegisterView, generate_qr, get_csrf_token,
-    MemberSignupView, google_auth,
-    request_password_reset, reset_password, add_gym, AddressSearchProxyView
+    MemberSignupView, google_auth, AddressSearchProxyView, get_profile,
+    request_password_reset, reset_password, add_gym, 
 )
 
 # Check-in related views
@@ -95,6 +95,7 @@ urlpatterns = [
     path("auth/member-signup/", MemberSignupView.as_view(), name="member_signup"),
     path("auth/guest-checkin/", GuestCheckinView.as_view(), name="guest_checkin"),
     path("auth/add-gym/", add_gym, name="add_gym"),
+    path("auth/profile/", get_profile, name="get_profile"),
     path("api/check_student/", check_student, name="check_student"),
     path("api/available_classes_today/<int:gym_id>/", available_classes_today, name="available_classes_today"),
     path("api/class_details/<int:classID>/", class_details, name="class_details"),

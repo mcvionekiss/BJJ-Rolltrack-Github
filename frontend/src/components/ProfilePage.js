@@ -17,14 +17,23 @@ import {
   Logout as LogoutIcon
 } from "@mui/icons-material";
 import NavigationMenu from "./NavigationMenu";
+import PersonalInfoForm from "./PersonalInfoForm";
+import GymDetailsForm from "./GymDetailsForm";
 import config from "../config";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const [loading, setLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState({});
   const [qrUrl, setQrUrl] = useState(() => {
     return localStorage.getItem("qrUrl") || "";
+  });
+
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "", lastName: "", email: "", phone: "",
+    gymName: "", gymPhone: "", gymEmail: "", address: "", city: "", state: ""
   });
 
   const [profileData, setProfileData] = useState(() => {
@@ -87,6 +96,24 @@ const ProfilePage = () => {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    if (editMode && profileData.name) {
+      const [firstName, lastName] = profileData.name.split(" ");
+      setFormData({
+        firstName,
+        lastName,
+        email: profileData.email,
+        phone: profileData.phone,
+        gymName: profileData.gym.name || "",
+        gymPhone: profileData.gym.phone || "",
+        gymEmail: profileData.gym.email || "",
+        address: profileData.gym.address || "",
+        city: profileData.gym.city || "",
+        state: profileData.gym.state || "",
+      });
+    }
+  }, [editMode]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem('profileData');
@@ -111,6 +138,109 @@ const ProfilePage = () => {
       alert("Failed to download QR code.");
     }
   };
+
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    if (match) return match[2];
+    return null;
+  }
+  
+  const handleSave = async () => {
+    try {
+      const csrfToken = getCookie("csrftoken");
+      // 1. Update user info
+      await axios.put(
+        `${config.apiUrl}/auth/profile/`,
+        {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+        },
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+  
+      // 2. Create or update gym
+      if (!profileData.gym.id) {
+        const res = await axios.post(
+          `${config.apiUrl}/auth/add-gym/`,
+          {
+            gymName: formData.gymName,
+            gymEmail: formData.gymEmail,
+            gymPhoneNumber: formData.gymPhone,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+          },
+          {
+            headers: {
+              "X-CSRFToken": csrfToken,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+        console.log("✅ Gym created:", res.data.gym);
+      } else {
+        await axios.put(
+          `${config.apiUrl}/auth/gym/${profileData.gym.id}/`,
+          {
+            gym_name: formData.gymName,
+            phone: formData.gymPhone,
+            email: formData.gymEmail,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+          },
+          {
+            headers: {
+              "X-CSRFToken": csrfToken,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+      }
+  
+      const res = await axios.get(`${config.apiUrl}/auth/profile/`, {
+        withCredentials: true,
+      });
+  
+      const { user, gym } = res.data;
+      const updatedProfile = {
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.phoneNumber || "",
+        gym: {
+          id: gym.id,
+          name: gym.name,
+          address: gym.address || "",
+          phone: gym.phone || "",
+          email: gym.email || "",
+          city: gym.city || "",
+          state: gym.state || ""
+        }
+      };
+  
+      const newQrUrl = config.endpoints.api.generateQR(gym.id);
+      setProfileData(updatedProfile);
+      setQrUrl(newQrUrl);
+      localStorage.setItem("profileData", JSON.stringify(updatedProfile));
+      localStorage.setItem("qrUrl", newQrUrl);
+  
+      setEditMode(false);
+      alert("✅ Profile updated successfully!");
+  
+    } catch (error) {
+      console.error("🔴 Failed to update profile:", error);
+      alert("Failed to save changes. Please try again.");
+    }
+  };  
 
   return (
     <Box display="flex" sx={{ minHeight: "100vh" }}>
@@ -148,24 +278,34 @@ const ProfilePage = () => {
             <Typography variant="h4" fontWeight="bold" sx={{ letterSpacing: 1 }}>
               Profile
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-              sx={{
-                backgroundColor: "black",
-                color: "white",
-                borderRadius: 2,
-                fontWeight: 600,
-                px: 3,
-                py: 1.2,
-                fontSize: 16,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                "&:hover": { backgroundColor: "#333" }
-              }}
-            >
-              Logout
-            </Button>
+            {editMode ? (
+                <Box display="flex" gap={2}>
+                    <Button
+                    variant="outlined"
+                    onClick={() => setEditMode(false)}
+                    >
+                    Cancel
+                    </Button>
+                    <Button
+                    variant="contained"
+                    onClick={handleSave} 
+                    sx={{
+                        backgroundColor: "black",
+                        color: "white",
+                        "&:hover": { backgroundColor: "#333" }
+                    }}
+                    >
+                    Save Changes
+                    </Button>
+                </Box>
+                ) : (
+                <Button
+                    variant="outlined"
+                    onClick={() => setEditMode(true)}
+                >
+                    Edit
+                </Button>
+                )}
           </Box>
 
           {/* Content */}
@@ -200,6 +340,8 @@ const ProfilePage = () => {
                   <Skeleton width="80%" height={20} sx={{ mt: 2 }} />
                   <Skeleton width="80%" height={20} />
                 </>
+              ) : editMode ? (
+                <PersonalInfoForm value={formData} onChange={setFormData} errors={formErrors}/>
               ) : (
                 <>
                   <Avatar
@@ -252,7 +394,7 @@ const ProfilePage = () => {
               <Typography variant="h6" fontWeight="bold" mb={3}>
                 Gym Information
               </Typography>
-              {!profileData.gym.name ? (
+              {!profileData.name && !profileData.gym?.id ?  (
                 <>
                   <Skeleton width="60%" height={30} />
                   <Skeleton width="90%" height={20} />
@@ -261,6 +403,8 @@ const ProfilePage = () => {
                   <Skeleton width={180} height={180} sx={{ mt: 3, borderRadius: 2 }} />
                   <Skeleton width="60%" height={36} />
                 </>
+              ) : editMode ? (
+                <GymDetailsForm value={formData} onChange={setFormData} errors={formErrors}/>
               ) : (
                 <>
                   <Typography variant="h5" fontWeight="bold">
@@ -339,6 +483,33 @@ const ProfilePage = () => {
                 </>
               )}
             </Paper>
+          </Box>
+          <Box
+            display="flex"
+            justifyContent="flex-end"
+            sx={{
+                mt: 4,
+                pr: 5, // adds right padding
+            }}
+            >
+            <Button
+                variant="contained"
+                startIcon={<LogoutIcon />}
+                onClick={handleLogout}
+                sx={{
+                backgroundColor: "black",
+                color: "white",
+                borderRadius: 2,
+                fontWeight: 600,
+                px: 3,
+                py: 1.2,
+                fontSize: 16,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                "&:hover": { backgroundColor: "#333" }
+                }}
+            >
+                Logout
+            </Button>
           </Box>
         </Paper>
       </Box>

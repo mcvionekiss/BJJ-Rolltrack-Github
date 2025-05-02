@@ -1936,36 +1936,69 @@ class AddressSearchProxyView(View):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
         
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
-def get_profile(request):
+def profile_view(request):
     user = request.user
 
-    # Get the user's associated gym
-    gym_owner_link = GymsOwners.objects.filter(user=user).first()
-    gym = gym_owner_link.gym if gym_owner_link else None
+    if request.method == 'GET':
+        # Get the user's associated gym
+        gym_owner_link = GymsOwners.objects.filter(user=user).first()
+        gym = gym_owner_link.gym if gym_owner_link else None
 
-    # Try to get the gym's address
-    address_obj = GymAddress.objects.filter(gym=gym).first() if gym else None
+        # Try to get the gym's address
+        address_obj = GymAddress.objects.filter(gym=gym).first() if gym else None
 
-    if address_obj:
-        address = f"{address_obj.street_line1}, {address_obj.city}, {address_obj.state} {address_obj.postal_code}"
-    else:
-        address = ""
+        if address_obj:
+            address = f"{address_obj.street_line1}, {address_obj.city}, {address_obj.state} {address_obj.postal_code}"
+        else:
+            address = ""
 
-    return Response({
-        "user": {
-            "id": user.id,
-            "firstName": user.first_name,
-            "lastName": user.last_name,
-            "email": user.email,
-            "phoneNumber": user.phone_number,
-        },
-        "gym": {
-            "id": gym.id if gym else None,
-            "name": gym.name if gym else "",
-            "address": address,
-            "phone": gym.phone_number if gym else "",
-            "email": gym.email if gym else ""
-        }
-    })
+        return Response({
+            "user": {
+                "id": user.id,
+                "firstName": user.first_name,
+                "lastName": user.last_name,
+                "email": user.email,
+                "phoneNumber": user.phone_number,
+            },
+            "gym": {
+                "id": gym.id if gym else None,
+                "name": gym.name if gym else "",
+                "address": address,
+                "phone": gym.phone_number if gym else "",
+                "email": gym.email if gym else ""
+            }
+        })
+    
+    elif request.method == 'PUT':
+        data = request.data
+        user.first_name = data.get("first_name", user.first_name)
+        user.last_name = data.get("last_name", user.last_name)
+        user.phone_number = data.get("phone", user.phone_number)
+        user.save()
+        return Response({"success": True, "message": "Profile updated successfully"})
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_gym(request, gym_id):
+    try:
+        gym = Gym.objects.get(id=gym_id)
+        gym.name = request.data.get("gym_name", gym.name)
+        gym.phone_number = request.data.get("phone", gym.phone_number)
+        gym.email = request.data.get("email", gym.email)
+        gym.save()
+
+        # Optional: update address in GymAddress if needed
+        address_obj = GymAddress.objects.filter(gym=gym).first()
+        if address_obj:
+            address_obj.street_line1 = request.data.get("address", address_obj.street_line1)
+            address_obj.city = request.data.get("city", address_obj.city)
+            address_obj.state = request.data.get("state", address_obj.state)
+            address_obj.save()
+
+        return Response({"success": True, "message": "Gym updated successfully"})
+    except Gym.DoesNotExist:
+        return Response({"success": False, "message": "Gym not found"}, status=404)
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)

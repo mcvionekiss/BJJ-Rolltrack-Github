@@ -19,6 +19,7 @@ import EditClass from "./components/Schedule/EditClass";
 import SignUpChoice from "./components/SignUpChoice";
 import ForgotPassword from "./components/ForgotPassword"
 import ResetPassword from "./components/ResetPassword";
+import WaiverMember from "./components/WaiverMember";
 
 function App() {
     return (
@@ -52,6 +53,9 @@ function App() {
                     <Route path="/available-classes" element={<AvailableClasses />} />
                     <Route path="/class-details/:id" element={<ClassDetails />} />
                     <Route path="/checkin-success" element={<CheckinSuccess />} />
+
+                    {/* Waiver Pages */}
+                    <Route path="/waiver-member" element={<WaiverMember />} />
                 </Routes>
             </EventProvider>
         </Router>

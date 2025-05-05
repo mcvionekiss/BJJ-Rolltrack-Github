@@ -65,8 +65,8 @@ const WaiverMember = () => {
         <>
             <Box sx={{overflowY: 'scroll', height: '100vh'}}>
                 <Container maxWidth="md" disableGutters sx={{ px: 4, py: 3 }}>
-                    <Typography variant="h4" fontWeight="bold" mb={3}>Waiver Form</Typography>
-                    <Typography variant="body1" mb={4}>
+                    <Typography variant="h4" fontWeight="bold" mb={3} sx={{ display:'flex', justifyContent: 'center' }}>Waiver Form</Typography>
+                    <Typography variant="body1" mb={4} sx={{ display:'flex', justifyContent: 'center' }}>
                         Please read through the form and ensure you understand all terms before signing.
                     </Typography>
 

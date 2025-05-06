@@ -254,7 +254,8 @@ const ProfilePage = () => {
           marginLeft: `${sidebarWidth}px`,
           transition: "margin-left 0.3s ease-in-out",
           height: "100vh",
-          overflowY: "auto"
+          overflowY: "auto",
+          maxHeight: "calc(100vh - 64px)"
         }}
       >
         <Paper
@@ -374,7 +375,9 @@ const ProfilePage = () => {
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <PhoneIcon sx={{ mr: 1, color: "text.secondary" }} />
-                      <Typography>{profileData.phone}</Typography>
+                      <Typography>
+                        {profileData.phone || "No phone number provided"}
+                      </Typography>
                     </Box>
                   </Box>
                 </>
@@ -391,7 +394,7 @@ const ProfilePage = () => {
                 boxShadow: "0 4px 16px 0 rgba(31, 38, 135, 0.08)"
               }}
             >
-              <Typography variant="h6" fontWeight="bold" mb={3}>
+              <Typography variant="h6" fontWeight="bold" mb={3} align="center">
                 Gym Information
               </Typography>
               {!profileData.name && !profileData.gym?.id ?  (
@@ -407,18 +410,18 @@ const ProfilePage = () => {
                 <GymDetailsForm value={formData} onChange={setFormData} errors={formErrors}/>
               ) : (
                 <>
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography variant="h5" fontWeight="bold" mb={1}>
                     {profileData.gym.name}
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <LocationIcon sx={{ mr: 1, color: "text.secondary" }} />
                     <Typography>{profileData.gym.address}</Typography>
                   </Box>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <PhoneIcon sx={{ mr: 1, color: "text.secondary" }} />
                     <Typography>{profileData.gym.phone}</Typography>
                   </Box>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <EmailIcon sx={{ mr: 1, color: "text.secondary" }} />
                     <Typography>{profileData.gym.email}</Typography>
                   </Box>

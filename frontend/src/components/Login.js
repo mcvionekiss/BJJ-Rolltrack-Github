@@ -104,9 +104,9 @@ function Login() {
     };
 
     return (
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" minWidth="md">
             {/* Top Navigation Bar with Logo */}
-            <AppBar position="static" elevation={0} sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 0" }}>
+            <AppBar position="static" elevation={0} sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 10px" }}>
                 <Toolbar sx={{ display: "flex", justifyContent: "space-between", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
                     {/* Left: Logo Image */}
                     <img
@@ -118,9 +118,6 @@ function Login() {
 
                     {/* Right: Log in & Sign Up Buttons */}
                     <Box>
-                        <Button color="inherit" onClick={() => navigate("/login")} sx={{ textTransform: "none" }}>
-                            Log in
-                        </Button>
                         <Button variant="contained" onClick={handleSignUp} sx={{ ml: 2, backgroundColor: "black", color: "white", "&:hover": { backgroundColor: "#333" } }}>
                             Sign up
                         </Button>
@@ -129,13 +126,22 @@ function Login() {
             </AppBar>
 
             {/* Centered Login Form */}
-            <Container maxWidth="sm">
-                <Paper elevation={3} sx={{ p: 4, textAlign: "center", mt: 5 }}>
-                    <Typography variant="h5" fontWeight="bold">
-                        Log in to your account
+            <Container 
+                maxWidth="xs"
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    minHeight: "calc(100vh - 125px)" // Subtract the AppBar height
+                }}
+            >
+                <Paper elevation={3} sx={{ p: 4, textAlign: "center", width: "100%" }}>
+                    <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
+                        Welcome Back!
                     </Typography>
                     <Typography variant="body2" color="gray" sx={{ mb: 3 }}>
-                        Welcome back! Please enter your details.
+                        Please enter your details to log in.
                     </Typography>
 
                     {error && (
@@ -173,13 +179,13 @@ function Login() {
                         />
 
                         {/* Remember Me & Forgot Password */}
-                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ margin: 2 }}>
                             <FormControlLabel
                                 control={
                                     <Checkbox
                                         checked={rememberMe}
                                         onChange={(e) => setRememberMe(e.target.checked)}
-                                        color="primary"
+                                        color="black"
                                     />
                                 }
                                 label="Remember me"

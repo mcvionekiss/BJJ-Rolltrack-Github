@@ -102,14 +102,13 @@ function Dashboard() {
                 ) : (
                     <>
                         {gymName && (
-                            <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
+                            <Typography variant="h4" sx={{ ml: 5, fontWeight: "bold" }}>
                                 {gymName} Dashboard
                             </Typography>
                         )}
                         <WelcomePage open={showWelcome} gymId={gymId} onClose={() => setShowWelcome(false)} />
-                        <Box style={{ marginLeft: '50px', marginRight: '50px' }}>
+                        <Box sx={{ ml: 5, mr: 5 }}>
                             <Calendar 
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
                                 gymId={gymId}
                             />
                         </Box>

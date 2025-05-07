@@ -112,6 +112,7 @@ function Login() {
                 minHeight: "100vh",
                 display: "flex",
                 flexDirection: "column",
+                overflow: "visible"
             }}
         >
             {/* Top Navigation Bar with Logo */}
@@ -177,7 +178,7 @@ function Login() {
                             background: "linear-gradient(145deg, #ffffff, #f9f9f9)",
                             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
                             position: "relative",
-                            overflow: "hidden",
+                            overflow: "auto",
                             transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
                             "&:hover": {
                                 boxShadow: "0 12px 40px rgba(0, 0, 0, 0.12)",

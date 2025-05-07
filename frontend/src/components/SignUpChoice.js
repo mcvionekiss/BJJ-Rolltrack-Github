@@ -20,6 +20,7 @@ const SignUpChoice = () => {
             minHeight: "100vh",
             display: "flex",
             flexDirection: "column",
+            overflow: "auto"
         }}
     >
         <AppBar position="static" elevation={0} sx={{ background: "white", color: "black", padding: "10px 10px" }}>
@@ -32,7 +33,7 @@ const SignUpChoice = () => {
                     onClick={() => navigate("/")}
                 />
 
-                {/* Right: Log in & Sign Up Buttons */}
+                {/* Right: Sign Up Button */}
                 <Box>
                     <Button 
                         variant="outlined" 

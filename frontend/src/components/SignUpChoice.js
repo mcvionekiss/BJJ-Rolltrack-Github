@@ -1,41 +1,53 @@
 // src/components/SignUpChoice.js
 import React from "react";
-import { Button, Typography, Box, Paper } from "@mui/material";
+import { Container, Button, Typography, Box, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import GoogleSignUpButton from "./GoogleSignUpButton";
 import logo from "../assets/logo.jpeg";
+import { AppBar, Toolbar } from "@mui/material";
 
 const SignUpChoice = () => {
   const navigate = useNavigate();
 
+  const handleLogin = () => {
+    navigate("/login");
+};
+
   return (
-    <Box className="signup-container"
+    <Container className="signup-container"
         sx={{
             minHeight: "100vh",
             display: "flex",
             flexDirection: "column",
         }}
     >
-        <Box className="logo-bar"
-            sx={{
-                width: "100%",
-                padding: "15px",
-            }}
-        >
-            <img src={logo} alt="RollTrack Logo" className="logo-img" onClick={(e) => {
-                            console.log("Navigating to login...");
-                            window.location.href = "/"; // Forces full page reload
-                        }}/>
-        </Box>
+        <AppBar position="static" elevation={0} sx={{ background: "white", color: "black", boxShadow: "none", padding: "10px 10px" }}>
+            <Toolbar sx={{ display: "flex", justifyContent: "space-between", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+                {/* Left: Logo Image */}
+                <img
+                    src={logo}
+                    alt="RollTrack Logo"
+                    style={{ height: "40px", cursor: "pointer" }}
+                    onClick={() => navigate("/")}
+                />
+
+                {/* Right: Log in & Sign Up Buttons */}
+                <Box>
+                    <Button variant="outlined" onClick={handleLogin} sx={{ ml: 2, backgroundColor: "white", color: "black", borderColor: "black", "&:hover": { backgroundColor: "black", color: "white" } }}>
+                        Login
+                    </Button>
+                </Box>
+            </Toolbar>
+        </AppBar>
 
         <Box 
             sx={{
-                flex: 1, // take remaining height below logo
                 display: "flex",
+                flexDirection: "column",
                 justifyContent: "center",
-                alignItems: "flex-start", // align box to top
-                pt: 8, // push it down slightly from the top (64px)
-              }}
+                alignItems: "center",
+                minHeight: "calc(100vh - 125px)" // Subtract the AppBar height
+            }}
         >
         <Paper elevation={3} className="form-box"
             sx={{
@@ -71,7 +83,7 @@ const SignUpChoice = () => {
             </Box>
       </Paper>
       </Box>
-    </Box>
+    </Container>
   );
 };
 

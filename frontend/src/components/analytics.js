@@ -13,7 +13,9 @@ import {
     TableRow,
     Box,
     useMediaQuery,
-    useTheme
+    useTheme,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { 
@@ -30,9 +32,9 @@ import {
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NavigationMenu from "./NavigationMenu";
+import { useNavigate } from "react-router-dom";
 
 import config from "../config";
-import ConfirmRegistration from './ConfirmRegistration';
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -110,85 +112,94 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
     </Paper>
 );
 
-const getdata = async (csrfToken) => {
+const getdata = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.todayAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 };
 
-const getyesterdaydata = async (csrfToken) => {
+const getyesterdaydata = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.yesterdayAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 };
 
-const getweeklydata = async (csrfToken) => {
+const getweeklydata = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.weeklyAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 };
 
-const getlastweekdata = async (csrfToken) => {
+const getlastweekdata = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.lastWeekAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 };
 
-const getmonthlydata = async (csrfToken) => {
+const getmonthlydata = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.monthlyAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 };
 
-const getlastmonthdata = async (csrfToken) => {
+const getlastmonthdata = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.lastMonthAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 };
 
-const gettodaycategory = async (csrfToken) => {
+const gettodaycategory = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.todayCategoryAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 
 };
 
-const getweekcategory = async (csrfToken) => {
+const getweekcategory = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.weekCategoryAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 
 };
 
-const getmonthcategory = async (csrfToken) => {
+const getmonthcategory = async (csrfToken, gymId) => {
     return axios.get(
         config.endpoints.api.monthCategoryAttendance,
         {
             withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
         }
     );
 
@@ -201,157 +212,159 @@ function Analytics() {
     const theme = useTheme();
     const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const isSmScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [mockClassData, setMockClassData] = useState([])
-    const [dailyAttendanceCount, setDailyAttendanceCount] = useState(0)
-    const [yesterdayAttendanceCount, setYesterdayAttendanceCount] = useState(0)
-    const [WeeklyAttendanceCount, setWeeklyAttendanceCount] = useState(0)
-    const [LastWeekAttendanceCount, setLastWeekAttendanceCount] = useState(0)
-    const [MonthlyAttendanceCount, setMonthlyAttendanceCount] = useState(0)
-    const [LastMonthAttendanceCount, setLastMonthAttendanceCount] = useState(0)
-    const [TodayCategory, setTodayCategory] = useState([])
-    const [WeekCategory, setWeekCategory] = useState([])
-    const [MonthCategory, setMonthCategory] = useState([])
+    const navigate = useNavigate();
+    const [mockClassData, setMockClassData] = useState([]);
+    const [dailyAttendanceCount, setDailyAttendanceCount] = useState(0);
+    const [yesterdayAttendanceCount, setYesterdayAttendanceCount] = useState(0);
+    const [WeeklyAttendanceCount, setWeeklyAttendanceCount] = useState(0);
+    const [LastWeekAttendanceCount, setLastWeekAttendanceCount] = useState(0);
+    const [MonthlyAttendanceCount, setMonthlyAttendanceCount] = useState(0);
+    const [LastMonthAttendanceCount, setLastMonthAttendanceCount] = useState(0);
+    const [TodayCategory, setTodayCategory] = useState([]);
+    const [WeekCategory, setWeekCategory] = useState([]);
+    const [MonthCategory, setMonthCategory] = useState([]);
+    const [gymId, setGymId] = useState(null);
+    const [gymName, setGymName] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     // ✅ Fetch CSRF token when the component mounts
     useEffect(() => {
         fetchCsrfToken(setCsrfToken);
     }, []);
 
-    const getDailyData = async (csrfToken) => {
-        try {
-            const response = await getdata(csrfToken);
-
-            console.log(response)
-            setMockClassData(response.data.classes)
-            setDailyAttendanceCount(response.data.total_attendance_for_today)
-
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const getYesterdayData = async (csrfToken) => {
-        try {
-            const response = await getyesterdaydata(csrfToken);
-
-            setYesterdayAttendanceCount(response.data.yesterdays_count)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const getWeeklyData = async (csrfToken) => {
-        try {
-            const response = await getweeklydata(csrfToken);
-
-            setWeeklyAttendanceCount(response.data.weekly_count)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const getLastWeekData = async (csrfToken) => {
-        try {
-            const response = await getlastweekdata(csrfToken);
-
-            setLastWeekAttendanceCount(response.data.weekly_count)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const getMonthlyData = async (csrfToken) => {
-        try {
-            const response = await getmonthlydata(csrfToken);
-
-            setMonthlyAttendanceCount(response.data.monthly_count)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const getLastMonthData = async (csrfToken) => {
-        try {
-            const response = await getlastmonthdata(csrfToken);
-
-            setLastMonthAttendanceCount(response.data.monthly_count)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const getDailyCategoryData = async (csrfToken) => {
-        try {
-            const response = await gettodaycategory(csrfToken);
-
-            const arr = []
-
-            arr.push(response.data.data)
-
-            setTodayCategory(arr)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-
-    }
-
-    const getWeekCategoryData = async (csrfToken) => {
-        try {
-            const response = await getweekcategory(csrfToken);
-
-            const arr = []
-
-            arr.push(response.data.data)
-
-            setWeekCategory(arr)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-
-    }
-
-    const getMonthCategoryData = async (csrfToken) => {
-        try {
-            const response = await getmonthcategory(csrfToken);
-
-            const arr = []
-
-            arr.push(response.data.data)
-
-            setMonthCategory(arr)
-
-            console.log(response)
-        } catch (error) {
-            console.log(error)
-        }
-
-    }
-
+    // Fetch user profile to get gym information
     useEffect(() => {
-        getDailyData()
-        getYesterdayData()
-        getWeeklyData()
-        getLastWeekData()
-        getMonthlyData()
-        getLastMonthData()
-        getDailyCategoryData()
-        getWeekCategoryData()
-        getMonthCategoryData()
-    }, []);
+        const fetchProfile = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(`${config.apiUrl}/auth/profile/`, {
+                    withCredentials: true
+                });
+                
+                const { gym } = res.data;
+                if (gym && gym.id) {
+                    setGymId(gym.id);
+                    setGymName(gym.name);
+                }
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
+                setError("Failed to load gym information. Please try again.");
+                setLoading(false);
+                
+                // If unauthorized, redirect to login
+                if (error.response && error.response.status === 401) {
+                    navigate("/login");
+                }
+            }
+        };
+
+        fetchProfile();
+    }, [navigate]);
+
+    const getDailyData = async () => {
+        try {
+            const response = await getdata(csrfToken, gymId);
+            setMockClassData(response.data.classes);
+            setDailyAttendanceCount(response.data.total_attendance_for_today);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getYesterdayData = async () => {
+        try {
+            const response = await getyesterdaydata(csrfToken, gymId);
+            setYesterdayAttendanceCount(response.data.yesterdays_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getWeeklyData = async () => {
+        try {
+            const response = await getweeklydata(csrfToken, gymId);
+            setWeeklyAttendanceCount(response.data.weekly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getLastWeekData = async () => {
+        try {
+            const response = await getlastweekdata(csrfToken, gymId);
+            setLastWeekAttendanceCount(response.data.weekly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getMonthlyData = async () => {
+        try {
+            const response = await getmonthlydata(csrfToken, gymId);
+            setMonthlyAttendanceCount(response.data.monthly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getLastMonthData = async () => {
+        try {
+            const response = await getlastmonthdata(csrfToken, gymId);
+            setLastMonthAttendanceCount(response.data.monthly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getDailyCategoryData = async () => {
+        try {
+            const response = await gettodaycategory(csrfToken, gymId);
+            const arr = [];
+            arr.push(response.data.data);
+            setTodayCategory(arr);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getWeekCategoryData = async () => {
+        try {
+            const response = await getweekcategory(csrfToken, gymId);
+            const arr = [];
+            arr.push(response.data.data);
+            setWeekCategory(arr);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getMonthCategoryData = async () => {
+        try {
+            const response = await getmonthcategory(csrfToken, gymId);
+            const arr = [];
+            arr.push(response.data.data);
+            setMonthCategory(arr);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    // Fetch analytics data when gymId is available
+    useEffect(() => {
+        if (gymId) {
+            getDailyData();
+            getYesterdayData();
+            getWeeklyData();
+            getLastWeekData();
+            getMonthlyData();
+            getLastMonthData();
+            getDailyCategoryData();
+            getWeekCategoryData();
+            getMonthCategoryData();
+        }
+    }, [gymId, csrfToken]);
     
     // Set chart height based on screen size
     const getChartHeight = () => {
@@ -410,8 +423,22 @@ function Analytics() {
                     width: `calc(100% - ${sidebarWidth}px)`
                 }}
             >
-                {/* Attendance Stats Cards */}
-                <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ mb: { xs: 3, sm: 4, md: 6 }, width: '100%' }}>
+                {loading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
+                        <CircularProgress />
+                    </Box>
+                ) : error ? (
+                    <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+                ) : (
+                <>
+                    {gymName && (
+                        <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
+                            {gymName} Analytics
+                        </Typography>
+                    )}
+                    
+                    {/* Attendance Stats Cards */}
+                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ mb: { xs: 3, sm: 4, md: 6 }, width: '100%' }}>
                     <Grid>
                         <AttendanceStatsCard
                             title="Daily Attendance"
@@ -439,10 +466,10 @@ function Analytics() {
                             data={MonthlyAttendanceCount}
                         />
                     </Grid>
-                </Grid>
+                    </Grid>
 
-                {/* Today's Classes and Trends - Side by side */}
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, sm: 3, md: 4 } }}>
+                    {/* Today's Classes and Trends - Side by side */}
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, sm: 3, md: 4 } }}>
                     {/* Today's Classes */}
                     <Box sx={{ flex: 1 }}>
                         <Paper
@@ -563,7 +590,9 @@ function Analytics() {
                             </ResponsiveContainer>
                         </Paper>
                     </Box>
-                </Box>
+                    </Box>
+                </>
+                )}
             </Container>
         </Box>
     );

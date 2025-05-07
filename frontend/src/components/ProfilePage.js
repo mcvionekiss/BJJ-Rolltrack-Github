@@ -114,13 +114,6 @@ const ProfilePage = () => {
     }
   }, [editMode]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem('profileData');
-    localStorage.removeItem('qrUrl');
-    navigate("/login");
-  };
-
   const handleDownloadQR = async () => {
     if (!qrUrl) return;
     try {
@@ -241,6 +234,31 @@ const ProfilePage = () => {
       alert("Failed to save changes. Please try again.");
     }
   };  
+
+  const handleLogout = async () => {
+    try {
+      const csrfToken = getCookie("csrftoken");
+      await axios.post(
+        `${config.apiUrl}/auth/logout/`,
+        {},
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      // Clear local storage
+      localStorage.removeItem("profileData");
+      localStorage.removeItem("qrUrl");
+      // Redirect to login page
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      alert("Logout failed. Please try again.");
+    }
+  };
 
   return (
     <Box display="flex" sx={{ minHeight: "100vh" }}>
@@ -496,22 +514,13 @@ const ProfilePage = () => {
             }}
             >
             <Button
-                variant="contained"
-                startIcon={<LogoutIcon />}
-                onClick={handleLogout}
-                sx={{
-                backgroundColor: "black",
-                color: "white",
-                borderRadius: 2,
-                fontWeight: 600,
-                px: 3,
-                py: 1.2,
-                fontSize: 16,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                "&:hover": { backgroundColor: "#333" }
-                }}
+              onClick={handleLogout}
+              startIcon={<LogoutIcon />}
+              variant="outlined"
+              color="error"
+              sx={{ borderRadius: 2 }}
             >
-                Logout
+              Log Out
             </Button>
           </Box>
         </Paper>

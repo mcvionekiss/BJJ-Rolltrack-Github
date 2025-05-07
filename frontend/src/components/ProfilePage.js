@@ -14,7 +14,6 @@ import {
   LocationOn as LocationIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  Logout as LogoutIcon
 } from "@mui/icons-material";
 import NavigationMenu from "./NavigationMenu";
 import PersonalInfoForm from "./PersonalInfoForm";
@@ -234,31 +233,6 @@ const ProfilePage = () => {
       alert("Failed to save changes. Please try again.");
     }
   };  
-
-  const handleLogout = async () => {
-    try {
-      const csrfToken = getCookie("csrftoken");
-      await axios.post(
-        `${config.apiUrl}/auth/logout/`,
-        {},
-        {
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-      // Clear local storage
-      localStorage.removeItem("profileData");
-      localStorage.removeItem("qrUrl");
-      // Redirect to login page
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      alert("Logout failed. Please try again.");
-    }
-  };
 
   return (
     <Box display="flex" sx={{ minHeight: "100vh" }}>
@@ -504,24 +478,6 @@ const ProfilePage = () => {
                 </>
               )}
             </Paper>
-          </Box>
-          <Box
-            display="flex"
-            justifyContent="flex-end"
-            sx={{
-                mt: 4,
-                pr: 5, // adds right padding
-            }}
-            >
-            <Button
-              onClick={handleLogout}
-              startIcon={<LogoutIcon />}
-              variant="outlined"
-              color="error"
-              sx={{ borderRadius: 2 }}
-            >
-              Log Out
-            </Button>
           </Box>
         </Paper>
       </Box>

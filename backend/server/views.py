@@ -194,6 +194,7 @@ class LoginView(View):
 @method_decorator(login_required, name="dispatch")
 class LogoutView(View):
     def post(self, request):
+        logout(request)  # Call Django's logout function to properly end the session
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
         response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
@@ -1392,9 +1393,11 @@ def add_gym(request):
 @csrf_exempt
 def generate_qr(request, gym_id):
     try:
+        # Get the frontend URL from query parameter, with fallback
+        frontend_url = request.GET.get('frontend_url')
+        print(f"Using frontend URL: {frontend_url}")
+        
         # Generate QR code data
-        # Use the frontend URL from settings instead of hardcoding
-        frontend_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:3000"
         qr_data = f"{frontend_url}/checkin-selection?gym_id={gym_id}"
         qr = qrcode.QRCode(
             version=6,

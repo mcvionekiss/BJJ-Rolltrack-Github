@@ -39,7 +39,7 @@ const config = {
     },
     api: {
       classDetails: (classID) => `${BASE_URL}/api/class_details/${classID}/`,
-      generateQR: (gymID) => `${BASE_URL}/api/generate-qr/${gymID}/`,
+      generateQR: (gymID) => `${BASE_URL}/api/generate-qr/${gymID}/?frontend_url=${encodeURIComponent(BASE_URL)}`,
       availableClasses: (gymID) => `${BASE_URL}/api/available_classes_today/${gymID}/`,
       gymHours: (gymID) => `${BASE_URL}/api/gym-hours/${gymID}/`,
       checkStudent: `${BASE_URL}/api/check_student/`,

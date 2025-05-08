@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import {
@@ -6,54 +6,102 @@ import {
     TextField,
     Container,
     Typography,
-    Box
+    Box,
+    Alert,
+    CircularProgress
 } from "@mui/material";
+import config from '../config';
+
+// Ensure cookies are included with requests
+axios.defaults.withCredentials = true;
 
 function Checkin() {
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [csrfToken, setCsrfToken] = useState("");
+    const [studentInfo, setStudentInfo] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
     
-    // Log component mount
+    // Get gym_id from URL query parameters
+    const queryParams = new URLSearchParams(location.search);
+    const gymId = queryParams.get("gym_id");
+    
+    // Fetch CSRF token on component mount
     useEffect(() => {
         console.log("🔷 Checkin component mounted");
+        console.log(`🔷 Gym ID from URL: ${gymId || 'Not provided'}`);
+        
+        const fetchCsrfToken = async () => {
+            try {
+                const response = await axios.get(config.endpoints.auth.csrf);
+                const token = response.data.csrfToken;
+                setCsrfToken(token);
+                console.log("🔷 CSRF token fetched successfully:", token);
+            } catch (error) {
+                console.error("🔴 Error fetching CSRF token:", error);
+                setError("Error fetching CSRF token. Please refresh the page.");
+            }
+        };
+        
+        fetchCsrfToken();
         
         return () => {
             console.log("🔷 Checkin component unmounted");
         };
-    }, []);
-    
-    // Log email state changes
-    useEffect(() => {
-        if (email) {
-            console.log(`🔹 Email state updated: ${email}`);
-        }
-    }, [email]);
+    }, [gymId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log(`🔶 Form submitted with email: ${email}`);
+        
+        // Basic validation
+        if (!email.includes('@')) {
+            setError("Please enter a valid email address");
+            return;
+        }
+        
+        if (!csrfToken) {
+            setError("An error occurred. Please refresh the page.");
+            return;
+        }
+        
         setError(""); // Clear previous errors
-        console.log("🔶 Previous errors cleared");
+        setLoading(true);
 
         try {
-            console.log(`🔶 Making API request to check_student with email: ${email}`);
-            const startTime = performance.now();
-            const response = await axios.post("http://192.168.2.1:8000/api/check_student/", { email });
-            const endTime = performance.now();
+            console.log(`🔶 Making API request to check_student with email: ${email} and gymId: ${gymId}`);
             
-            console.log(`🔶 API response received in ${(endTime - startTime).toFixed(2)}ms`);
-            console.log("🔶 API response data:", response.data);
-
-            if (response.data.exists) {
+            // Configure headers with CSRF token
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            };
+            
+            const response = await axios.post(
+                config.endpoints.api.checkStudent, 
+                { 
+                    email,
+                    gym_id: gymId  // Include the gym_id in the request
+                },
+                { headers }
+            );
+            
+            if (response.data.success) {
                 console.log(`✅ Student found: ${email}`, {
-                    studentData: response.data,
+                    studentData: response.data.student,
                     timestamp: new Date().toISOString()
                 });
-                console.log(`🔶 Navigating to /available-classes with email: ${email}`);
-                navigate("/available-classes", { state: { email } });
+                console.log(`🔶 Navigating to /available-classes with email: ${email} and gymId: ${gymId}`);
+                setStudentInfo(response.data.student);
+                
+                // Pass both email and gym_id to the next page
+                navigate("/available-classes", { 
+                    state: { email, gymId } 
+                });
             } else {
                 console.warn(`⚠️ Student exists=false for email: ${email}`);
+                setError(response.data.message || "Email not found. Please try again or sign up as a new member.");
             }
         } catch (error) {
             console.error("🔴 Student not found:", {
@@ -63,15 +111,45 @@ function Checkin() {
                 timestamp: new Date().toISOString(),
                 fullError: error
             });
-            setError("Email not found. Please try again or contact an instructor.");
-            console.log("🔶 Error state updated with message: Email not found. Please try again or contact an instructor.");
+            
+            if (error.response) {
+                if (error.response.status === 404) {
+                    setError("Email not found. Please try again or sign up as a new member.");
+                } else if (error.response.status === 403) {
+                    setError("CSRF verification failed. Please refresh the page and try again.");
+                    // Try to fetch a new CSRF token
+                    try {
+                        const response = await axios.get(config.endpoints.auth.csrf);
+                        setCsrfToken(response.data.csrfToken);
+                        console.log("🔷 New CSRF token fetched after error");
+                    } catch (e) {
+                        console.error("Failed to fetch new CSRF token", e);
+                    }
+                } else {
+                    setError(error.response.data.message || "Error checking student. Please try again.");
+                }
+            } else if (error.request) {
+                setError("Could not connect to server. Please check your connection and try again.");
+            } else {
+                setError("An unexpected error occurred. Please try again later.");
+            }
+            
+            console.log(`🔶 Error state updated with message: ${error}`);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    // Handle back button click with gym_id preservation
+    const handleBack = () => {
+        navigate(`/checkin-selection${gymId ? `?gym_id=${gymId}` : ''}`);
     };
 
     return (
         <Container 
             maxWidth="sm" 
             sx={{ 
+                px: 4,
                 py: 8,
                 display: 'flex',
                 flexDirection: 'column',
@@ -101,20 +179,16 @@ function Checkin() {
             </Typography>
 
             {error && (
-                <Typography 
-                    color="error" 
+                <Alert 
+                    severity="error" 
                     sx={{ 
                         mb: 3,
-                        py: 1,
-                        px: 2,
-                        bgcolor: 'rgba(211, 47, 47, 0.1)',
-                        borderRadius: 1,
                         width: '100%',
                         maxWidth: '400px'
                     }}
                 >
                     {error}
-                </Typography>
+                </Alert>
             )}
 
             <Box
@@ -132,13 +206,15 @@ function Checkin() {
                     fullWidth
                     label="Email"
                     variant="outlined"
+                    type="email"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                     sx={{
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: "30px",
                         }
                     }}
                 />
@@ -147,22 +223,29 @@ function Checkin() {
                     type="submit"
                     variant="contained"
                     size="large"
+                    disabled={loading || !csrfToken}
                     sx={{ 
                         py: 1.5,
                         backgroundColor: "black", 
                         color: "white",
-                        borderRadius: 2,
+                        borderRadius: "30px",
                         "&:hover": { 
                             backgroundColor: "#333"
                         }
                     }}
                 >
-                    Continue
+                    {loading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                            Checking...
+                        </Box>
+                    ) : !csrfToken ? "Loading..." : "Continue"}
                 </Button>
                 
                 <Button
                     variant="text"
-                    onClick={() => navigate("/checkin-selection")}
+                    onClick={handleBack}
+                    disabled={loading}
                     sx={{ 
                         mt: 1,
                         color: "text.secondary",

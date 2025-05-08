@@ -8,16 +8,22 @@ import {
     Button,
     CardMedia,
     IconButton,
-    Grid
+    Grid,
+    Alert,
+    CircularProgress
 } from "@mui/material";
 import banner from "../assets/banner.png";
+import config from "../config";
 
 // Icons
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 
+// Ensure cookies are included with requests
+axios.defaults.withCredentials = true;
+
 // Utility function to format date
 const formatDate = (date) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
     return new Date(date).toLocaleDateString('en-US', options);
 };
 
@@ -32,38 +38,179 @@ function ClassDetails() {
     const location = useLocation();
     const navigate = useNavigate();
     const studentEmail = location.state?.email || "";
+    const studentName = location.state?.studentName || "";
+    const isGuest = location.state?.isGuest || false;
+    const gymId = location.state?.gymId || ""; // Get gymId from location state
     const [classDetails, setClassDetails] = useState(null);
     const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [checkingIn, setCheckingIn] = useState(false);
+    const [csrfToken, setCsrfToken] = useState("");
+
+    // Log for debugging
+    console.log("ClassDetails - Retrieved data:", {
+        studentName,
+        email: studentEmail,
+        isGuest,
+        gymId
+    });
+    
+    // Fetch CSRF token when component mounts
+    useEffect(() => {
+        const fetchCsrfToken = async () => {
+            try {
+                console.log("Fetching CSRF token...");
+                const response = await axios.get(config.endpoints.auth.csrf);
+                const token = response.data.csrfToken;
+                setCsrfToken(token);
+                console.log("CSRF token fetched successfully");
+            } catch (error) {
+                console.error("Error fetching CSRF token:", error);
+                setError("Error fetching CSRF token. Please refresh the page.");
+            }
+        };
+        
+        fetchCsrfToken();
+    }, []);
 
     useEffect(() => {
-        axios.get(`http://192.168.2.1:8000/api/class_details/${id}/`)
+        setError("");
+        setLoading(true);
+        
+        // Log for debugging
+        console.log(`Fetching class details for ID: ${id}, Gym ID: ${gymId}`);
+        
+        axios.get(config.endpoints.api.classDetails(id))
             .then(response => {
-                setClassDetails(response.data);
+                if (response.data.success) {
+                    setClassDetails(response.data);
+                } else {
+                    setError(response.data.message || "Could not load class details.");
+                }
             })
             .catch(error => {
-                setError("Error loading class details.");
+                console.error("Error fetching class details:", error);
+                if (error.response) {
+                    setError(error.response.data.message || "Error loading class details.");
+                } else {
+                    setError("Could not connect to server. Please try again later.");
+                }
+            })
+            .finally(() => {
+                setLoading(false);
             });
-    }, [id]);
+    }, [id, gymId]);
 
     const handleCheckIn = async () => {
-        setLoading(true);
+        if (!studentEmail) {
+            setError("Student email is required to check in.");
+            return;
+        }
+        
+        if (!csrfToken) {
+            setError("Security token not available. Please refresh the page.");
+            return;
+        }
+        
+        setCheckingIn(true);
+        setError("");
+        
         try {
-            await axios.post("http://192.168.2.1:8000/api/checkin/", {
-                email: studentEmail,
-                classID: id
-            });
+            console.log(`Sending check-in request for class ID: ${id}, email: ${studentEmail}, gym ID: ${gymId}`);
+            
+            // Configure headers with CSRF token
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            };
+            
+            // Check-in process for both guests and regular students
+            const response = await axios.post(
+                config.endpoints.api.checkin, 
+                {
+                    email: studentEmail,
+                    classID: id,  // This is the id from useParams()
+                    gym_id: gymId,  // Changed to gym_id to match backend parameter name
+                    isGuest: isGuest // Flag to indicate if this is a guest check-in
+                },
+                { headers }
+            );
 
-            navigate("/checkin-success", {
-                state: { studentName: "John Doe", className: classDetails.name, email: studentEmail } // Replace with actual student name
-            });
+            console.log("Check-in response:", response.data);
+
+            if (response.data.success) {
+                // Get either the server-provided name or use existing name or fallback to email
+                const displayName = 
+                    response.data.checkin?.guestName || 
+                    response.data.checkin?.studentName || 
+                    studentName || 
+                    studentEmail.split('@')[0];
+                
+                const checkinData = response.data.checkin || {
+                    studentName: displayName,
+                    className: classDetails.name,
+                    email: studentEmail,
+                    checkinTime: new Date().toISOString(),
+                    date: classDetails.date,
+                    gymId: gymId,
+                    isGuest: isGuest
+                };
+                
+                console.log("Navigating to success page with data:", checkinData);
+                navigate("/checkin-success", { 
+                    state: { 
+                        ...checkinData, 
+                        email: studentEmail, 
+                        studentName: displayName, // Ensure name is explicitly set
+                        gymId: gymId,
+                        isGuest: isGuest
+                    } 
+                });
+            } else {
+                console.error("Check-in failed:", response.data.message);
+                setError(response.data.message || "Check-in failed. Please try again.");
+            }
         } catch (error) {
-            setError("Error checking in. Please try again.");
+            console.error("Error during check-in:", error);
+            let errorMessage = "An unexpected error occurred.";
+            
+            if (error.response) {
+                console.error("Error response:", error.response.data);
+                errorMessage = error.response.data.message || "Error checking in. Please try again.";
+            } else if (error.request) {
+                console.error("No response received:", error.request);
+                errorMessage = "Network error. Please check your connection.";
+            } else {
+                console.error("Error setting up request:", error.message);
+                errorMessage = error.message || "An unexpected error occurred.";
+            }
+            
+            setError(errorMessage);
         } finally {
-            setLoading(false);
+            setCheckingIn(false);
         }
     };
 
+    // Back button handler
+    const handleBack = () => {
+        // Keep student email and guest status in state when going back
+        navigate("/available-classes", { 
+            state: { 
+                email: studentEmail,
+                studentName: studentName,
+                isGuest: isGuest,
+                gymId: gymId  // Include gymId when navigating back
+            } 
+        });
+    };
+
+    if (loading) {
+        return (
+            <Container maxWidth="sm" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+                <CircularProgress />
+            </Container>
+        );
+    }
 
     return (
         <Container maxWidth="sm" sx={{ paddingBottom: 4 }}>
@@ -80,7 +227,7 @@ function ClassDetails() {
                     }}
                 />
                 <ArrowBackIosIcon
-                    onClick={() => navigate("/available-classes")}
+                    onClick={handleBack}
                     sx={{
                         cursor: "pointer",
                         position: "absolute",
@@ -91,13 +238,25 @@ function ClassDetails() {
                 />
             </Box>
 
-            {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+            {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+            
+            {isGuest && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                    You are checking in as a guest: {studentName || studentEmail}
+                </Alert>
+            )}
 
             {classDetails ? (
                 <>
                     <Typography variant="h4" fontWeight="bold" sx={{ mt: 3 }}>
                         {classDetails.name}
                     </Typography>
+
+                    {classDetails.description && (
+                        <Typography variant="body1" sx={{ mt: 1 }}>
+                            {classDetails.description}
+                        </Typography>
+                    )}
 
                     <Box sx={{ mt: 3, mb: 4 }}>
                         <Grid container spacing={1}>
@@ -119,86 +278,89 @@ function ClassDetails() {
                             </Grid>
                             <Grid item xs={8}>
                                 <Typography>
-                                    {/*{formatDate(classDetails.day)}*/}
-                                    Wednesday, March 18
+                                    {classDetails.date ? formatDate(classDetails.date) : "Date not available"}
                                 </Typography>
                             </Grid>
 
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold">
-                                    TRAINER:
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={8}>
-                                <Typography>
-                                    {/*{classDetails.trainer}*/}
-                                    Alex Martinez
-                                </Typography>
-                            </Grid>
+                            {classDetails.level && (
+                                <>
+                                    <Grid item xs={4}>
+                                        <Typography variant="body2" color="text.secondary" fontWeight="bold">
+                                            SKILL LEVEL:
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item xs={8}>
+                                        <Typography>
+                                            {classDetails.level}
+                                        </Typography>
+                                    </Grid>
+                                </>
+                            )}
 
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold">
-                                    CATEGORY:
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={8}>
-                                <Typography>
-                                    {/*{classDetails.category}*/}
-                                    Fundamentals
-                                </Typography>
-                            </Grid>
+                            {classDetails.maxCapacity && (
+                                <>
+                                    <Grid item xs={4}>
+                                        <Typography variant="body2" color="text.secondary" fontWeight="bold">
+                                            CAPACITY:
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item xs={8}>
+                                        <Typography>
+                                            {classDetails.maxCapacity} students
+                                        </Typography>
+                                    </Grid>
+                                </>
+                            )}
 
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold">
-                                    SKILL LEVEL:
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={8}>
-                                <Typography>
-                                    {/*{classDetails.skillLevel}*/}
-                                    Intermediate
-                                </Typography>
-                            </Grid>
-
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold">
-                                    LOCATION:
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={8}>
-                                <Typography>
-                                    Room 1
-                                </Typography>
-                            </Grid>
+                            {classDetails.notes && (
+                                <>
+                                    <Grid item xs={4}>
+                                        <Typography variant="body2" color="text.secondary" fontWeight="bold">
+                                            NOTES:
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item xs={8}>
+                                        <Typography>
+                                            {classDetails.notes}
+                                        </Typography>
+                                    </Grid>
+                                </>
+                            )}
                         </Grid>
                     </Box>
 
-                    <Button
-                        variant="contained"
-                        fullWidth
-                        sx={{
-                            mt: 3,
-                            borderRadius: "30px",
-                            // backgroundColor: classDetails.isAvailable ? "black" : "#E0E0E0",
-                            backgroundColor: "black",
-                            // color: classDetails.isAvailable ? "white" : "#757575",
-                            color: "white",
-                            // "&:hover": {
-                            //     backgroundColor: classDetails.isAvailable ? "#333" : "#E0E0E0"
-                            // }
-                            "&:hover": {
-                                backgroundColor: "#333"
-                            }
-                        }}
-                        onClick={handleCheckIn}
-                        // disabled={loading || !classDetails.isAvailable}
-                        disabled={loading}
-                    >
-                        {loading ? "Checking In..." : "Check In"}
-                    </Button>
+                    {classDetails.isCanceled ? (
+                        <Alert severity="warning" sx={{ mb: 3 }}>
+                            This class has been canceled.
+                        </Alert>
+                    ) : (
+                        <Button
+                            variant="contained"
+                            fullWidth
+                            sx={{ 
+                                py: 1.5,
+                                backgroundColor: "black", 
+                                color: "white",
+                                borderRadius: "30px",
+                                "&:hover": { 
+                                    backgroundColor: "#333"
+                                }
+                            }}
+                            onClick={handleCheckIn}
+                            disabled={checkingIn || !studentEmail}
+                        >
+                            {checkingIn ? "Checking In..." : "Check In"}
+                        </Button>
+                    )}
+
+                    {!studentEmail && (
+                        <Typography color="error" variant="body2" sx={{ mt: 1, textAlign: "center" }}>
+                            Student email is required to check in
+                        </Typography>
+                    )}
                 </>
             ) : (
-                <Typography sx={{ mt: 4 }}>Loading...</Typography>
+                <Typography sx={{ mt: 4 }}>No class details available.</Typography>
             )}
         </Container>
     );

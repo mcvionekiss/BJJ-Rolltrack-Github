@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
     Box,
     List,
@@ -10,57 +11,84 @@ import {
     ListItemIcon,
     Typography,
     Tooltip,
-    IconButton,
-    Divider
+    Divider,
 } from "@mui/material";
 
-// Import MUI Icons
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import MenuIcon from "@mui/icons-material/Menu";
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
 import logo from '../assets/logo.jpeg';
+import config from "../config";
 
 const NavigationMenu = ({ onWidthChange }) => {
     const navigate = useNavigate();
     const currentPath = window.location.pathname;
 
-    // State for Sidebar Width
     const [sidebarWidth, setSidebarWidth] = useState(250);
-
-    // Responsive Breakpoints
     const MAX_WIDTH = 250;
     const MIN_WIDTH = 60;
 
-    // Handle Resize
     const handleResize = () => {
         const screenWidth = window.innerWidth;
         const displayWidth = window.screen.width;
 
         if (screenWidth < (displayWidth / 2)) {
-            setSidebarWidth(MIN_WIDTH); // Only icons
+            setSidebarWidth(MIN_WIDTH);
         } else {
-            setSidebarWidth(MAX_WIDTH); // Full version
+            setSidebarWidth(MAX_WIDTH);
         }
     };
 
-    // Notify parent component of width change
     useEffect(() => {
         onWidthChange(sidebarWidth);
     }, [sidebarWidth, onWidthChange]);
 
-    // Add Event Listener for Resizing
     useEffect(() => {
         window.addEventListener("resize", handleResize);
-        handleResize(); // Initial check
+        handleResize();
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
     const menuItems = [
         { text: "Schedule", path: "/dashboard", icon: <CalendarTodayIcon /> },
         { text: "Analytics", path: "/analytics", icon: <BarChartIcon /> },
-        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> }
+        { text: "Clients", path: "/clients-page", icon: <PeopleIcon /> },
+        { text: "Profile", path: "/profile", icon: <PersonIcon /> }
     ];
+
+    function getCookie(name) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        if (match) return match[2];
+        return null;
+    }
+  
+    const handleLogout = async () => {
+        try {
+            const csrfToken = getCookie("csrftoken");
+            await axios.post(
+                `${config.apiUrl}/auth/logout/`,
+                {},
+                {
+                    headers: {
+                        "X-CSRFToken": csrfToken,
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true,
+                }
+            );
+            // Clear local storage
+            localStorage.removeItem("profileData");
+            localStorage.removeItem("qrUrl");
+            // Redirect to login page
+            navigate("/login");
+        } catch (error) {
+            console.error("Logout failed:", error);
+            alert("Logout failed. Please try again.");
+        }
+    };
 
     return (
         <Box
@@ -71,8 +99,12 @@ const NavigationMenu = ({ onWidthChange }) => {
                 boxShadow: "2px 0 5px rgba(0, 0, 0, 0.1)",
                 padding: "20px 10px",
                 position: "fixed",
+                zIndex: 1200,
                 overflowX: "hidden",
-                transition: "width 0.3s ease-in-out"
+                overflowY: "auto",
+                transition: "width 0.3s ease-in-out",
+                display: "flex",
+                flexDirection: "column"
             }}
         >
             <Box
@@ -85,7 +117,7 @@ const NavigationMenu = ({ onWidthChange }) => {
                     <img
                         src={logo}
                         alt="RollTrack Logo"
-                        style={{ height: "40px", cursor: "pointer" }} // Adjust height if needed
+                        style={{ height: "40px", cursor: "pointer" }}
                         onClick={() => navigate("/")}
                     />
                 )}
@@ -103,18 +135,17 @@ const NavigationMenu = ({ onWidthChange }) => {
                     sx={{
                         cursor: "pointer",
                         color: "#757575",
-                        transition: "transform 0.3s",
-                        // "&:hover": {
-                        //     transform: "rotate(90deg)"
-                        // }
+                        transition: "transform 0.3s"
                     }}
                 />
             </Box>
-            <List>
+            
+            {/* Main navigation items */}
+            <List sx={{ flex: 1 }}>
                 {menuItems.map((item, index) => (
                     <Tooltip title={item.text} placement="right" key={index}>
                         <ListItem
-                            button
+                            component="div"
                             onClick={() => navigate(item.path)}
                             sx={{
                                 mb: 1,
@@ -122,7 +153,8 @@ const NavigationMenu = ({ onWidthChange }) => {
                                 backgroundColor: currentPath === item.path ? "#e0e0e0" : "transparent",
                                 "&:hover": {
                                     backgroundColor: "#e0e0e0"
-                                }
+                                },
+                                cursor: "pointer"
                             }}
                         >
                             <ListItemIcon sx={{ color: "#757575", minWidth: "40px" }}>
@@ -135,6 +167,33 @@ const NavigationMenu = ({ onWidthChange }) => {
                     </Tooltip>
                 ))}
             </List>
+            
+            {/* Logout button at bottom with extra spacing */}
+            <Box sx={{ mt: 'auto', pb: 4 }}>
+                <Divider sx={{ my: 2 }} />
+                <Tooltip title="Logout" placement="right">
+                    <ListItem
+                        component="div"
+                        onClick={handleLogout}
+                        sx={{
+                            borderRadius: "8px",
+                            "&:hover": {
+                                backgroundColor: "rgba(211, 47, 47, 0.1)",
+                                color: "#d32f2f"
+                            },
+                            cursor: "pointer",
+                            color: "#d32f2f"
+                        }}
+                    >
+                        <ListItemIcon sx={{ color: "inherit", minWidth: "40px" }}>
+                            <LogoutIcon />
+                        </ListItemIcon>
+                        {sidebarWidth > MIN_WIDTH && (
+                            <ListItemText primary="Logout" />
+                        )}
+                    </ListItem>
+                </Tooltip>
+            </Box>
         </Box>
     );
 };

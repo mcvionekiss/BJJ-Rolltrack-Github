@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
 import { 
     Container,
     Paper, 
@@ -10,7 +11,11 @@ import {
     TableCell,
     TableHead,
     TableRow,
-    Box
+    Box,
+    useMediaQuery,
+    useTheme,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { 
@@ -25,106 +30,22 @@ import {
     Legend
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NavigationMenu from "./NavigationMenu";
+import { useNavigate } from "react-router-dom";
 
-// Mock data for sparklines
-const sparklineData = {
-    daily: [
-        { value: 65 }, { value: 72 }, { value: 68 }, { value: 75 }, 
-        { value: 69 }, { value: 78 }, { value: 80 }
-    ],
-    weekly: [
-        { value: 320 }, { value: 350 }, { value: 365 }, { value: 380 }, 
-        { value: 340 }, { value: 390 }, { value: 400 }
-    ],
-    monthly: [
-        { value: 1200 }, { value: 1400 }, { value: 1350 }, { value: 1450 }, 
-        { value: 1480 }, { value: 1550 }, { value: 1600 }
-    ]
+import config from "../config";
+
+const fetchCsrfToken = async (setCsrfToken) => {
+    try {
+        const response = await axios.get(config.endpoints.auth.csrf, {
+            withCredentials: true,
+        });
+        setCsrfToken(response.data.csrfToken);
+    } catch (error) {
+        console.error("Failed to fetch CSRF token", error);
+    }
 };
-
-// Mock data for different time ranges
-const mockDayData = [
-    {
-        name: 'CHILDREN',
-        Fundamental: 45,
-        Beginner: 35,
-        Intermediate: 25,
-        Advanced: 20,
-    },
-    {
-        name: 'TEENAGERS',
-        Fundamental: 15,
-        Beginner: 25,
-        Intermediate: 40,
-        Advanced: 30,
-    },
-    {
-        name: 'ADULT',
-        Fundamental: 10,
-        Beginner: 35,
-        Intermediate: 45,
-        Advanced: 30,
-    },
-];
-
-const mockWeekData = [
-    {
-        name: 'CHILDREN',
-        Fundamental: 150,
-        Beginner: 120,
-        Intermediate: 80,
-        Advanced: 50,
-    },
-    {
-        name: 'TEENAGERS',
-        Fundamental: 60,
-        Beginner: 100,
-        Intermediate: 140,
-        Advanced: 90,
-    },
-    {
-        name: 'ADULT',
-        Fundamental: 40,
-        Beginner: 110,
-        Intermediate: 160,
-        Advanced: 120,
-    },
-];
-
-const mockMonthData = [
-    {
-        name: 'CHILDREN',
-        Fundamental: 600,
-        Beginner: 450,
-        Intermediate: 300,
-        Advanced: 200,
-    },
-    {
-        name: 'TEENAGERS',
-        Fundamental: 250,
-        Beginner: 400,
-        Intermediate: 550,
-        Advanced: 400,
-    },
-    {
-        name: 'ADULT',
-        Fundamental: 180,
-        Beginner: 480,
-        Intermediate: 620,
-        Advanced: 500,
-    },
-];
-
-// Mock data for today's classes
-const mockClassData = [
-    { name: 'Tiny Champs', checkIns: 15, time: '10:00 AM' },
-    { name: 'Advanced Teens', checkIns: 30, time: '3:30 PM' },
-    { name: 'Adult Fundamentals', checkIns: 25, time: '5:00 PM' },
-    { name: 'Adult Advanced', checkIns: 20, time: '6:00 PM' },
-    { name: 'Kids Age 5-7', checkIns: 10, time: '7:00 PM' },
-    { name: 'Kids Age 8-10', checkIns: 15, time: '8:00 PM' },
-];
 
 // Attendance Stats Card Component
 const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => (
@@ -168,10 +89,22 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
             </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUpIcon color="success" />
-            <Typography color="success.main">
-                {percentage}%
-            </Typography>
+            {
+                percentage > 0 ?
+                <div>
+                    <TrendingUpIcon color="success" />
+                    <Typography color="success.main">
+                        {percentage}%
+                    </Typography>
+                </div>
+                :
+                <div>
+                    <TrendingDownIcon color="error" />
+                    <Typography color="error.main">
+                        {percentage}%
+                    </Typography>
+                </div>
+            }
             <Typography color="text.secondary">
                 {timePeriod}
             </Typography>
@@ -179,130 +112,431 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
     </Paper>
 );
 
+const getdata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.todayAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getyesterdaydata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.yesterdayAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getweeklydata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.weeklyAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getlastweekdata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.lastWeekAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getmonthlydata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.monthlyAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getlastmonthdata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.lastMonthAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const gettodaycategory = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.todayCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+
+};
+
+const getweekcategory = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.weekCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+
+};
+
+const getmonthcategory = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.monthCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+
+};
+
 function Analytics() {
+    const [csrfToken, setCsrfToken] = useState("");
     const [timeRange, setTimeRange] = useState('day');
     const [sidebarWidth, setSidebarWidth] = useState(250);
+    const theme = useTheme();
+    const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
+    const isSmScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const navigate = useNavigate();
+    const [mockClassData, setMockClassData] = useState([]);
+    const [dailyAttendanceCount, setDailyAttendanceCount] = useState(0);
+    const [yesterdayAttendanceCount, setYesterdayAttendanceCount] = useState(0);
+    const [WeeklyAttendanceCount, setWeeklyAttendanceCount] = useState(0);
+    const [LastWeekAttendanceCount, setLastWeekAttendanceCount] = useState(0);
+    const [MonthlyAttendanceCount, setMonthlyAttendanceCount] = useState(0);
+    const [LastMonthAttendanceCount, setLastMonthAttendanceCount] = useState(0);
+    const [TodayCategory, setTodayCategory] = useState([]);
+    const [WeekCategory, setWeekCategory] = useState([]);
+    const [MonthCategory, setMonthCategory] = useState([]);
+    const [gymId, setGymId] = useState(null);
+    const [gymName, setGymName] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    // ✅ Fetch CSRF token when the component mounts
+    useEffect(() => {
+        fetchCsrfToken(setCsrfToken);
+    }, []);
+
+    // Fetch user profile to get gym information
+    useEffect(() => {
+        const fetchProfile = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(`${config.apiUrl}/auth/profile/`, {
+                    withCredentials: true
+                });
+                
+                const { gym } = res.data;
+                if (gym && gym.id) {
+                    setGymId(gym.id);
+                    setGymName(gym.name);
+                }
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
+                setError("Failed to load gym information. Please try again.");
+                setLoading(false);
+                
+                // If unauthorized, redirect to login
+                if (error.response && error.response.status === 401) {
+                    navigate("/login");
+                }
+            }
+        };
+
+        fetchProfile();
+    }, [navigate]);
+
+    const getDailyData = async () => {
+        try {
+            const response = await getdata(csrfToken, gymId);
+            setMockClassData(response.data.classes);
+            setDailyAttendanceCount(response.data.total_attendance_for_today);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getYesterdayData = async () => {
+        try {
+            const response = await getyesterdaydata(csrfToken, gymId);
+            setYesterdayAttendanceCount(response.data.yesterdays_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getWeeklyData = async () => {
+        try {
+            const response = await getweeklydata(csrfToken, gymId);
+            setWeeklyAttendanceCount(response.data.weekly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getLastWeekData = async () => {
+        try {
+            const response = await getlastweekdata(csrfToken, gymId);
+            setLastWeekAttendanceCount(response.data.weekly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getMonthlyData = async () => {
+        try {
+            const response = await getmonthlydata(csrfToken, gymId);
+            setMonthlyAttendanceCount(response.data.monthly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getLastMonthData = async () => {
+        try {
+            const response = await getlastmonthdata(csrfToken, gymId);
+            setLastMonthAttendanceCount(response.data.monthly_count);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getDailyCategoryData = async () => {
+        try {
+            const response = await gettodaycategory(csrfToken, gymId);
+            const arr = [];
+            arr.push(response.data.data);
+            setTodayCategory(arr);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getWeekCategoryData = async () => {
+        try {
+            const response = await getweekcategory(csrfToken, gymId);
+            const arr = [];
+            arr.push(response.data.data);
+            setWeekCategory(arr);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getMonthCategoryData = async () => {
+        try {
+            const response = await getmonthcategory(csrfToken, gymId);
+            const arr = [];
+            arr.push(response.data.data);
+            setMonthCategory(arr);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    // Fetch analytics data when gymId is available
+    useEffect(() => {
+        if (gymId) {
+            getDailyData();
+            getYesterdayData();
+            getWeeklyData();
+            getLastWeekData();
+            getMonthlyData();
+            getLastMonthData();
+            getDailyCategoryData();
+            getWeekCategoryData();
+            getMonthCategoryData();
+        }
+    }, [gymId, csrfToken]);
+    
+    // Set chart height based on screen size
+    const getChartHeight = () => {
+        if (isXsScreen) return 300;
+        if (isSmScreen) return 350;
+        return 400;
+    };
+
+    // Get appropriate bar size based on screen size
+    const getMaxBarSize = () => {
+        if (isXsScreen) return 30;
+        if (isSmScreen) return 40;
+        return 50;
+    };
+    
+    // Modify bar gap based on screen size
+    const getBarGap = () => {
+        if (isXsScreen) return 4;
+        if (isSmScreen) return 8;
+        return 12;
+    };
+    
+    // Modify category gap based on screen size
+    const getBarCategoryGap = () => {
+        if (isXsScreen) return 20;
+        if (isSmScreen) return 30;
+        return 40;
+    };
 
     const getChartData = (timeRange) => {
         switch (timeRange) {
             case 'week':
-                return mockWeekData;
+                return WeekCategory;
             case 'month':
-                return mockMonthData;
+                return MonthCategory;
             default:
-                return mockDayData;
+                return TodayCategory;
         }
     };
 
+    // Function to handle font size for axis tick labels
+    const getTickFontSize = () => {
+        if (isXsScreen) return 10;
+        return 12;
+    };
+
     return (
-        <Box display="flex">
+        <Box display="flex" sx={{height: '100vh', overflowY: 'auto',}}>
             <NavigationMenu onWidthChange={setSidebarWidth} />
             <Container disableGutters maxWidth={false}
-                       sx={{
-                        flexGrow: 1,
-                        px: { xs: 2, sm: 3, md: 5 },
-                        pt: { xs: 2, sm: 3, md: 5 },
-                        marginLeft: `${sidebarWidth}px`,
-                        width: "calc(100% - " + sidebarWidth + "px)"
-                    }}
+                sx={{
+                    flexGrow: 1,
+                    px: { xs: 1, sm: 2, md: 3, lg: 5 },
+                    pt: { xs: 1, sm: 2, md: 3, lg: 5 },
+                    marginLeft: `${sidebarWidth}px`,
+                    width: `calc(100% - ${sidebarWidth}px)`
+                }}
             >
-
-                {/* Attendance Stats Cards */}
-                <Grid container spacing={4} sx={{ mb: 6, width: '100%' }}>
-                    <Grid xs={12} md={4} flexGrow={1}>
+                {loading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
+                        <CircularProgress />
+                    </Box>
+                ) : error ? (
+                    <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+                ) : (
+                <>
+                    {gymName && (
+                        <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
+                            {gymName} Analytics
+                        </Typography>
+                    )}
+                    
+                    {/* Attendance Stats Cards */}
+                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ mb: { xs: 3, sm: 4, md: 6 }, width: '100%' }}>
+                    <Grid>
                         <AttendanceStatsCard
                             title="Daily Attendance"
-                            value="80"
-                            percentage="1.08"
+                            value={dailyAttendanceCount}
+                            percentage={yesterdayAttendanceCount > 0 ? (dailyAttendanceCount - yesterdayAttendanceCount) / yesterdayAttendanceCount : -100}
                             timePeriod="Since yesterday"
-                            data={sparklineData.daily}
+                            data={dailyAttendanceCount}
                         />
                     </Grid>
-                    <Grid xs={12} md={4} flexGrow={1}>
+                    <Grid>
                         <AttendanceStatsCard
                             title="Weekly Attendance"
-                            value="400"
-                            percentage="2.85"
+                            value={WeeklyAttendanceCount}
+                            percentage={LastWeekAttendanceCount > 0 ? (WeeklyAttendanceCount - LastWeekAttendanceCount) / LastWeekAttendanceCount : 100}
                             timePeriod="Since last week"
-                            data={sparklineData.weekly}
+                            data={WeeklyAttendanceCount}
                         />
                     </Grid>
-                    <Grid xs={12} md={4} flexGrow={1}>
+                    <Grid>
                         <AttendanceStatsCard
                             title="Monthly Attendance"
-                            value="1,600"
-                            percentage="5.38"
+                            value={MonthlyAttendanceCount}
+                            percentage={LastMonthAttendanceCount > 0 ? (MonthlyAttendanceCount - LastMonthAttendanceCount) / LastMonthAttendanceCount : 100}
                             timePeriod="Since last month"
-                            data={sparklineData.monthly}
+                            data={MonthlyAttendanceCount}
                         />
                     </Grid>
-                </Grid>
+                    </Grid>
 
-                {/* Today's Classes and Trends */}
-                <Grid container flexGrow={1} spacing={4} sx={{ display: 'flex', flexWrap: 'nowrap' }}>
-                {/* Today's Classes */}
-                    <Grid xs={12} sm={4} md={4} flexShrink={0} display="flex" flexDirection="column">
-                    <Paper
+                    {/* Today's Classes and Trends - Side by side */}
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, sm: 3, md: 4 } }}>
+                    {/* Today's Classes */}
+                    <Box sx={{ flex: 1 }}>
+                        <Paper
                             sx={{
-                                p: 4,
+                                p: { xs: 2, sm: 3, md: 4 },
                                 borderRadius: 3,
-                                minHeight: '450px',
+                                minHeight: '300px',
                                 height: '100%',
                             }}
                         >
-                            <Typography variant="h5" sx={{ mb: 4 }}>
+                            <Typography variant="h5" sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
                                 Today's Classes
                             </Typography>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>CLASS NAME</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>CHECK-INS</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>TIME</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {mockClassData.map((classItem, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{classItem.name}</TableCell>
-                                            <TableCell>{classItem.checkIns}</TableCell>
-                                            <TableCell>{classItem.time}</TableCell>
+                            <Box sx={{ overflowX: 'auto' }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1, sm: 2 } }}>CLASS NAME</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1, sm: 2 } }}>CHECK-INS</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', py: { xs: 1, sm: 2 }, minWidth: '100px' }}>TIME</TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHead>
+                                    <TableBody>
+                                        {mockClassData.map((classItem, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell sx={{ py: { xs: 1, sm: 2 } }}>{classItem.name}</TableCell>
+                                                <TableCell sx={{ py: { xs: 1, sm: 2 } }}>{classItem.checkIns}</TableCell>
+                                                <TableCell sx={{ py: { xs: 1, sm: 2 }, whiteSpace: 'nowrap' }}>{classItem.time}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Box>
                         </Paper>
-                    </Grid>
+                    </Box>
 
                     {/* Trends */}
-                    <Grid xs={12} sm={8} md={8} display="flex" flexDirection="column">
-                    <Paper
+                    <Box sx={{ flex: 2 }}>
+                        <Paper
                             sx={{
-                                p: 5,
+                                p: { xs: 2, sm: 3, md: 4, lg: 5 },
                                 borderRadius: 3,
-                                minHeight: '450px',
+                                minHeight: { xs: '300px', md: '350px', lg: '450px' },
                                 height: '100%',
-                                width: '91.5%'
+                                width: '100%'
                             }}
                         >
                             <Box sx={{
                                 display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
                                 justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 4
+                                alignItems: { xs: 'flex-start', sm: 'center' },
+                                mb: { xs: 2, sm: 3, md: 4 },
+                                gap: { xs: 2, sm: 0 }
                             }}>
                                 <Typography variant="h5">
                                     Trends
                                 </Typography>
                                 <ToggleButtonGroup
-                                    size="small"
+                                    size={isXsScreen ? "small" : "medium"}
                                     value={timeRange}
                                     exclusive
-                                    onChange={(e, newValue) => setTimeRange(newValue)}
+                                    onChange={(e, newValue) => newValue && setTimeRange(newValue)}
                                     sx={{
                                         '& .MuiToggleButton-root': {
                                             textTransform: 'none',
-                                            px: 3
+                                            px: { xs: 2, sm: 3 }
                                         }
                                     }}
                                 >
@@ -311,29 +545,30 @@ function Analytics() {
                                     <ToggleButton value="month">Month</ToggleButton>
                                 </ToggleButtonGroup>
                             </Box>
-                            <ResponsiveContainer width="100%" height={400}>
+                            <ResponsiveContainer width="100%" height={getChartHeight()}>
                                 <BarChart
                                     data={getChartData(timeRange)}
                                     margin={{
                                         top: 20,
-                                        right: 30,
-                                        left: 10,
+                                        right: isXsScreen ? 10 : (isSmScreen ? 20 : 30),
+                                        left: isXsScreen ? 0 : 10,
                                         bottom: 20,
                                     }}
-                                    barGap={12}
-                                    barCategoryGap={40}
+                                    barGap={getBarGap()}
+                                    barCategoryGap={getBarCategoryGap()}
+                                    maxBarSize={getMaxBarSize()}
                                 >
                                     <XAxis
-                                        dataKey="name"
-                                        axisLine={false}
+                                        dataKey={false}
                                         tickLine={false}
                                         dy={10}
-                                        interval={0}
-                                        tick={{ fontSize: 12 }}
+                                        tick={{ fontSize: getTickFontSize() }}
                                     />
                                     <YAxis
                                         axisLine={false}
                                         tickLine={false}
+                                        fontSize={isXsScreen ? 10 : 12}
+                                        width={isXsScreen ? 30 : 40}
                                     />
                                     <Tooltip />
                                     <Legend
@@ -343,21 +578,24 @@ function Analytics() {
                                         align="center"
                                         wrapperStyle={{
                                             paddingTop: '10px',
-                                            paddingBottom: '10px'
+                                            paddingBottom: '10px',
+                                            fontSize: isXsScreen ? '0.75rem' : '0.875rem'
                                         }}
                                     />
-                                    <Bar dataKey="Fundamental" fill="#e0e0e0" />
+                                    <Bar dataKey="Fundamental" fill="#bdbdbd" />
                                     <Bar dataKey="Beginner" fill="#bdbdbd" />
                                     <Bar dataKey="Intermediate" fill="#9e9e9e" />
                                     <Bar dataKey="Advanced" fill="#757575" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </Paper>
-                    </Grid>
-                </Grid>
+                    </Box>
+                    </Box>
+                </>
+                )}
             </Container>
         </Box>
     );
 }
 
-export default Analytics;
+export default Analytics; 

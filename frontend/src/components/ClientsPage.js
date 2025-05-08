@@ -139,9 +139,11 @@ function ClientsPage() {
                     maxWidth: "1400px",
                     marginLeft: `${sidebarWidth}px`,
                     transition: "margin-left 0.3s ease-in-out",
+                    height: '100vh',
+                    overflowY: 'auto',
                 }}
             >
-                <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 5 }}>
+                <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 }, mt: 0 }}>
                     <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
                         Clients
                     </Typography>

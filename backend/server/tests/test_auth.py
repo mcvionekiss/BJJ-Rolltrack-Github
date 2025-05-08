@@ -1,7 +1,8 @@
 import pytest
 from django.test import Client, TestCase
 from django.urls import reverse
-from server.models import GymOwner
+from server.models import Users, Belts, Roles
+from django.utils import timezone
 import json
 
 class TestAuthentication(TestCase):
@@ -12,13 +13,21 @@ class TestAuthentication(TestCase):
         self.register_url = reverse('register')
         self.logout_url = reverse('logout')
         
+        # Create default belt and role for testing
+        self.test_belt = Belts.objects.create(belt="White Belt")
+        self.test_role = Roles.objects.create(role="Student")
+        
         # Create a test user
-        self.test_user = GymOwner.objects.create_user(
+        self.test_user = Users.objects.create_user(
             username='testuser',
             email='test@example.com',
             password='testpass123',
             first_name='Test',
-            last_name='User'
+            last_name='User',
+            date_enrolled=timezone.now().date(),
+            date_of_birth=timezone.now().date(),
+            belt=self.test_belt,
+            role=self.test_role
         )
         
         # Test user registration data
@@ -27,7 +36,9 @@ class TestAuthentication(TestCase):
             'email': 'newuser@example.com',
             'password': 'newpass123',
             'firstName': 'New',
-            'lastName': 'User'
+            'lastName': 'User',
+            'belt': self.test_belt.beltID,
+            'role': self.test_role.roleID
         }
         
         # Test login data
@@ -46,7 +57,7 @@ class TestAuthentication(TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['success'])
-        self.assertTrue(GymOwner.objects.filter(email=self.valid_register_data['email']).exists())
+        self.assertTrue(Users.objects.filter(email=self.valid_register_data['email']).exists())
 
     def test_user_registration_duplicate_email(self):
         """Test registration with existing email"""

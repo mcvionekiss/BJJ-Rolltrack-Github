@@ -13,7 +13,13 @@ import AddClass from "./components/Schedule/AddClass";
 import CheckinSelection from "./components/CheckinSelection";
 import MemberSignup from "./components/MemberSignup";
 import GuestCheckin from "./components/GuestCheckin";
+import ProfilePage from "./components/ProfilePage";
 import { EventProvider } from "./components/Schedule/EventContext";
+import EditClass from "./components/Schedule/EditClass";
+import SignUpChoice from "./components/SignUpChoice";
+import ForgotPassword from "./components/ForgotPassword"
+import ResetPassword from "./components/ResetPassword";
+
 function App() {
     return (
         <Router>
@@ -24,13 +30,19 @@ function App() {
 
                     {/* Registration Pages */}
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+                    <Route path="/signup" element={<SignUpChoice />} />
+                    <Route path="/register/email" element={<Register />} />
+                    <Route path="/register/google" element={<Register />} />
 
                     {/* Gym Owner Pages */}
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/add-class" element={<AddClass />} />
+                    <Route path="/edit-class" element={<EditClass/>}/>
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/clients-page" element={<ClientsPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
 
                     {/* Check In Flow */}
                     <Route path="/checkin" element={<Checkin />} />

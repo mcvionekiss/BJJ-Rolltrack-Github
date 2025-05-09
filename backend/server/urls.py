@@ -130,6 +130,14 @@ urlpatterns = [
     path('auth/request-password-reset/', request_password_reset),
     path('auth/reset-password/<uuid:token>/', reset_password),
     
+    # Waiver management endpoints
+    path("api/waivers/", waiver_management, name="waiver_management"),
+    path("api/waivers/<int:gym_id>/", waiver_management, name="gym_waiver_management"),
+    path("api/waivers/download/<int:waiver_id>/", download_waiver, name="download_waiver"),
+    path("api/waivers/signature/", member_waiver_signature, name="member_waiver_signature"),
+    path("api/waivers/signature/<int:signature_id>/", get_signature_status, name="get_signature_status"),
+    path("api/waivers/preview/<int:gym_id>/", preview_waiver, name="preview_waiver"),
+    
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),
     

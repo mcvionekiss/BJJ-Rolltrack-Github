@@ -11,6 +11,10 @@ import {
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import GroupIcon from "@mui/icons-material/Group";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+<<<<<<< Updated upstream:frontend/src/components/AvailableClasses.js
+=======
+import config from "../../config";
+>>>>>>> Stashed changes:frontend/src/pages/Checkin/AvailableClasses.js
 
 // Utility function to format the date
 const formatDate = (date) => {

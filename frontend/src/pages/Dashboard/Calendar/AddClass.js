@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField, Select, MenuItem, InputLabel } from '@mui/material';
+<<<<<<< Updated upstream:frontend/src/components/Schedule/AddClass.js
 import NavigationMenu from "../NavigationMenu";
 import './Dashboard.css';
 import { useEvents } from './EventContext';
 import Calendar from './Calendar';
+=======
+import NavigationMenu from "../../../components/NavigationMenu";
+import "../../../styles/Dashboard.css";
+import { useEvents } from '../../../context/EventContext';
+import AddClassInformation from './AddClassInformation';
+import { v4 as uuidv4 } from 'uuid';
+
+>>>>>>> Stashed changes:frontend/src/pages/Dashboard/Calendar/AddClass.js
 
 export default function AddClass() {
   const { events, setEvents } = useEvents();

@@ -18,7 +18,7 @@ from server.settings import get_secret
 SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # ALLOWED_HOSTS will be overridden by environment variables in __init__.py
 ALLOWED_HOSTS = ['*']
@@ -40,14 +40,14 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'server.GymOwner'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "django.middleware.common.CommonMiddleware",
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # ✅ Allow cookies and authentication
@@ -151,14 +151,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
+<<<<<<< Updated upstream
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+=======
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+>>>>>>> Stashed changes
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+<<<<<<< Updated upstream
 # Security settings for production
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
@@ -190,10 +196,19 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+=======
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+>>>>>>> Stashed changes
         },
     },
     'loggers': {
         'django': {
+<<<<<<< Updated upstream
             'handlers': ['file', 'console'],
             'level': 'INFO',
             'propagate': True,
@@ -202,6 +217,10 @@ LOGGING = {
             'handlers': ['file', 'console'],
             'level': 'INFO',
             'propagate': True,
+=======
+            'handlers': ['console'],
+            'level': 'DEBUG',
+>>>>>>> Stashed changes
         },
     },
 }

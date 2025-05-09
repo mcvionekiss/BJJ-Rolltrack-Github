@@ -103,10 +103,14 @@ const NavigationMenu = ({ onWidthChange }) => {
                     sx={{
                         cursor: "pointer",
                         color: "#757575",
+<<<<<<< Updated upstream
                         transition: "transform 0.3s",
                         // "&:hover": {
                         //     transform: "rotate(90deg)"
                         // }
+=======
+                        transition: "transform 0.2s"
+>>>>>>> Stashed changes
                     }}
                 />
             </Box>

@@ -18,10 +18,16 @@ from server.settings import get_secret
 SECRET_KEY = get_secret('DJANGO_SECRET_KEY', "django-insecure-vf1ql$l*ln)wabh$4g#!&9&3v6-j#w+-8r!$ci9948i7wx^(fr")
 
 # SECURITY WARNING: don't run with debug turned on in production!
+<<<<<<< Updated upstream
 DEBUG = get_secret('DEBUG', 'True').lower() == 'true'
 
 # ALLOWED_HOSTS will be overridden by environment variables in __init__.py
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.2.1"]
+=======
+DEBUG = True
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.2.1", "172.31.130.173"]
+>>>>>>> Stashed changes
 
 # Application definition
 
@@ -51,14 +57,36 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+<<<<<<< Updated upstream
 # CSRF_TRUSTED_ORIGINS will be overridden by environment variables in __init__.py
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://192.168.2.1:3000"]
+=======
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://172.16.42.15",
+    "http://172.31.130.173"
+]  
+>>>>>>> Stashed changes
 
 # CORS_ALLOWED_ORIGINS will be overridden by environment variables in __init__.py
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+<<<<<<< Updated upstream
     "http://192.168.2.1:3000",
 ]
+=======
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://172.16.42.15",
+    "http://172.31.130.173"
+]
+
+# Allow all origins for development (remove in production)
+>>>>>>> Stashed changes
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "Content-Type",
@@ -142,13 +170,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+<<<<<<< Updated upstream
 # Development-specific logging
 LOGGING = {
     'version': 1,
@@ -169,3 +199,17 @@ LOGGING = {
         },
     },
 }
+=======
+#email setting
+load_dotenv()
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.zoho.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+LOGIN_REDIRECT_URL = "login"
+LOGOUT_REDIRECT_URL = "login"
+>>>>>>> Stashed changes

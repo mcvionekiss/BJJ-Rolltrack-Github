@@ -8,6 +8,13 @@ import {
     Paper,
     Typography
 } from "@mui/material";
+<<<<<<< Updated upstream:frontend/src/components/Checkin.js
+=======
+import config from "../../config";
+
+// Ensure cookies are included with requests
+axios.defaults.withCredentials = true;
+>>>>>>> Stashed changes:frontend/src/pages/Checkin/Checkin.js
 
 function Checkin() {
     const [email, setEmail] = useState("");

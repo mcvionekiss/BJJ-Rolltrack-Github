@@ -22,7 +22,7 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import NavigationMenu from "./NavigationMenu";
+import NavigationMenu from "../../components/NavigationMenu";
 
 // Mock data for clients
 const mockClients = [

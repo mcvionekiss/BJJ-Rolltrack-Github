@@ -1,9 +1,11 @@
-// src/components/Login.js
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+<<<<<<< Updated upstream:frontend/src/components/Login.js
 import { API_ENDPOINTS } from "../config";
+=======
+import config from "../../config";
+>>>>>>> Stashed changes:frontend/src/pages/Login/LoginPage.js
 import {
     TextField,
     Button,
@@ -16,9 +18,18 @@ import {
     Link,
     CircularProgress,
     AppBar,
+<<<<<<< Updated upstream:frontend/src/components/Login.js
     Toolbar
 } from "@mui/material";
 import logo from '../assets/logo.jpeg';
+=======
+    Toolbar,
+    Fade,
+    useTheme
+} from "@mui/material";
+import logo from '../../assets/logo.jpeg';
+import GoogleSignIn from "../../components/GoogleSignIn";
+>>>>>>> Stashed changes:frontend/src/pages/Login/LoginPage.js
 
 const fetchCsrfToken = async (setCsrfToken) => {
     try {
@@ -40,7 +51,7 @@ const loginUser = async (credentials, csrfToken) => {
     );
 };
 
-function Login() {
+function LoginPage() {
     const [formData, setFormData] = useState({ email: "", password: "" });
     const [csrfToken, setCsrfToken] = useState("");
     const [loading, setLoading] = useState(false);
@@ -126,6 +137,7 @@ function Login() {
             </AppBar>
 
             {/* Centered Login Form */}
+<<<<<<< Updated upstream:frontend/src/components/Login.js
             <Container maxWidth="sm">
                 <Paper elevation={3} sx={{ p: 4, textAlign: "center", mt: 5 }}>
                     <Typography variant="h5" fontWeight="bold">
@@ -138,6 +150,66 @@ function Login() {
                     {error && (
                         <Typography color="error" sx={{ mb: 2 }}>
                             {error}
+=======
+            <Fade in={true} timeout={800}>
+                <Box 
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        minHeight: "calc(100vh - 200px)", // Subtract the AppBar height
+                        position: "relative",
+                        zIndex: 1,
+                        py: 4,
+                    }}
+                >
+                    <Paper elevation={4} className="form-box"
+                        sx={{
+                            textAlign: "center",
+                            borderRadius: "16px",
+                            paddingY: "50px",
+                            paddingX: { xs: "24px", sm: "48px" },
+                            width: { xs: "90%", sm: "400px" },
+                            maxWidth: "500px",
+                            background: "linear-gradient(145deg, #ffffff, #f9f9f9)",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
+                            position: "relative",
+                            overflow: "auto",
+                            transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                            "&:hover": {
+                                boxShadow: "0 12px 40px rgba(0, 0, 0, 0.12)",
+                                transform: "translateY(-5px)"
+                            }
+                        }}
+                    >
+                        <Typography 
+                            variant="h5" 
+                            sx={{ 
+                                mb: 1, 
+                                fontWeight: 700, 
+                                letterSpacing: "0.5px",
+                                background: "linear-gradient(90deg, #000000, #333333)",
+                                backgroundClip: "text",
+                                textFillColor: "transparent",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                            }}
+                        >
+                            Welcome Back!
+                        </Typography>
+                        <Typography 
+                            variant="body1" 
+                            color="text.secondary" 
+                            sx={{ 
+                                mb: 3,
+                                maxWidth: "280px",
+                                mx: "auto",
+                                lineHeight: 1.6
+                            }}
+                        >
+                            Please enter your details to log in
+>>>>>>> Stashed changes:frontend/src/pages/Login/LoginPage.js
                         </Typography>
                     )}
 
@@ -211,4 +283,4 @@ function Login() {
     );
 }
 
-export default Login;
+export default LoginPage;

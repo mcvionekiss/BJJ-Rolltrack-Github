@@ -25,6 +25,7 @@ import {
     Legend
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+<<<<<<< Updated upstream:frontend/src/components/analytics.js
 import NavigationMenu from "./NavigationMenu";
 
 // Mock data for sparklines
@@ -41,6 +42,23 @@ const sparklineData = {
         { value: 1200 }, { value: 1400 }, { value: 1350 }, { value: 1450 }, 
         { value: 1480 }, { value: 1550 }, { value: 1600 }
     ]
+=======
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import NavigationMenu from "../../components/NavigationMenu";
+import { useNavigate } from "react-router-dom";
+
+import config from "../../config";
+
+const fetchCsrfToken = async (setCsrfToken) => {
+    try {
+        const response = await axios.get(config.endpoints.auth.csrf, {
+            withCredentials: true,
+        });
+        setCsrfToken(response.data.csrfToken);
+    } catch (error) {
+        console.error("Failed to fetch CSRF token", error);
+    }
+>>>>>>> Stashed changes:frontend/src/pages/Analytics/AnalyticsPage.js
 };
 
 // Mock data for different time ranges
@@ -179,7 +197,105 @@ const AttendanceStatsCard = ({ title, value, percentage, timePeriod, data }) => 
     </Paper>
 );
 
+<<<<<<< Updated upstream:frontend/src/components/analytics.js
 function Analytics() {
+=======
+const getdata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.todayAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getyesterdaydata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.yesterdayAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getweeklydata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.weeklyAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getlastweekdata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.lastWeekAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getmonthlydata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.monthlyAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const getlastmonthdata = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.lastMonthAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+};
+
+const gettodaycategory = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.todayCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+
+};
+
+const getweekcategory = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.weekCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+
+};
+
+const getmonthcategory = async (csrfToken, gymId) => {
+    return axios.get(
+        config.endpoints.api.monthCategoryAttendance,
+        {
+            withCredentials: true, // Required for session authentication
+            params: gymId ? { gym_id: gymId } : {}
+        }
+    );
+
+};
+
+function AnalyticsPage() {
+    const [csrfToken, setCsrfToken] = useState("");
+>>>>>>> Stashed changes:frontend/src/pages/Analytics/AnalyticsPage.js
     const [timeRange, setTimeRange] = useState('day');
     const [sidebarWidth, setSidebarWidth] = useState(250);
 
@@ -360,4 +476,8 @@ function Analytics() {
     );
 }
 
+<<<<<<< Updated upstream:frontend/src/components/analytics.js
 export default Analytics;
+=======
+export default AnalyticsPage; 
+>>>>>>> Stashed changes:frontend/src/pages/Analytics/AnalyticsPage.js

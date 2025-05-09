@@ -7,10 +7,19 @@ import {
     Box,
     Button,
     CardMedia,
+<<<<<<< Updated upstream:frontend/src/components/ClassDetails.js
     IconButton,
     Grid
 } from "@mui/material";
 import banner from "../assets/banner.png";
+=======
+    Grid,
+    Alert,
+    CircularProgress
+} from "@mui/material";
+import banner from "../../assets/banner.png";
+import config from "../../config";
+>>>>>>> Stashed changes:frontend/src/pages/Checkin/ClassDetails.js
 
 // Icons
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";

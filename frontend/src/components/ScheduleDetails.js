@@ -4,7 +4,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import TextField from '@mui/material/TextField';
 import dayjs from "dayjs";
-import "./Register.css";
+import { Box, Typography } from '@mui/material';
 
 const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule }) => {
   const defaultSchedule =
@@ -67,56 +67,71 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
     });
   };
 
+  const tableStyles = {
+    table: {
+      width: '100%',
+      marginTop: '10px',
+      borderCollapse: 'collapse'
+    },
+    tableCell: {
+      padding: '10px',
+      textAlign: 'center'
+    }
+  };
+
   return (
-    <div className="schedule-container">
-      <p>Gym Hours of Operation</p>
-      <div className="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Day</th>
-            <th>Opening Time</th>
-            <th>Closing Time</th>
-            <th>Closed</th>
-          </tr>
-        </thead>
-        <tbody>
-          {schedule.map((entry, index) => (
-            <tr key={entry.day}>
-              <td>{entry.day}</td>
-                <td>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <TimePicker
-                            value={dayjs.isDayjs(entry.openTime) ? entry.openTime : dayjs(entry.openTime, "h:mm A")}
-                            onChange={(newTime) => handleTimeChange(index, "openTime", newTime)}
-                            disabled={entry.closed}
-                            renderInput={(params) => <TextField {...params} size="small" />}
-                        />
-                    </LocalizationProvider>
-                </td>
-                <td>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <TimePicker
-                            value={dayjs.isDayjs(entry.closeTime) ? entry.closeTime : dayjs(entry.closeTime, "h:mm A")}
-                            onChange={(newTime) => handleTimeChange(index, "closeTime", newTime)}
-                            disabled={entry.closed}
-                            renderInput={(params) => <TextField {...params} size="small" />}
-                        />
-                    </LocalizationProvider>
-                </td>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={entry.closed}
-                  onChange={() => handleClosedToggle(index)}
-                />
-              </td>
+    <Box>
+      <Typography variant="body1" sx={{ mb: 2, textAlign: "center" }}>Gym Hours of Operation</Typography>
+      <Box>
+        <Box 
+          component="table" 
+          sx={tableStyles.table}
+        >
+          <thead>
+            <tr>
+              <Box component="th" sx={tableStyles.tableCell}>Day</Box>
+              <Box component="th" sx={tableStyles.tableCell}>Opening Time</Box>
+              <Box component="th" sx={tableStyles.tableCell}>Closing Time</Box>
+              <Box component="th" sx={tableStyles.tableCell}>Closed</Box>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
-    </div>
+          </thead>
+          <tbody>
+            {schedule.map((entry, index) => (
+              <tr key={entry.day}>
+                <Box component="td" sx={tableStyles.tableCell}>{entry.day}</Box>
+                <Box component="td" sx={tableStyles.tableCell}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <TimePicker
+                          value={dayjs.isDayjs(entry.openTime) ? entry.openTime : dayjs(entry.openTime, "h:mm A")}
+                          onChange={(newTime) => handleTimeChange(index, "openTime", newTime)}
+                          disabled={entry.closed}
+                          renderInput={(params) => <TextField {...params} size="small" />}
+                      />
+                  </LocalizationProvider>
+                </Box>
+                <Box component="td" sx={tableStyles.tableCell}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <TimePicker
+                          value={dayjs.isDayjs(entry.closeTime) ? entry.closeTime : dayjs(entry.closeTime, "h:mm A")}
+                          onChange={(newTime) => handleTimeChange(index, "closeTime", newTime)}
+                          disabled={entry.closed}
+                          renderInput={(params) => <TextField {...params} size="small" />}
+                      />
+                  </LocalizationProvider>
+                </Box>
+                <Box component="td" sx={tableStyles.tableCell}>
+                  <input
+                    type="checkbox"
+                    checked={entry.closed}
+                    onChange={() => handleClosedToggle(index)}
+                  />
+                </Box>
+              </tr>
+            ))}
+          </tbody>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

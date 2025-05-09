@@ -8,7 +8,8 @@ import {
   TextField,
   Button,
   Paper,
-  Alert
+  Alert,
+  Container
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -116,11 +117,7 @@ const WaiverSetup = ({ formData, setFormData }) => {
   `;
 
   return (
-    <Box sx={{ mb: 2, maxWidth: '90%', mx: 'auto' }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
-        Waiver Setup
-      </Typography>
-
+    <Container sx={{ maxWidth: '100%'}}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         {/* Left Column - Settings */}
         <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '40%' } }}>
@@ -325,7 +322,7 @@ const WaiverSetup = ({ formData, setFormData }) => {
 
         </Box>
       </Box>
-    </Box>
+    </Container>
   );
 };
 

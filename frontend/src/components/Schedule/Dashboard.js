@@ -82,14 +82,14 @@ function Dashboard() {
     };
 
     return (
-        <Box display="flex">
+        <Box display="flex" sx={{ overflowY: "auto" }}>
             <NavigationMenu onWidthChange={setSidebarWidth} />
             <Box
                 component="main"
                 sx={{
                     flexGrow: 1,
                     padding: 3,
-                    transition: "margin-left 0.3s ease-in-out",
+                    transition: "margin-left 0.2s ease-in-out",
                     marginLeft: `${sidebarWidth}px`
                 }}
             >
@@ -110,6 +110,7 @@ function Dashboard() {
                         <Box sx={{ ml: 5, mr: 5 }}>
                             <Calendar 
                                 gymId={gymId}
+                                sidebarWidth={sidebarWidth}
                             />
                         </Box>
                     </>

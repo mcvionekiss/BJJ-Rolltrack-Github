@@ -12,6 +12,7 @@ import CheckinSuccess from './components/CheckinSuccess';
 import AddClass from "./components/Schedule/AddClass";
 import CheckinSelection from "./components/CheckinSelection";
 import MemberSignup from "./components/MemberSignup";
+import MemberWaiverSignature from "./components/MemberWaiverSignature";
 import GuestCheckin from "./components/GuestCheckin";
 import ProfilePage from "./components/ProfilePage";
 import { EventProvider } from "./components/Schedule/EventContext";
@@ -48,6 +49,7 @@ function App() {
                     <Route path="/checkin" element={<Checkin />} />
                     <Route path="/checkin-selection" element={<CheckinSelection />} />
                     <Route path="/member-signup" element={<MemberSignup />} />
+                    <Route path="/member-waiver" element={<MemberWaiverSignature />} />
                     <Route path="/guest-checkin" element={<GuestCheckin />} />
                     <Route path="/available-classes" element={<AvailableClasses />} />
                     <Route path="/class-details/:id" element={<ClassDetails />} />

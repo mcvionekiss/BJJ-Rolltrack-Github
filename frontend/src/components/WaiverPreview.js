@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -12,11 +12,13 @@ import SignatureCanvas from 'react-signature-canvas';
 import axios from 'axios';
 import config from '../config';
 
-// Initialize PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Initialize PDF.js worker with a reliable source URL
+// Use legacy build to avoid "Headers: Invalid name" error
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
 
 const WaiverPreview = ({ gymId, userId, onSigningComplete }) => {
   const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [waiverText, setWaiverText] = useState('');
@@ -28,6 +30,49 @@ const WaiverPreview = ({ gymId, userId, onSigningComplete }) => {
 
   // Signature pad ref
   const sigPad = useRef(null);
+
+  // PDF options memoized to prevent unnecessary re-renders
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`
+  }), []);
+  
+  // Convert PDF URL to Blob URL to avoid Header issues
+  useEffect(() => {
+    if (pdfUrl) {
+      // Create a blob URL from direct URL to avoid network issues
+      const fetchPdfAsBlob = async () => {
+        try {
+          const response = await fetch(pdfUrl, { 
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/pdf' }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch PDF: ${response.status}`);
+          }
+          
+          const pdfBlob = await response.blob();
+          const blobUrl = URL.createObjectURL(pdfBlob);
+          setPdfBlobUrl(blobUrl);
+        } catch (error) {
+          console.error('Error converting PDF URL to blob:', error);
+          setError(`Error loading PDF: ${error.message}. Trying alternate display method.`);
+        }
+      };
+      
+      fetchPdfAsBlob();
+    }
+    
+    // Clean up blob URL on unmount
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   // Fetch waiver data when component mounts
   useEffect(() => {
@@ -158,16 +203,61 @@ const WaiverPreview = ({ gymId, userId, onSigningComplete }) => {
       );
     }
 
-    if (waiverType === 'custom' && pdfUrl) {
+    if (waiverType === 'custom' && (pdfBlobUrl || pdfUrl)) {
       return (
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={(error) => setError('Error loading PDF: ' + error.message)}
-          >
-            <Page pageNumber={pageNumber} width={450} />
-          </Document>
+          {error ? (
+            <Box p={3} border="1px solid #ddd" borderRadius="4px" mb={2} width="100%">
+              <Typography color="error" gutterBottom>
+                {error}
+              </Typography>
+              {waiverText && (
+                <Box 
+                  sx={{ 
+                    whiteSpace: "pre-wrap", 
+                    fontFamily: "monospace", 
+                    fontSize: "0.75rem",
+                    mt: 2,
+                    p: 2,
+                    bgcolor: "#f5f5f5",
+                    borderRadius: 1
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom>
+                    Showing text version instead:
+                  </Typography>
+                  {waiverText}
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Document
+              file={pdfBlobUrl || pdfUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={(error) => {
+                console.error("Error loading PDF:", error);
+                setError(`Error loading PDF: ${error.message}. Showing text version if available.`);
+              }}
+              options={{
+                ...pdfOptions,
+                withCredentials: false,
+                cMapPacked: true
+              }}
+            >
+              <Page 
+                pageNumber={pageNumber} 
+                width={450}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                error={(error) => (
+                  <Typography color="error">
+                    Error rendering page: {error.message}
+                  </Typography>
+                )}
+                loading={<CircularProgress />}
+              />
+            </Document>
+          )}
           
           {numPages > 1 && (
             <Box display="flex" justifyContent="center" alignItems="center" mt={2}>

@@ -146,3 +146,37 @@ STATIC_ROOT = Path(BASE_DIR / "staticfiles")
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# AWS S3 Storage Configuration
+try:
+    # Add storages to INSTALLED_APPS
+    INSTALLED_APPS += ['storages']
+    
+    # AWS S3 settings
+    AWS_ACCESS_KEY_ID = get_secret('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = get_secret('AWS_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = get_secret('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_REGION_NAME = get_secret('AWS_S3_REGION_NAME', 'us-east-1')
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = 'private'
+    AWS_S3_VERIFY = True
+    
+    # Only configure S3 storage if all required settings are present
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
+        # S3 media settings (for user uploads)
+        DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+        MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/media/'
+        
+        # Enable S3 storage for waiver files
+        WAIVER_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+        
+        # Optionally use S3 for static files
+        # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+except Exception as e:
+    import logging
+    logging.error(f"Error configuring S3 storage: {str(e)}")
+    
+    # Fallback to local storage if S3 configuration fails
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = Path(BASE_DIR / 'media')

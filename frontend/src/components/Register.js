@@ -802,10 +802,60 @@ function Register() {
                                 )}
 
                                 {activeStep === 3 && (
-                                    <WaiverSetup 
-                                        formData={formData}
-                                        setFormData={setFormData}
-                                    />
+                                    <>
+                                        <WaiverSetup 
+                                            formData={formData}
+                                            setFormData={setFormData}
+                                        />
+                                        <Box sx={{ 
+                                            display: "flex", 
+                                            justifyContent: "space-between", 
+                                            mt: { xs: 2, sm: 4 }
+                                        }}>
+                                            <Button 
+                                                onClick={() => setActiveStep(activeStep - 1)} 
+                                                variant="outlined"
+                                                sx={{
+                                                    borderColor: "#e0e0e0",
+                                                    color: "text.secondary",
+                                                    borderRadius: "10px",
+                                                    textTransform: "none",
+                                                    py: 1,
+                                                    px: 3,
+                                                    fontWeight: 500,
+                                                    "&:hover": {
+                                                        borderColor: "black",
+                                                        color: "black",
+                                                        background: "transparent"
+                                                    }
+                                                }}
+                                            >
+                                                Back
+                                            </Button>
+                                            <Button 
+                                                onClick={() => setActiveStep(activeStep + 1)}
+                                                variant="contained" 
+                                                sx={{
+                                                    backgroundColor: "black",
+                                                    color: "white",
+                                                    borderRadius: "10px",
+                                                    textTransform: "none",
+                                                    py: 1.5,
+                                                    px: 4,
+                                                    fontWeight: 500,
+                                                    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+                                                    transition: "all 0.2s ease-in-out",
+                                                    "&:hover": { 
+                                                        backgroundColor: "#222",
+                                                        boxShadow: "0 6px 15px rgba(0, 0, 0, 0.15)",
+                                                        transform: "translateY(-2px)"
+                                                    }
+                                                }}
+                                            >
+                                                Continue
+                                            </Button>
+                                        </Box>
+                                    </>
                                 )}
 
                                 {activeStep === 4 && (
@@ -832,7 +882,7 @@ function Register() {
                                     </Typography>
                                 )}
 
-                                {activeStep < 4 && (
+                                {activeStep < 4 && activeStep !== 3 && (
                                     <Box sx={{ 
                                         display: "flex", 
                                         justifyContent: activeStep === 0 ? "flex-end" : "space-between", 

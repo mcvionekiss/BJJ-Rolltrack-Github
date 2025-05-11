@@ -35,3 +35,7 @@ django-templated-email==3.0.1
 
 # For signature verification
 pyjwt==2.8.0
+
+# For AWS S3 storage
+django-storages>=1.13.2
+boto3>=1.26.0

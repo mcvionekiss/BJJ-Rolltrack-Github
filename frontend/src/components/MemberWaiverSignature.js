@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -13,15 +13,25 @@ import {
   FormControl,
   FormLabel
 } from '@mui/material';
+import { Document, Page, pdfjs } from 'react-pdf';
 import SignatureCanvas from 'react-signature-canvas';
 import axios from '../utils/axiosConfig';
 import config from '../config';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Initialize PDF.js worker with a reliable source URL
+// Use legacy build to avoid "Headers: Invalid name" error
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
 
 const MemberWaiverSignature = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [gymData, setGymData] = useState(null);
   const [waiver, setWaiver] = useState(null);
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [signatureComplete, setSignatureComplete] = useState(false);
   const [parentSignatureComplete, setParentSignatureComplete] = useState(false);
   const [isMinor, setIsMinor] = useState(false);
@@ -62,6 +72,42 @@ const MemberWaiverSignature = () => {
     }
   }, [memberData]);
 
+  // Safe conversion of PDF URLs to blob URLs to avoid headers issues
+  useEffect(() => {
+    if (waiver?.waiver_type === 'custom' && waiver?.file_url) {
+      // Create a blob URL from direct URL to avoid network issues
+      const fetchPdfAsBlob = async () => {
+        try {
+          const response = await fetch(waiver.file_url, { 
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/pdf' }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch PDF: ${response.status}`);
+          }
+          
+          const pdfBlob = await response.blob();
+          const blobUrl = URL.createObjectURL(pdfBlob);
+          setPdfBlobUrl(blobUrl);
+        } catch (error) {
+          console.error('Error converting PDF URL to blob:', error);
+          setError(`Error loading PDF: ${error.message}`);
+        }
+      };
+      
+      fetchPdfAsBlob();
+      
+      // Clean up blob URL on unmount
+      return () => {
+        if (pdfBlobUrl) {
+          URL.revokeObjectURL(pdfBlobUrl);
+        }
+      };
+    }
+  }, [waiver]);
+
   // Fetch CSRF token and waiver data on component mount
   useEffect(() => {
     console.log("🔷 Member Waiver Signature component mounted");
@@ -87,6 +133,8 @@ const MemberWaiverSignature = () => {
       }
       
       try {
+        setLoading(true);
+        
         // Fetch gym details
         const gymResponse = await axios.get(config.endpoints.api.gymDetails(gymId));
         setGymData(gymResponse.data);
@@ -94,6 +142,7 @@ const MemberWaiverSignature = () => {
         // Fetch waiver for this gym
         const waiverResponse = await axios.get(config.endpoints.api.getWaiver(gymId));
         setWaiver(waiverResponse.data);
+        setPageNumber(1);
         
         setLoading(false);
       } catch (err) {
@@ -124,6 +173,20 @@ const MemberWaiverSignature = () => {
       console.log("🔷 Member Waiver Signature component unmounted");
     };
   }, [gymId]);
+
+  // Handle PDF document load success
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+  };
+
+  // Navigate through PDF pages
+  const changePage = (offset) => {
+    const newPageNumber = pageNumber + offset;
+    if (newPageNumber > 0 && newPageNumber <= numPages) {
+      setPageNumber(newPageNumber);
+    }
+  };
 
   // Handle member signature changes
   const handleSignatureEnd = () => {
@@ -221,6 +284,13 @@ const MemberWaiverSignature = () => {
     }
   };
   
+  // PDF options memoized to prevent unnecessary re-renders
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`
+  }), []);
+
   // Generate a default waiver template
   const generateDefaultWaiverTemplate = (gymName, address, state) => {
     return `
@@ -270,7 +340,89 @@ Date: ____________________________
   const renderWaiverPreview = () => {
     if (!waiver) return null;
     
-    if (waiver.waiver_type === "default") {
+    if (waiver.waiver_type === "custom" && waiver.file_url) {
+      // Render PDF preview for custom waiver
+      return (
+        <Paper
+          elevation={2}
+          sx={{
+            p: 2,
+            maxHeight: "400px",
+            overflow: "auto",
+            backgroundColor: "#f8f8f8",
+            mb: 2
+          }}
+        >
+          {error && waiver.waiver_type === "custom" && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {error} Showing text-based version instead.
+            </Alert>
+          )}
+          
+          {error && waiver.waiver_text ? (
+            // Fallback to text display when PDF fails to load
+            <Box sx={{ 
+              whiteSpace: "pre-wrap", 
+              fontFamily: "monospace", 
+              fontSize: "0.75rem" 
+            }}>
+              {waiver.waiver_text}
+            </Box>
+          ) : (
+            <Document
+              file={pdfBlobUrl || waiver.file_url}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={(error) => {
+                console.error("Error loading PDF:", error);
+                setError("Error loading PDF. Displaying text version if available.");
+              }}
+              options={{
+                ...pdfOptions,
+                withCredentials: false,
+                cMapPacked: true
+              }}
+            >
+              <Page 
+                pageNumber={pageNumber} 
+                width={450}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                error={(error) => (
+                  <Typography color="error">
+                    Error rendering page: {error.message}
+                  </Typography>
+                )}
+                loading={<CircularProgress />}
+              />
+            </Document>
+          )}
+          
+          {numPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2 }}>
+              <Button 
+                variant="outlined" 
+                onClick={() => changePage(-1)} 
+                disabled={pageNumber <= 1}
+                size="small"
+              >
+                Previous
+              </Button>
+              <Typography variant="body2" sx={{ mx: 2 }}>
+                Page {pageNumber} of {numPages}
+              </Typography>
+              <Button 
+                variant="outlined"
+                onClick={() => changePage(1)} 
+                disabled={pageNumber >= numPages}
+                size="small"
+              >
+                Next
+              </Button>
+            </Box>
+          )}
+        </Paper>
+      );
+    } else if (waiver.waiver_type === "default") {
       // Render default template preview
       return (
         <Paper
@@ -290,7 +442,7 @@ Date: ____________________________
         </Paper>
       );
     } else {
-      // Render custom PDF preview (simplified for prototype)
+      // Fallback for no waiver or unsupported type
       return (
         <Paper
           elevation={2}
@@ -306,10 +458,10 @@ Date: ____________________________
           }}
         >
           <Typography variant="h6" align="center" gutterBottom>
-            PDF Waiver Document
+            Waiver Document
           </Typography>
           <Typography variant="body2" align="center" color="textSecondary">
-            Custom waiver document from {gymData?.name || "the gym"}
+            No valid waiver document available from {gymData?.name || "the gym"}
           </Typography>
         </Paper>
       );

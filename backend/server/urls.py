@@ -44,6 +44,12 @@ from server.views import (
     get_all_category_classes_analysis_for_monthly
 )
 
+# Waiver management views
+from server.views import (
+    waiver_management, download_waiver, member_waiver_signature,
+    get_signature_status, preview_waiver
+)
+
 # API URLs grouped together for better organization
 api_patterns = [
     path("check_student/", check_student, name="check_student"),

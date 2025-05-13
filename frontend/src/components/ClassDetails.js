@@ -213,7 +213,18 @@ function ClassDetails() {
     }
 
     return (
-        <Container maxWidth="sm" sx={{ paddingBottom: 4 }}>
+        <Container maxWidth="sm" 
+            sx={{ 
+                px: 5,
+                py: 10,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                textAlign: 'center',
+                height: '100vh',
+                overflow: 'auto' 
+            }}
+        >
             {/* Top Image with Back Button */}
             <Box sx={{ position: "relative" }}>
                 <CardMedia

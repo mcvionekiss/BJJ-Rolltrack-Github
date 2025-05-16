@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import config from "../config";
 
 const GoogleSignIn = () => {
@@ -37,6 +38,18 @@ const GoogleSignIn = () => {
 
       console.log("✅ Logged in:", response.data);
       if (response.data.new_user) {
+        if (response.data.token) {
+          localStorage.setItem("authToken", response.data.token);
+        }
+        const decoded = jwtDecode(id_token);
+        localStorage.setItem(
+          "userInfo",
+          JSON.stringify({
+            first_name: decoded.given_name || "",
+            last_name: decoded.family_name || "",
+            email: decoded.email || "",
+          })
+        );
         // Redirect new users to complete registration
         navigate("/register/google", { state: response.data });
       } else {

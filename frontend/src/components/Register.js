@@ -133,6 +133,7 @@ function Register() {
         personal: "",
         gym: "",
       });
+    const [scheduleErrors, setScheduleErrors] = useState([]);
     const [isGoogleSignup, setIsGoogleSignup] = useState(false);
 
     useEffect(() => {
@@ -797,10 +798,10 @@ function Register() {
                                         onContinue={() => setActiveStep(activeStep + 1)}
                                         onBack={() => setActiveStep(activeStep - 1)}
                                         setScheduleData={handleScheduleUpdate}
-                                        initialSchedule={formData.schedule} // Pass stored schedule
+                                        setScheduleErrors={setScheduleErrors}
+                                        initialSchedule={formData.schedule}
                                     />
                                 )}
-
                                 {activeStep === 3 && (
                                     <>
                                         <WaiverSetup 
@@ -929,7 +930,7 @@ function Register() {
                                                     transform: "translateY(-2px)"
                                                 }
                                             }}
-                                            disabled={loading}
+                                            disabled={loading || (activeStep === 2 && scheduleErrors.length > 0)}
                                         >
                                             {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : 
                                                 activeStep === steps.length - 1 ? "Submit" : "Continue"}

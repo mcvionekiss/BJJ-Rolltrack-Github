@@ -135,8 +135,13 @@ const ConfirmRegistration = ({ formData, onEdit, onSubmit }) => {
               formData.schedule.map((entry, index) => (
                 <ListItem key={index} sx={{ py: 0.5 }}>
                   <Typography>
-                    {entry.day}: {entry.closed ? "Closed" : `${entry.openTime} - ${entry.closeTime}`}
-                  </Typography>
+                    {entry.day}:{" "} 
+                    {entry.closed
+                      ? "Closed"
+                      : entry.openTime == null || entry.closeTime == null
+                      ? "No schedule available"
+                      : `${entry.openTime} - ${entry.closeTime}`}
+                </Typography>
                 </ListItem>
               ))
             ) : (

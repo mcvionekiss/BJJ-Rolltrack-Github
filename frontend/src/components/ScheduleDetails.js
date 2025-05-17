@@ -6,7 +6,7 @@ import TextField from '@mui/material/TextField';
 import dayjs from "dayjs";
 import { Box, Typography } from '@mui/material';
 
-const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule }) => {
+const ScheduleDetails = ({ onContinue, onBack, setScheduleData, setScheduleErrors, initialSchedule }) => {
   const defaultSchedule =
   ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(day => ({
     day,
@@ -16,6 +16,7 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
   }))
 
   const [schedule, setSchedule] = useState(initialSchedule.length ? initialSchedule : defaultSchedule);
+  const [localErrors, setLocalErrors] = useState({});
 
   useEffect(() => {
     if (initialSchedule.length) {
@@ -34,20 +35,66 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
     }
   }, [initialSchedule]);
 
+  const validateSchedule = (scheduleData) => {
+    const errors = [];
+
+    scheduleData.forEach((entry) => {
+      if (!entry.closed) {
+        if (!entry.openTime || !entry.closeTime) {
+          errors.push(`${entry.day}: Please set both opening and closing times.`);
+        } else {
+          const openTime = dayjs(entry.openTime.format("HH:mm"), "HH:mm");
+          const closeTime = dayjs(entry.closeTime.format("HH:mm"), "HH:mm");
+
+          if (openTime.isAfter(closeTime)) {
+            errors.push(`${entry.day}: Opening time cannot be after closing time.`);
+          }
+        }
+      }
+    });
+
+    return errors;
+  };
+
   const handleTimeChange = (index, field, value) => {
-    if (!value || !value.isValid || !value.isValid()) return; // safety check
+    if (!value || !value.isValid || !value.isValid()) return;
 
     setSchedule(prev => {
-      const updatedSchedule = prev.map((item, i) => 
+      const updatedSchedule = prev.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       );
-      // When storing or sending, convert to string:
+
       const scheduleForParent = updatedSchedule.map(s => ({
         ...s,
         openTime: s.openTime ? s.openTime.format("h:mm A") : null,
         closeTime: s.closeTime ? s.closeTime.format("h:mm A") : null,
       }));
-      setScheduleData(scheduleForParent); // Update form data in parent
+
+      setScheduleData(scheduleForParent);
+
+      // Validate only this day's entry
+      const entry = updatedSchedule[index];
+      let error = "";
+      if (!entry.closed) {
+        if (!entry.openTime || !entry.closeTime) {
+          error = "Please set both opening and closing times.";
+        } else {
+          const openTime = dayjs(entry.openTime.format("HH:mm"), "HH:mm");
+          const closeTime = dayjs(entry.closeTime.format("HH:mm"), "HH:mm");
+          if (openTime.isAfter(closeTime)|| openTime.isSame(closeTime)) {
+            error = "Opening time can only be before closing time.";
+          }
+        }
+      }
+
+      setLocalErrors(prevErrors => {
+        const newErrors = { ...prevErrors, [entry.day]: error };
+        // Clean up if no error
+        if (!error) delete newErrors[entry.day];
+        setScheduleErrors(Object.values(newErrors));  // Update parent with error list for disabling Continue
+        return newErrors;
+      });
+
       return updatedSchedule;
     });
   };
@@ -109,6 +156,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
                         slotProps={{
                           textField: {
                             size: "small",
+                            error: !!localErrors[entry.day],
+                            helperText: localErrors[entry.day],
                             inputProps: {
                               placeholder: "hh:mm AM",
                             },
@@ -128,6 +177,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
                         slotProps={{
                           textField: {
                             size: "small",
+                            error: !!localErrors[entry.day],
+                            helperText: localErrors[entry.day],
                             inputProps: {
                               placeholder: "hh:mm PM",
                             },

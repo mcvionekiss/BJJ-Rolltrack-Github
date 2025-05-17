@@ -10,8 +10,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
   const defaultSchedule =
   ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(day => ({
     day,
-    openTime: dayjs().hour(12).minute(0),
-    closeTime: dayjs().hour(12).minute(0),
+    openTime: day === "SUN" ? null : null, 
+    closeTime: day === "SUN" ? null : null,
     closed: day === "SUN",
   }))
 
@@ -44,8 +44,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
       // When storing or sending, convert to string:
       const scheduleForParent = updatedSchedule.map(s => ({
         ...s,
-        openTime: s.openTime.format("h:mm A"),
-        closeTime: s.closeTime.format("h:mm A"),
+        openTime: s.openTime ? s.openTime.format("h:mm A") : null,
+        closeTime: s.closeTime ? s.closeTime.format("h:mm A") : null,
       }));
       setScheduleData(scheduleForParent); // Update form data in parent
       return updatedSchedule;
@@ -59,8 +59,8 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
       );
       const scheduleForParent = updatedSchedule.map(s => ({
         ...s,
-        openTime: s.openTime.format("h:mm A"),
-        closeTime: s.closeTime.format("h:mm A"),
+        openTime: s.openTime ? s.openTime.format("h:mm A") : null,
+        closeTime: s.closeTime ? s.closeTime.format("h:mm A") : null,
       }));
       setScheduleData(scheduleForParent); // Update form data in parent
       return updatedSchedule;
@@ -102,20 +102,38 @@ const ScheduleDetails = ({ onContinue, onBack, setScheduleData, initialSchedule 
                 <Box component="td" sx={tableStyles.tableCell}>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <TimePicker
-                          value={dayjs.isDayjs(entry.openTime) ? entry.openTime : dayjs(entry.openTime, "h:mm A")}
-                          onChange={(newTime) => handleTimeChange(index, "openTime", newTime)}
-                          disabled={entry.closed}
-                          renderInput={(params) => <TextField {...params} size="small" />}
+                        value={entry.closed ? null : (dayjs.isDayjs(entry.openTime) ? entry.openTime : dayjs(entry.openTime, "h:mm A"))}
+                        onChange={(newTime) => handleTimeChange(index, "openTime", newTime)}
+                        disabled={entry.closed}
+                        format="hh:mm A"
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            inputProps: {
+                              placeholder: "hh:mm AM",
+                            },
+                          },
+                        }}
+                        renderInput={(params) => <TextField {...params} size="small" />}
                       />
                   </LocalizationProvider>
                 </Box>
                 <Box component="td" sx={tableStyles.tableCell}>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <TimePicker
-                          value={dayjs.isDayjs(entry.closeTime) ? entry.closeTime : dayjs(entry.closeTime, "h:mm A")}
-                          onChange={(newTime) => handleTimeChange(index, "closeTime", newTime)}
-                          disabled={entry.closed}
-                          renderInput={(params) => <TextField {...params} size="small" />}
+                        value={entry.closed ? null : (dayjs.isDayjs(entry.closeTime) ? entry.closeTime : dayjs(entry.closeTime, "h:mm A"))}
+                        onChange={(newTime) => handleTimeChange(index, "closeTime", newTime)}
+                        disabled={entry.closed}
+                        format="hh:mm A"
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            inputProps: {
+                              placeholder: "hh:mm PM",
+                            },
+                          },
+                        }}
+                        renderInput={(params) => <TextField {...params} size="small" />}
                       />
                   </LocalizationProvider>
                 </Box>

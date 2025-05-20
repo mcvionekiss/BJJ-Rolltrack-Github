@@ -41,13 +41,18 @@ from server.views import (
     get_all_classes_analysis_for_week, get_all_classes_analysis_for_last_week,
     get_all_classes_analysis_for_month, get_all_classes_analysis_for_last_month,
     get_all_category_classes_analysis_for_today, get_all_category_classes_analysis_for_weekly, 
-    get_all_category_classes_analysis_for_monthly
+    get_all_category_classes_analysis_for_monthly, get_all_clients, edit_client
 )
 
 # Waiver management views
 from server.views import (
     waiver_management, download_waiver, member_waiver_signature,
     get_signature_status, preview_waiver
+)
+
+# Adding client API endpoints
+from server.views import (
+    update_client, add_client, delete_client
 )
 
 # API URLs grouped together for better organization
@@ -57,6 +62,8 @@ api_patterns = [
     path("class_details/<int:classID>/", class_details, name="class_details"),
     path("checkin/", checkin, name="checkin"),
     path("add_class/", add_class, name="add_class"),
+    path("get_clients/", get_all_clients, name="get_clients"),
+    path('edit-client/<int:client_id>/', edit_client, name='edit_client')
 ]
 
 # Auth URLs grouped together
@@ -127,7 +134,7 @@ urlpatterns = [
     path("api/total-category-attendance-month/",get_all_category_classes_analysis_for_monthly, name="get_all_category_classes_analysis_for_monthly"),
     path("api/get-every-class-for-today-with-attendance/",get_every_class_for_today_with_attendance, name="get_every_class_for_today_with_attendance"),
     path("api/search-address/", AddressSearchProxyView.as_view(), name="search_address"),
-
+    path("api/get-clients/", get_all_clients, name="get_clients"),
     # Add template API endpoints
     path("api/templates/", get_templates, name="get_templates"),
     path("api/templates/<int:template_id>/", delete_template, name="delete_template"),
@@ -143,6 +150,11 @@ urlpatterns = [
     path("api/waivers/signature/", member_waiver_signature, name="member_waiver_signature"),
     path("api/waivers/signature/<int:signature_id>/", get_signature_status, name="get_signature_status"),
     path("api/waivers/preview/<int:gym_id>/", preview_waiver, name="preview_waiver"),
+    
+    # Client management endpoints
+    path("api/update-client/<int:client_id>/", update_client, name="update_client"),
+    path("api/add-client/", add_client, name="add_client"),
+    path("api/delete-client/<int:client_id>/", delete_client, name="delete_client"),
     
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),

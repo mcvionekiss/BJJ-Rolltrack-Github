@@ -55,14 +55,18 @@ const config = {
       todayCategoryAttendance: `${BASE_URL}/api/total-category-attendance-today/`,
       weekCategoryAttendance: `${BASE_URL}/api/total-category-attendance-week/`,
       monthCategoryAttendance: `${BASE_URL}/api/total-category-attendance-month/`,
-    }
-  },
+      getClients: `${BASE_URL}/api/get-clients/`,
+      updateClient: `${BASE_URL}/api/update-client`,
+      addClient: `${BASE_URL}/api/add-client`,
+      deleteClient: `${BASE_URL}/api/delete-client`,
 
-  // Testing-specific settings
-  testing: {
-    bypassAuth: false,  // Set to true to bypass authentication in frontend for testing
-    mockData: false,    // Set to true to use mock data instead of API calls
-    debugMode: true     // Enable detailed console logging
+    // Testing-specific settings
+    testing: {
+      bypassAuth: false,  // Set to true to bypass authentication in frontend for testing
+      mockData: false,    // Set to true to use mock data instead of API calls
+      debugMode: true     // Enable detailed console logging
+    }
+  }
   }
 };
 

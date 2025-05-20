@@ -71,7 +71,7 @@ class Gym(models.Model):
     phone_number = models.CharField(max_length=20)
     website = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    #include arrribute for pdf wavier 
+    #include arrribute for pdf wavier
     # Not including the belts field as it doesn't appear in the database schema
 
     class Meta:
@@ -136,12 +136,12 @@ class ClassLevel(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=100)
     description = models.TextField()
-    minimum_belt = models.ForeignKey(Belts, models.DO_NOTHING, blank=True, null=True)
-    gym = models.ForeignKey(Gym, models.DO_NOTHING)
+    color = models.CharField(max_length=10, default="#3788d8")
+    #minimum_belt = models.ForeignKey(Belts, models.DO_NOTHING, blank=True, null=True)
+    #gym = models.ForeignKey(Gym, models.DO_NOTHING)
 
     class Meta:
         db_table = "class_levels"
-        unique_together = (('name', 'gym'),)
 
 class ClassTemplates(models.Model):
     """
@@ -179,6 +179,7 @@ class Class(models.Model):
     def __str__(self):
         return f"{self.template.name if hasattr(self, 'template') else 'Class'} on {self.date} ({self.start_time} - {self.end_time})"
 
+
 class RepeatingClasses(models.Model):
     """
     Repeatable classes
@@ -193,7 +194,7 @@ class RepeatingClasses(models.Model):
 
     class Meta:
         db_table = "repeating_class"
-        
+
     def __str__(self):
         return f"{self.name} ({self.startTime} - {self.endTime})"
 
@@ -296,10 +297,10 @@ class ClassAttendance(models.Model):
     class Meta:
         db_table = 'class_attendance'
         unique_together = (('user', 'scheduled_class'),)
-        
+
     def __str__(self):
         return f"{self.user.email} checked into {self.scheduled_class.template.name if hasattr(self.scheduled_class, 'template') else 'Class'} on {self.scheduled_class.date}"
- 
+
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -324,14 +325,14 @@ class GuestVisit(models.Model):
     other_dojos = models.TextField(blank=True, null=True)
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         db_table = "guest_visits"
         indexes = [
             models.Index(fields=['email']),
             models.Index(fields=['gym']),
         ]
-    
+
     def __str__(self):
         return f"{self.name} ({self.email}) at {self.gym.name}"
 
@@ -343,10 +344,68 @@ class GuestCheckin(models.Model):
     guest = models.ForeignKey(GuestVisit, on_delete=models.CASCADE, related_name='checkins')
     class_instance = models.ForeignKey('Class', on_delete=models.CASCADE, related_name='guest_checkins')
     checkin_time = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         db_table = "guest_checkins"
         unique_together = (('guest', 'class_instance'),)
-    
+
     def __str__(self):
         return f"{self.guest.name} checked into {self.class_instance.template.name if hasattr(self.class_instance, 'template') else 'Class'} on {self.checkin_time}"
+
+class RecurringClass(models.Model):
+    """
+    Model representing a scheduled class.
+    """
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_canceled = models.IntegerField(default=0)
+    is_recurring = models.BooleanField()
+    recurrs_Monday = models.BooleanField()
+    recurrs_Tuesday = models.BooleanField()
+    recurrs_Wednesday = models.BooleanField()
+    recurrs_Thursday = models.BooleanField()
+    recurrs_Friday = models.BooleanField()
+    recurrs_Saturday = models.BooleanField()
+    recurrs_Sunday = models.BooleanField()
+    notes = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    last_month_updated = models.IntegerField(null=True)
+    duration_minutes = models.PositiveIntegerField(default = 0, null=True)
+    max_capacity = models.PositiveIntegerField(blank=True, null=True)
+    level = models.ForeignKey(ClassLevel, on_delete=models.DO_NOTHING, null=True)
+    template = models.ForeignKey('ClassTemplates', on_delete=models.DO_NOTHING, blank=True, null=True)
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "recurring_classes"
+
+    def __str__(self):
+        return f"{self.template.name if hasattr(self, 'template') else 'Class'} on {self.date} ({self.start_time} - {self.end_time})"
+
+class TestClass(models.Model):
+    """
+    Model representing a scheduled class.
+    """
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_canceled = models.IntegerField(default=0)
+    is_recurring = models.BooleanField(default=False)
+    duration_minutes = models.PositiveIntegerField(default = 0, null=True)
+    max_capacity = models.PositiveIntegerField(blank=True, null=True)
+    level = models.ForeignKey(ClassLevel, on_delete=models.DO_NOTHING, null=True)
+    parent_recurr_class_id = models.ForeignKey(RecurringClass, on_delete=models.SET_NULL, blank=True, null = True)
+    notes = models.TextField(blank=True, null=True)
+    template = models.ForeignKey('ClassTemplates', on_delete=models.DO_NOTHING, blank=True, null = True)
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "classes"
+
+    def __str__(self):
+        return f"{self.template.name if hasattr(self, 'template') else 'Class'} on {self.date} ({self.start_time} - {self.end_time})"

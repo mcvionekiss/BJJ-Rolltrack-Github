@@ -85,9 +85,12 @@ export const EventProvider = ({ children }) => {
     }
   ];
 
+
+  //const getclasses = 
+
   // Load events from localStorage if available
-  const [events, setEvents] = useState(() => {
-    try {
+  const [events, setEvents] = useState(//() => {
+    /*try {
       const savedEvents = localStorage.getItem('calendarEvents');
       if (savedEvents) {
         console.log("Loading saved events from localStorage");
@@ -97,7 +100,10 @@ export const EventProvider = ({ children }) => {
       console.error("Error loading events:", error);
     }
     return defaultEvents;
-  });
+    */
+   []
+//  }
+);
 
   // Save events to localStorage whenever they change
   useEffect(() => {

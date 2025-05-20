@@ -55,6 +55,11 @@ const config = {
       todayCategoryAttendance: `${BASE_URL}/api/total-category-attendance-today/`,
       weekCategoryAttendance: `${BASE_URL}/api/total-category-attendance-week/`,
       monthCategoryAttendance: `${BASE_URL}/api/total-category-attendance-month/`,
+      addClasses: `${BASE_URL}/api/add-class-to-calendar/`,
+      getClasses: `${BASE_URL}/api/get-class-for-calendar/`,
+      deleteAClass: `${BASE_URL}/api/delete-single-class/`,
+      deleteRecurringClass: `${BASE_URL}/api/delete-recurring-classes/`,
+      editClass: `${BASE_URL}/api/edit-class/`,
     }
   },
 

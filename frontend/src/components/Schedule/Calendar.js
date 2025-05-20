@@ -22,10 +22,138 @@ import './Dashboard.css';
 import Edit from '@mui/icons-material/Edit';
 import { v4 as uuidv4 } from 'uuid';
 
+import axios from "axios";
+import config from "../../config";
+
+const fetchCsrfToken = async (setCsrfToken) => {
+  try {
+      const response = await axios.get(config.endpoints.auth.csrf, {
+          withCredentials: true,
+      });
+      setCsrfToken(response.data.csrfToken);
+  } catch (error) {
+      console.error("Failed to fetch CSRF token", error);
+  }
+};
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return match[2];
+  return null;
+}
+
+const postdata = async (posting_data) => {
+  const csrfToken = getCookie('csrftoken');
+    axios.post(
+        config.endpoints.api.addClasses,
+        posting_data,
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getdata = async (gym_id) => {
+  const csrfToken = getCookie('csrftoken');
+    return axios.post(
+        config.endpoints.api.getClasses,
+        {"gym_id" : gym_id},
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const deleteClass = async (class_id) => {
+  const csrfToken = getCookie('csrftoken');
+  axios.delete(
+    config.endpoints.api.deleteAClass,
+    { data: {"class_id": class_id},
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+   },
+
+    {
+        withCredentials: true, // Required for session authentication
+    }
+  );
+};
+
+const deleteRecurringClass = async (parent_id) => {
+  const csrfToken = getCookie('csrftoken');
+  axios.delete(
+    config.endpoints.api.deleteRecurringClass,
+    { data: {"parent_reccur_id": parent_id},
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+  },
+    {
+        withCredentials: true, // Required for session authentication
+    }
+  );
+};
+
+
+  const getEvents = async () => {
+    try {
+    let cached = localStorage.getItem("profileData");
+    cached = JSON.parse(cached);
+    const response = await getdata(cached.gym.id);
+
+    const classes = response.data.classes;
+    console.log(classes)
+    const newEvents = [];
+
+    classes.forEach(scheduled_class => {
+      //console.log(scheduled_class)
+        const newEvent = {
+          "id": scheduled_class.id,
+          "title": scheduled_class.name,
+          "date" : scheduled_class.date,
+          "start": new Date(scheduled_class.date+'T'+scheduled_class.start_time),
+          "end": new Date(scheduled_class.date+'T'+scheduled_class.end_time),
+          "parent_reccur" : scheduled_class.parent_reccur_id,
+          "is_recurring" : scheduled_class.is_recurring,
+          "color" : scheduled_class.color,
+          "textColor" : 'white',
+          extendedProps: {
+            "instructor" : "",
+            "classLevel" : scheduled_class.level,
+            "age": "",
+            "duration": scheduled_class.duration,
+            dayOfWeek: scheduled_class.is_recurring,
+            //capacity: capacity
+          }
+        };
+        
+
+        newEvents.push(newEvent);
+        //console.log(newEvent)
+    });
+    return newEvents
+      
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
 export default function Calendar() {
   const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 768);
+  const [csrfToken, setCsrfToken] = useState("");
+
+  useEffect(() => {
+    fetchCsrfToken(setCsrfToken);
+}, []);
+
 
   const style = {
     position: 'absolute',
@@ -41,6 +169,66 @@ export default function Calendar() {
     maxHeight: typeof window !== 'undefined' && windowWidth < 768 ? '95vh' : '90vh',
     p: 0,
   };
+
+  const [profileData, setProfileData] = useState(() => {
+    const cached = localStorage.getItem("profileData");
+    return cached
+      ? JSON.parse(cached)
+      : {
+          name: "",
+          email: "",
+          phone: "",
+          gym: {
+            id: null,
+            name: "",
+            address: "",
+            phone: "",
+            email: ""
+          }
+        };
+  });
+
+  /*useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${config.apiUrl}/auth/profile/`, {
+          withCredentials: true
+        });
+
+        const { user, gym } = res.data;
+        const newProfile = {
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          phone: user.phoneNumber || "",
+          gym: {
+            id: gym.id,
+            name: gym.name,
+            address: gym.address || "",
+            phone: gym.phone || "",
+            email: gym.email || ""
+          }
+        };
+        const qr = config.endpoints.api.generateQR(gym.id);
+
+        // Only update if something changed
+        const prev = localStorage.getItem("profileData");
+        const prevObj = prev ? JSON.parse(prev) : null;
+        const profileChanged = JSON.stringify(newProfile) !== JSON.stringify(prevObj);
+        if (profileChanged) {
+            setProfileData(newProfile);
+            localStorage.setItem("profileData", JSON.stringify(newProfile));
+            setQrUrl(qr);
+            localStorage.setItem("qrUrl", qr);}
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);*/
 
   // Helper function to determine class level color - moved to component scope
   const getLevelColor = (level) => {
@@ -99,6 +287,8 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedStartTime, setSelectedStartTime] = useState(null);
   const [selectedEndTime, setSelectedEndTime] = useState(null);
+  const [deleting, SetDeleting] = useState(false);
+  const [editing, SetEditing] = useState(false);
 
   const [age, setAge] = React.useState('');
   const handleChange = (event) => {
@@ -121,6 +311,91 @@ export default function Calendar() {
         window.removeEventListener('resize', handleResize);
       };
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${config.apiUrl}/auth/profile/`, {
+          withCredentials: true
+        });
+
+        const { user, gym } = res.data;
+        const newProfile = {
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          phone: user.phoneNumber || "",
+          gym: {
+            id: gym.id,
+            name: gym.name,
+            address: gym.address || "",
+            phone: gym.phone || "",
+            email: gym.email || ""
+          }
+        };
+        const qr = config.endpoints.api.generateQR(gym.id);
+
+        // Only update if something changed
+        const prev = localStorage.getItem("profileData");
+        const prevObj = prev ? JSON.parse(prev) : null;
+        const profileChanged = JSON.stringify(newProfile) !== JSON.stringify(prevObj);
+        if (profileChanged) {
+            setProfileData(newProfile);
+            localStorage.setItem("profileData", JSON.stringify(newProfile));
+            //setQrUrl(qr);
+            localStorage.setItem("qrUrl", qr);}
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        navigate("/login");
+      } 
+    };
+
+
+    const getEvents = async () => {
+      try {
+        let cached = localStorage.getItem("profileData");
+        cached = JSON.parse(cached);
+        const response = await getdata(profileData.gym.id);
+        console.log("hey")
+
+        const classes = response.data.classes;
+        const newEvents = [];
+
+        classes.forEach(scheduled_class => {
+          //console.log(scheduled_class)
+          console.log(scheduled_class.is_recurring, typeof(scheduled_class.is_recurring))
+            const newEvent = {
+              "id": scheduled_class.id,
+              "title": scheduled_class.name,
+              "date" : scheduled_class.date,
+              "start": new Date(scheduled_class.date+'T'+scheduled_class.start_time),
+              "end": new Date(scheduled_class.date+'T'+scheduled_class.end_time),
+              "parent_reccur" : scheduled_class.parent_reccur_id,
+              "is_recurring" : scheduled_class.is_recurring,
+              "color" : scheduled_class.color,
+              "textColor" : 'white',
+              extendedProps: {
+                "instructor" : "",
+                "classLevel" : scheduled_class.level,
+                "age": "",
+                "duration": scheduled_class.duration,
+                //dayOfWeek: dayName,
+                capacity: scheduled_class.capacity
+              }
+            };
+            
+            newEvents.push(newEvent);
+            //console.log(newEvent)
+        });
+        setEvents(newEvents)
+          
+        } catch (error) {
+          console.log(error)
+        }
+      };
+
+    fetchProfile();
+    getEvents();
   }, []);
 
   // Handlers for opening and closing the modal
@@ -152,6 +427,7 @@ export default function Calendar() {
     endDate.setHours(endDate.getHours() + 1);
     return endDate;
   };
+
 
   // Event Render Function To Get Event Info and Display it
   function renderEventContent(eventInfo) {
@@ -531,7 +807,7 @@ export default function Calendar() {
     }
   }
 
-  const handleSubmit = (e, recurrence) => {
+  const handleSubmit = async (e, recurrence) => {
     e.preventDefault();
     console.log("=== CALENDAR DIRECT FORM HANDLER STARTED ===");
     
@@ -561,6 +837,14 @@ export default function Calendar() {
     
     // Array to hold all new events
     const newEvents = [];
+
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+    const diffMs = endDate - startDate;
+    const class_duration = Math.round(((diffMs % 86400000) % 3600000) / 60000);
+
+    let cached = localStorage.getItem("profileData");
+    cached = JSON.parse(cached);
     
     // Create the base event for the selected date
     const baseEventId = `class-${Date.now()}-single`;
@@ -571,7 +855,7 @@ export default function Calendar() {
     };
     
     // Add the base event
-    newEvents.push(baseEvent);
+    //newEvents.push(baseEvent);
     console.log(`Created base event for ${date}`);
     
     // If this is a recurring event and is weekly
@@ -590,7 +874,7 @@ export default function Calendar() {
       console.log(`Total selected days: ${selectedDayCount}`);
       
       // First create an event for the base day if it's in the selected days
-      if (recurrence.days[baseDayName]) {
+     /* if (recurrence.days[baseDayName]) {
         console.log(`Creating event for base day: ${baseDayName}`);
         
         const eventId = `class-${Date.now()}-${baseDayName}`;
@@ -617,7 +901,7 @@ export default function Calendar() {
       }
       
       // Process each day of the week (except the base day which was already handled)
-      dayNames.forEach((dayName, dayIndex) => {
+      /*dayNames.forEach((dayName, dayIndex) => {
         // Skip if this day is not selected or if it's the same as the base day
         if (!recurrence.days[dayName] || dayIndex === baseDayIndex) {
           if (!recurrence.days[dayName]) {
@@ -669,6 +953,35 @@ export default function Calendar() {
         newEvents.push(newEvent);
         console.log(`Created recurring event for ${dayName} on ${formattedDate}`);
       });
+
+      */
+        const postingData = {
+            "gym_id" : profileData.gym.id,
+            "name" : form.elements.title.value,
+            "date" : date,
+            "start_time" : startTime,
+            "end_time" : endTime,
+            "is_canceled" : false,
+            "is_recurring" : true,
+            "recurrs_Monday" : recurrence.days.monday,
+            "recurrs_Tuesday" : recurrence.days.tuesday,
+            "recurrs_Wednesday" : recurrence.days.wednesday,
+            "recurrs_Thursday" : recurrence.days.thursday,
+            "recurrs_Friday" : recurrence.days.friday,
+            "recurrs_Saturday" : recurrence.days.saturday,
+            "recurrs_Sunday" : recurrence.days.sunday,
+            "notes" : "test",
+            "duration" : class_duration,
+            "level" : classLevel,
+            "capacity" : 20,
+            "template" : 1
+        }
+            try {
+              //console.log(postingData)
+              await postdata(postingData)
+            } catch (error) {
+                console.log(error)
+            }
     } 
     // If this is a daily recurring event
     else if (recurrence && recurrence.type === 'daily') {
@@ -677,6 +990,7 @@ export default function Calendar() {
       // First, create an event for the base day
       const baseEventId = `class-${Date.now()}-daily-${formatDateCustom(baseDate, "YYYY-MM-DD")}`;
       
+      /*
       const baseEvent = {
         id: baseEventId,
         title,
@@ -753,8 +1067,36 @@ export default function Calendar() {
         newEvents.push(newEvent);
         console.log(`Created daily recurring event for day ${i}: ${formattedDate}`);
       }
+        */
       
-      console.log(`Generated ${daysToGenerate} days of daily recurring events`);
+        const postingData = {
+            "gym_id" : profileData.gym.id,
+            "name" : form.elements.title.value,
+            "date" : date,
+            "start_time" : startTime,
+            "end_time" : endTime,
+            "is_canceled" : false,
+            "is_recurring" : true,
+            "recurrs_Monday" : true,
+            "recurrs_Tuesday" : true,
+            "recurrs_Wednesday" : true,
+            "recurrs_Thursday" : true,
+            "recurrs_Friday" : true,
+            "recurrs_Saturday" : true,
+            "recurrs_Sunday" : true,
+            "notes" : "test",
+            "duration" : class_duration,
+            "level" : classLevel,
+            "capacity" : 20,
+            "template" : 1
+        }
+            try {
+                await postdata(postingData)
+            } catch (error) {
+                console.log(error)
+            }
+
+      //console.log(`Generated ${daysToGenerate} days of daily recurring events`);
     }
     else {
       // Not recurring, just create a single event for the selected date
@@ -775,8 +1117,36 @@ export default function Calendar() {
           capacity: capacity
         }
       };
+
+            const postingData = {
+                "gym_id" : profileData.gym.id,
+                "name" : form.elements.title.value,
+                "date" : date,
+                "start_time" : startTime,
+                "end_time" : endTime,
+                "is_canceled" : false,
+                "is_recurring" : false,
+                "recurrs_Monday" : false,
+                "recurrs_Tuesday" : false,
+                "recurrs_Wednesday" : false,
+                "recurrs_Thursday" : false,
+                "recurrs_Friday" : false,
+                "recurrs_Saturday" : false,
+                "recurrs_Sunday" : false,
+                "notes" : "test",
+                "duration" : class_duration,
+                "level" : classLevel,
+                "capacity" : 20,
+                "template" : 1
+            }
+
+            try {
+                await postdata(postingData)
+            } catch (error) {
+                console.log(error)
+            }
       
-      newEvents.push(singleEvent);
+      //newEvents.push(singleEvent);
       console.log(`Created single event for ${date}`);
     }
     
@@ -796,6 +1166,7 @@ export default function Calendar() {
     });
     
     console.log(`Adding ${filteredEvents.length} events to calendar`);
+    /*
     
     // Update the state with new events
     if (filteredEvents.length > 0) {
@@ -809,10 +1180,16 @@ export default function Calendar() {
         console.error('Error saving to localStorage:', error);
       }
     }
+    */
+   setEvents([])
+
+   const data=await getEvents()
+   setEvents(data)
     
     console.log("=== CALENDAR DIRECT FORM HANDLER COMPLETED ===");
     handleCloseModal();
   };
+
 
   // Helper function to calculate days between two weekdays
   function calculateDayDifference(startDayIndex, targetDayIndex) {
@@ -863,46 +1240,56 @@ export default function Calendar() {
   };
 
   // Add a function to handle deleting an event
-  const handleDeleteEvent = (eventId) => {
+  const handleDeleteEvent = async (eventId) => {
     // Ask for confirmation before deleting
     if (window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
       // Filter out the event with the given ID
-      const updatedEvents = events.filter(event => event.id !== eventId);
-      
-      // Update the state
-      setEvents(updatedEvents);
-      
+      SetDeleting(true);
+      await deleteClass(eventId);
+      setEvents([])
+
+      const data = await getEvents()
+      setEvents(data)
+
       // Update localStorage
       try {
-        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+        localStorage.setItem('calendarEvents', JSON.stringify(data));
+        localStorage.setItem('events', JSON.stringify(data));
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
       
+      SetDeleting(false);
       // Close the modal
       handleCloseModal();
+      //window.location.reload();
     }
   };
 
   // Add a function to handle deleting all recurring events
-  const handleDeleteRecurringEvents = (eventTitle) => {
+  const handleDeleteRecurringEvents = async (eventId) => {
     // Ask for confirmation before deleting all recurring events
     if (window.confirm('Do you want to delete all occurrences of this recurring class? This action cannot be undone.')) {
       // Filter out all events with the given title
-      const updatedEvents = events.filter(event => event.title !== eventTitle);
-      
-      // Update the state
-      setEvents(updatedEvents);
-      
+      SetDeleting(true);
+      await deleteRecurringClass(eventId);
+
+      setEvents([])
+      const data = await getEvents()
+      setEvents(data)
+
       // Update localStorage
       try {
-        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+        localStorage.setItem('calendarEvents', JSON.stringify(data));
+        localStorage.setItem('events', JSON.stringify(data));
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
       
+      SetDeleting(false);
       // Close the modal
       handleCloseModal();
+      window.location.reload();
     }
   };
 
@@ -1032,6 +1419,7 @@ export default function Calendar() {
         <Box sx={style}>
           {selectedEvent ? (
             <>
+            {console.log(selectedEvent.is_recurring)}
               <Box sx={{ 
                 position: 'relative', 
                 p: 3, 
@@ -1132,12 +1520,14 @@ export default function Calendar() {
                   <Button 
                     variant="contained" 
                     startIcon={<EditIcon />}
+                    disabled={new Date() > selectedEvent.start || deleting || editing}
                     onClick={() => {
                       const eventData = {
                         id: selectedEvent.id,
                         title: selectedEvent.title,
                         start: selectedEvent.start,
                         end: selectedEvent.end,
+                        is_recurring: selectedEvent.is_recurring,
                         extendedProps: {
                           instructor: selectedEvent.extendedProps?.instructor,
                           classLevel: selectedEvent.extendedProps?.classLevel,
@@ -1166,6 +1556,7 @@ export default function Calendar() {
                   
                   <IconButton
                     color="error"
+                    disabled={new Date() > selectedEvent.start || deleting || editing}
                     onClick={() => handleDeleteEvent(selectedEvent.id)}
                     sx={{
                       backgroundColor: 'error.lighter',
@@ -1194,13 +1585,15 @@ export default function Calendar() {
                 </Box>
                 
                 {/* Only show the delete all occurrences button if it's a recurring event */}
-                {selectedEvent.extendedProps?.dayOfWeek && (
+                {console.log(selectedEvent)}
+                {selectedEvent.extendedProps?.is_recurring && (
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button 
                       variant="text" 
                       color="error"
                       size="small"
-                      onClick={() => handleDeleteRecurringEvents(selectedEvent.title)}
+                      disabled={new Date() > selectedEvent.start || deleting}
+                      onClick={() => handleDeleteRecurringEvents(selectedEvent.extendedProps?.parent_reccur)}
                       sx={{ 
                         borderRadius: '8px',
                         fontSize: '0.75rem'
@@ -1260,6 +1653,7 @@ export default function Calendar() {
                   initialDate={selectedDate ? formatDateForInput(selectedDate) : ''}
                   initialStartTime={selectedStartTime ? formatTimeForInput(selectedStartTime) : ''}
                   initialEndTime={selectedEndTime ? formatTimeForInput(selectedEndTime) : ''}
+                  showRecurring={true}
                 />
               </Box>
             </>

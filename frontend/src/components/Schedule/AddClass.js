@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField, Select, MenuItem, InputLabel } from '@mui/material';
 import NavigationMenu from "../NavigationMenu";
@@ -8,15 +8,213 @@ import Calendar from './Calendar';
 import AddClassInformation from './AddClassInformation';
 import { v4 as uuidv4 } from 'uuid';
 
+import axios from "axios";
+import config from "../../config";
+
+const fetchCsrfToken = async (setCsrfToken) => {
+  try {
+      const response = await axios.get(config.endpoints.auth.csrf, {
+          withCredentials: true,
+      });
+      setCsrfToken(response.data.csrfToken);
+  } catch (error) {
+      console.error("Failed to fetch CSRF token", error);
+  }
+};
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return match[2];
+  return null;
+}
+
+const postdata = async (posting_data) => {
+  const csrfToken = getCookie('csrftoken');
+    axios.post(
+        config.endpoints.api.addClasses,
+        posting_data,
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+
+const getdata = async (gym_id) => {
+  const csrfToken = getCookie('csrftoken');
+    return axios.post(
+        config.endpoints.api.getClasses,
+        {"gym_id" : gym_id},
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
+  const getEvents = async () => {
+    try {
+    let cached = localStorage.getItem("profileData");
+    cached = JSON.parse(cached);
+    const response = await getdata(cached.gym.id);
+
+    const classes = response.data.classes;
+    console.log(classes)
+    const newEvents = [];
+
+    classes.forEach(scheduled_class => {
+      //console.log(scheduled_class)
+        const newEvent = {
+          "id": scheduled_class.id,
+          "title": scheduled_class.name,
+          "date" : scheduled_class.date,
+          "start": new Date(scheduled_class.date+'T'+scheduled_class.start_time),
+          "end": new Date(scheduled_class.date+'T'+scheduled_class.end_time),
+          "parent_reccur" : scheduled_class.parent_reccur_id,
+          "is_recurring" : scheduled_class.is_recurring,
+          "color" : scheduled_class.color,
+          "textColor" : 'white',
+          extendedProps: {
+            "instructor" : "",
+            "classLevel" : scheduled_class.level,
+            "age": "",
+            "duration": scheduled_class.duration,
+            dayOfWeek: scheduled_class.is_recurring,
+            //capacity: capacity
+          }
+        };
+        
+
+        newEvents.push(newEvent);
+        //console.log(newEvent)
+    });
+    return newEvents
+      
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
 export default function AddClass() {
   const { events, setEvents } = useEvents();
   const navigate = useNavigate();
   const [sidebarWidth, setSidebarWidth] = useState(250);
 
+  const [loading, setLoading] = useState(false)
+  const [qrUrl, setQrUrl] = useState(() => {
+    return localStorage.getItem("qrUrl") || "";
+  });
+
+  const [profileData, setProfileData] = useState(() => {
+    const cached = localStorage.getItem("profileData");
+    return cached
+      ? JSON.parse(cached)
+      : {
+          name: "",
+          email: "",
+          phone: "",
+          gym: {
+            id: null,
+            name: "",
+            address: "",
+            phone: "",
+            email: ""
+          }
+        };
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${config.apiUrl}/auth/profile/`, {
+          withCredentials: true
+        });
+
+        const { user, gym } = res.data;
+        const newProfile = {
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          phone: user.phoneNumber || "",
+          gym: {
+            id: gym.id,
+            name: gym.name,
+            address: gym.address || "",
+            phone: gym.phone || "",
+            email: gym.email || ""
+          }
+        };
+        const qr = config.endpoints.api.generateQR(gym.id);
+
+        // Only update if something changed
+        const prev = localStorage.getItem("profileData");
+        const prevObj = prev ? JSON.parse(prev) : null;
+        const profileChanged = JSON.stringify(newProfile) !== JSON.stringify(prevObj);
+        if (profileChanged) {
+            setProfileData(newProfile);
+            localStorage.setItem("profileData", JSON.stringify(newProfile));
+            //setQrUrl(qr);
+            localStorage.setItem("qrUrl", qr);}
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        navigate("/login");
+      } 
+    };
+
+
+    const getEvents = async () => {
+      try {
+        let cached = localStorage.getItem("profileData");
+        cached = JSON.parse(cached);
+        const response = await getdata(profileData.gym.id);
+        console.log("hey")
+
+        const classes = response.data.classes;
+        const newEvents = [];
+
+        classes.forEach(scheduled_class => {
+          //console.log(scheduled_class)
+          console.log(scheduled_class.is_recurring, typeof(scheduled_class.is_recurring))
+            const newEvent = {
+              "id": scheduled_class.id,
+              "title": scheduled_class.name,
+              "date" : scheduled_class.date,
+              "start": new Date(scheduled_class.date+'T'+scheduled_class.start_time),
+              "end": new Date(scheduled_class.date+'T'+scheduled_class.end_time),
+              "parent_reccur" : scheduled_class.parent_reccur_id,
+              "is_recurring" : scheduled_class.is_recurring,
+              "color" : scheduled_class.color,
+              "textColor" : 'white',
+              extendedProps: {
+                "instructor" : "",
+                "classLevel" : scheduled_class.level,
+                "age": "",
+                "duration": scheduled_class.duration,
+                //dayOfWeek: dayName,
+                capacity: scheduled_class.capacity
+              }
+            };
+            
+            newEvents.push(newEvent);
+            //console.log(newEvent)
+        });
+        setEvents(newEvents)
+          
+        } catch (error) {
+          console.log(error)
+        }
+      };
+
+    fetchProfile();
+    getEvents();
+  }, []);
+
   // Color helper function
   const getLevelColor = (level) => {
     if (!level) return '#3788d8';
+
     
     const levelLower = level.toLowerCase();
     if (levelLower.includes('beginner') || levelLower.includes('fundamentals')) return '#4caf50';
@@ -25,10 +223,12 @@ export default function AddClass() {
     return '#3788d8'; // default blue
   };
 
+
   // NEW Version of handleSubmit with completely different approach
-  const handleSubmit = (e, recurrence) => {
+  const handleSubmit = async (e, recurrence) => {
     e.preventDefault();
     console.log("=== NEW FORM HANDLER STARTED ===");
+    console.log("recurrence", recurrence)
     
     // Extract all form data
     const form = e.target;
@@ -54,6 +254,11 @@ export default function AddClass() {
     
     // Array to hold all new events
     const newEvents = [];
+
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+    const diffMs = endDate - startDate;
+    const class_duration = Math.round(((diffMs % 86400000) % 3600000) / 60000);
     
     // If this is a recurring event and is weekly
     if (recurrence && recurrence.type === 'weekly') {
@@ -114,9 +319,37 @@ export default function AddClass() {
         };
         
         // Add to our collection
-        newEvents.push(newEvent);
+//        newEvents.push(newEvent);
         console.log(`Created event for ${dayName} on ${formattedDate}`);
       });
+      console.log("recurrence", recurrence)
+        const postingData = {
+            "gym_id" : profileData.gym.id,
+            "name" : form.elements.title.value,
+            "date" : date,
+            "start_time" : startTime,
+            "end_time" : endTime,
+            "is_canceled" : false,
+            "is_recurring" : true,
+            "recurrs_Monday" : recurrence.days.monday,
+            "recurrs_Tuesday" : recurrence.days.tuesday,
+            "recurrs_Wednesday" : recurrence.days.wednesday,
+            "recurrs_Thursday" : recurrence.days.thursday,
+            "recurrs_Friday" : recurrence.days.friday,
+            "recurrs_Saturday" : recurrence.days.saturday,
+            "recurrs_Sunday" : recurrence.days.sunday,
+            "duration" : class_duration,
+            "level" : classLevel,
+            "capacity" : 20,
+            "notes" : "test",
+            "template" : 1
+        }
+            try {
+              //console.log(postingData)
+              await postdata(postingData)
+            } catch (error) {
+                console.log(error)
+            }
     } 
     // If this is a daily recurring event
     else if (recurrence && recurrence.type === 'daily') {
@@ -167,7 +400,7 @@ export default function AddClass() {
       }
       
       // Generate events for the specified number of days
-      for (let i = 1; i <= daysToGenerate; i++) {
+      /*for (let i = 1; i <= daysToGenerate; i++) {
         // Clone the base date and add the days
         const eventDate = new Date(baseDate);
         eventDate.setDate(eventDate.getDate() + i);
@@ -194,11 +427,40 @@ export default function AddClass() {
             recurring: 'daily',
           }
         };
+
         
         // Add to our collection
         newEvents.push(newEvent);
         console.log(`Created daily recurring event for day ${i}: ${formattedDate}`);
       }
+        */
+
+        const postingData = {
+            "gym_id" : profileData.gym.id,
+            "name" : form.elements.title.value,
+            "date" : date,
+            "start_time" : startTime,
+            "end_time" : endTime,
+            "is_canceled" : false,
+            "is_recurring" : true,
+            "recurrs_Monday" : true,
+            "recurrs_Tuesday" : true,
+            "recurrs_Wednesday" : true,
+            "recurrs_Thursday" : true,
+            "recurrs_Friday" : true,
+            "recurrs_Saturday" : true,
+            "recurrs_Sunday" : true,
+            "duration" : class_duration,
+            "level" : classLevel,
+            "capacity" : 20,
+            "notes" : "test",
+            "template" : 1
+        }
+            try {
+                await postdata(postingData)
+            } catch (error) {
+                console.log(error)
+            }
       
       console.log(`Generated ${daysToGenerate} days of daily recurring events`);
     }
@@ -220,53 +482,57 @@ export default function AddClass() {
           duration: calculateDuration(startTime, endTime)
         }
       };
+
+            const postingData = {
+                "gym_id" : profileData.gym.id,
+                "name" : form.elements.title.value,
+                "date" : date,
+                "start_time" : startTime,
+                "end_time" : endTime,
+                "is_canceled" : false,
+                "is_recurring" : false,
+                "recurrs_Monday" : false,
+                "recurrs_Tuesday" : false,
+                "recurrs_Wednesday" : false,
+                "recurrs_Thursday" : false,
+                "recurrs_Friday" : false,
+                "recurrs_Saturday" : false,
+                "recurrs_Sunday" : false,
+                "duration" : class_duration,
+                "level" : classLevel,
+                "capacity" : 20,
+                "notes" : "test",
+                "template" : 1
+            }
+
+            try {
+                await postdata(postingData)
+            } catch (error) {
+                console.log(error)
+            }
       
-      newEvents.push(singleEvent);
+      //newEvents.push(singleEvent);
+      //setEvents([])
       console.log(`Created single event for ${date}`);
     }
     
     // No events were created
-    if (newEvents.length === 0) {
+    /*if (newEvents.length === 0) {
       console.error("No events were created!");
       return;
     }
-    
-    console.log(`Adding ${newEvents.length} events to calendar`);
-    
-    // Check for existing events with the same title and date/time to avoid duplicates
-    const filteredEvents = newEvents.filter(newEvent => {
-      const duplicate = events.some(existingEvent => 
-        existingEvent.title === newEvent.title && 
-        existingEvent.start === newEvent.start
-      );
-      
-      if (duplicate) {
-        console.log(`Skipping duplicate event: ${newEvent.title} on ${newEvent.start}`);
-        return false;
-      }
-      
-      return true;
-    });
-    
-    console.log(`After filtering duplicates: ${filteredEvents.length} events to add`);
-    
-    // Update the state with new events
-    if (filteredEvents.length > 0) {
-      const updatedEvents = [...events, ...filteredEvents];
-      setEvents(updatedEvents);
-      
-      // Store in localStorage
-      try {
-        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-    }
+      */
+
+   setEvents([])
+
+   const data=await getEvents()
+   setEvents(data)
     
     // Navigate back to dashboard
     console.log("=== FORM HANDLER COMPLETED ===");
     navigate('/dashboard');
   };
+
   
   // Helper function to calculate days between two weekdays
   function calculateDayDifference(startDayIndex, targetDayIndex) {
@@ -326,7 +592,7 @@ export default function AddClass() {
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           <div style={{ margin: "75px" }}>
             <Typography variant="h3" mb={2}>Add Class</Typography>
-            <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit} />
+            <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit} showRecurring={true}/>
           </div>
         </Box>
       </Box>

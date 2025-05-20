@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import NavigationMenu from "../NavigationMenu";
@@ -6,11 +6,54 @@ import './Dashboard.css';
 import { useEvents } from './EventContext';
 import AddClassInformation from './AddClassInformation';
 
+import axios from "axios";
+import config from "../../config";
+
+const fetchCsrfToken = async (setCsrfToken) => {
+  try {
+      const response = await axios.get(config.endpoints.auth.csrf, {
+          withCredentials: true,
+      });
+      setCsrfToken(response.data.csrfToken);
+  } catch (error) {
+      console.error("Failed to fetch CSRF token", error);
+  }
+};
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return match[2];
+  return null;
+}
+
+const updatedata = async (updating_data) => {
+    const csrfToken = getCookie('csrftoken');
+    axios.put(
+        config.endpoints.api.editClass,
+        updating_data,
+        {
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+            withCredentials: true, // Required for session authentication
+        }
+    );
+};
 
 const EditClass = () => {
     const { events, setEvents } = useEvents();
     const { state } = useLocation();
     const navigate = useNavigate();
+
+    const [csrfToken, setCsrfToken] = useState("");
+
+    useEffect(() => {
+        fetchCsrfToken(setCsrfToken);
+    }, []);
+
+    const editClass = async (updatingData) => {
+        const response = await updatedata(updatingData)
+    }
 
     console.log("Edit state:", state);
     
@@ -18,6 +61,7 @@ const EditClass = () => {
     if (state?.event?.title) {
         const sameTitle = events.filter(e => e.title === state.event.title);
         console.log(`Found ${sameTitle.length} events with title "${state.event.title}"`);
+        console.log(state.event.id)
     }
 
     const [sidebarWidth, setSidebarWidth] = useState(250);
@@ -174,7 +218,7 @@ const EditClass = () => {
     }
     
     // Handle form submission
-    const handleSubmit = (e, recurrenceInfo) => {
+    const handleSubmit = async (e, recurrenceInfo) => {
         // If called directly from the form
         if (e && e.preventDefault) {
             e.preventDefault();
@@ -187,13 +231,34 @@ const EditClass = () => {
                 age: e.target.elements.age.value,
                 maxCapacity: e.target.elements.maxCapacity.value,
                 startTime: e.target.elements.start.value,
-                endTime: e.target.elements.end.value
+                endTime: e.target.elements.end.value,
+                //duration: e.target.elements.duration.value,
             };
             
             console.log("Form values:", formValues);
             
             // Call the updateEvent function with the form values and recurrence info
-            updateEvent(formValues, recurrenceInfo);
+            //updateEvent(formValues, recurrenceInfo);
+
+        const startDate = new Date(formValues.startTime);
+        const endDate = new Date(formValues.endTime);
+        const diffMs = endDate - startDate;
+        const class_duration = Math.round(((diffMs % 86400000) % 3600000) / 60000);
+
+        const updatingData = {
+            "class_id" : state.event.id,
+            "name" : formValues.title,
+            "start_time" : formValues.startTime,
+            "end_time" : formValues.endTime,
+            "is_canceled" : false,
+            "duration" : class_duration,
+            "level" : formValues.classLevel,
+            "capacity" : formValues.maxCapacity,
+            "notes" : "test",
+            "template" : 1
+        }
+            await editClass(updatingData)
+            navigate('/dashboard');
         }
     };
 
@@ -214,7 +279,7 @@ const EditClass = () => {
                         <Typography variant="subtitle1" color="primary" mb={2}>
                             Changes will be applied to all recurring instances of this class.
                         </Typography>
-                        <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit} data={state}></AddClassInformation>
+                        <AddClassInformation handleCancelButton={handleCancelButton} handleSubmit={handleSubmit} data={state} showRecurring={false}></AddClassInformation>
                     </div>
                 </Box>
             </Box>

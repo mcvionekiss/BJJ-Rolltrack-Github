@@ -17,7 +17,7 @@ import json
 import logging
 import time
 import requests
-from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken, GymAddress, GymsOwners
+from .models import Users, Class, Belts, Roles, ClassAttendance, GymHours, Gym, ClassTemplates, ClassLevel, PasswordResetToken, GymAddress, GymsOwners, TestClass, RecurringClass
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
@@ -28,6 +28,13 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.db.models.functions import (
+    ExtractDay, ExtractMonth, ExtractQuarter, ExtractWeek,
+    ExtractIsoWeekDay, ExtractWeekDay, ExtractIsoYear, ExtractYear, Extract
+)
+from datetime import datetime
+import calendar
+from dateutil.relativedelta import relativedelta
 
 # Rest framework imports
 from rest_framework import status
@@ -58,16 +65,18 @@ import io
 
 # Local imports
 from .models import (
-    Belts, 
-    Class, 
-    ClassAttendance, 
-    ClassLevel, 
-    ClassTemplates, 
-    Gym, 
-    GymHours, 
-    PasswordResetToken, 
-    Roles, 
-    Users
+    Belts,
+    Class,
+    ClassAttendance,
+    ClassLevel,
+    ClassTemplates,
+    Gym,
+    GymHours,
+    PasswordResetToken,
+    Roles,
+    Users,
+    RecurringClass,
+    TestClass
 )
 
 # CSRF token endpoint (non-exempt - safe for XHR requests)
@@ -79,12 +88,12 @@ def get_csrf_token(request):
     response["Access-Control-Allow-Credentials"] = "true"
     # Ensure headers are exposed to the frontend
     response["Access-Control-Expose-Headers"] = "Set-Cookie"
-    
+
     # Check if we're in a development environment, adjust cookie settings
     if settings.DEBUG:
         # In development, we need to allow credentials across origins
         response["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
-        
+
     print(f"Generated new CSRF token: {token}")
     return response
 
@@ -94,14 +103,14 @@ def throttle_login(view_func):
         ip = request.META.get('REMOTE_ADDR')
         key = f"login_attempt:{ip}"
         attempts = cache.get(key, 0)
-        
+
         # Allow 5 attempts per 5 minutes
         if attempts >= 5:
             return JsonResponse({"success": False, "message": "Too many login attempts. Please try again later."}, status=429)
-        
+
         cache.set(key, attempts + 1, 300)  # 5 minutes
         return view_func(request, *args, **kwargs)
-    
+
     return wrapped_view
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -125,35 +134,35 @@ class LoginView(View):
 
             if not user:
                 return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
-                
+
             # If gym_id is provided, check if the user has access to this gym
             if gym_id:
                 # Check if user has membership for this gym in the gym_memberships table
                 from django.db import connection
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        SELECT COUNT(*) FROM gym_memberships 
+                        SELECT COUNT(*) FROM gym_memberships
                         WHERE user_id = %s AND gym_id = %s AND active = %s
                     """, [user.id, gym_id, True])
-                    
+
                     has_membership = cursor.fetchone()[0] > 0
-                
+
                 if not has_membership:
                     return JsonResponse({
                         "success": False,
                         "message": "You don't have access to this gym"
                     }, status=403)
-                    
+
                 # If user has access, get the gym details
                 try:
                     gym = Gym.objects.get(id=gym_id)
                     gym_name = gym.name
                 except Gym.DoesNotExist:
                     gym_name = None
-                    
+
                 # Login the user
                 login(request, user)
-                
+
                 # Return successful response with gym info
                 return JsonResponse({
                     "success": True,
@@ -197,8 +206,8 @@ class LogoutView(View):
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
         response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
-    
-@method_decorator(csrf_protect, name='dispatch')
+
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(View):
     def post(self, request):
         try:
@@ -233,9 +242,9 @@ class RegisterView(View):
                     'success': False,
                     'message': f'Role with ID {role_id} does not exist.'
                 }, status=400)
-            
+
             is_gym_owner = (role.id == 2)
-            
+
             user = Users.objects.create_user(
                 username=username,
                 email=email,
@@ -307,14 +316,14 @@ class GuestCheckinView(View):
                     'success': False,
                     'message': 'Please fill in all required fields'
                 }, status=400)
-                
+
             # Validate gym_id is provided
             if not gym_id:
                 return JsonResponse({
                     'success': False,
                     'message': 'Gym ID is required'
                 }, status=400)
-                
+
             # Check if the gym exists
             try:
                 gym = Gym.objects.get(id=gym_id)
@@ -328,7 +337,7 @@ class GuestCheckinView(View):
             try:
                 # Try to get or create a guest visit record
                 from .models import GuestVisit
-                
+
                 guest, created = GuestVisit.objects.get_or_create(
                     email=email,
                     gym=gym,
@@ -342,7 +351,7 @@ class GuestCheckinView(View):
                         'other_dojos': other_dojos
                     }
                 )
-                
+
                 # If guest already exists but this isn't a creation, update their info
                 if not created:
                     guest.name = name
@@ -358,10 +367,10 @@ class GuestCheckinView(View):
                 # log the error but continue with a simpler response
                 print(f"Error with GuestVisit: {str(e)}")
                 # For now, we'll just log without storing in the database
-                
+
             # Log the guest check-in
             print(f"Guest Check-in at {gym_name} (ID: {gym_id}): {name} ({email}) - Experience: {experience_level}, Source: {referral_source}")
-            
+
             return JsonResponse({
                 'success': True,
                 'message': 'Guest check-in successful',
@@ -386,7 +395,7 @@ class GuestCheckinView(View):
                 'success': False,
                 'message': str(e)
             }, status=500)
-    
+
 @method_decorator(csrf_protect, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 class MemberSignupView(View):
@@ -409,7 +418,7 @@ class MemberSignupView(View):
                     'success': False,
                     'message': 'All fields are required'
                 }, status=400)
-                
+
             # Validate gym_id is provided
             if not gym_id:
                 return JsonResponse({
@@ -427,7 +436,7 @@ class MemberSignupView(View):
             # Create new user
             belt = Belts.objects.get(id=belt_id)
             role = Roles.objects.get(id=role_id)
-            
+
             user = Users.objects.create_user(
                 username=email,
                 email=email,
@@ -441,11 +450,11 @@ class MemberSignupView(View):
                 phone_number=phone,
                 is_gym_owner=False
             )
-            
+
             # Associate user with the gym by creating a gym membership record
             try:
                 gym = Gym.objects.get(id=gym_id)
-                
+
                 # Create the gym membership entry in the "gym_memberships" table
                 # Using the structure visible in the schema image: id, join_date, active, gym_id, user_id
                 from django.db import connection
@@ -459,7 +468,7 @@ class MemberSignupView(View):
                         gym_id,                 # gym_id
                         user.id                 # user_id
                     ])
-                
+
                 return JsonResponse({
                     'success': True,
                     'message': 'Member registration successful',
@@ -503,36 +512,36 @@ class MemberSignupView(View):
 def check_student(request):
     logger = logging.getLogger(__name__)
     request_id = f"req_{int(time.time() * 1000)}"  # Generate a unique request ID
-    
+
     logger.info(f"[{request_id}] check_student endpoint called with method: {request.method}")
-    
+
     if request.method == "POST":
         logger.info(f"[{request_id}] Processing POST request to check_student")
         try:
             # Log request headers for debugging
             logger.debug(f"[{request_id}] Request headers: {dict(request.headers)}")
-            
+
             # Parse request body
             start_time = time.time()
             data = json.loads(request.body)
             email = data.get("email")
             gym_id = data.get("gym_id")  # Get gym_id from request
-            
+
             logger.info(f"[{request_id}] Parsed request body. Email to check: {email}, Gym ID: {gym_id}")
-            
+
             # Check if student exists
             logger.debug(f"[{request_id}] Querying database for student with email: {email}")
             query_start_time = time.time()
             student = Users.objects.filter(email=email).first()
             query_time = time.time() - query_start_time
             logger.debug(f"[{request_id}] Database query completed in {query_time:.4f}s")
-            
+
             # Prepare response
             if student:
                 logger.info(f"[{request_id}] Student found with email: {email}")
                 response = {
-                    "success": True, 
-                    "exists": True, 
+                    "success": True,
+                    "exists": True,
                     "message": "Student found",
                     "student": {
                         "id": student.id,
@@ -546,11 +555,11 @@ def check_student(request):
                 logger.warning(f"[{request_id}] Student not found with email: {email}")
                 response = {"success": False, "exists": False, "message": "Student not found"}
                 status_code = 404
-            
+
             # Log response details
             total_time = time.time() - start_time
             logger.info(f"[{request_id}] Returning response with status: {status_code}, exists: {student is not None}, total processing time: {total_time:.4f}s")
-            
+
             return JsonResponse(response, status=status_code)
 
         except json.JSONDecodeError as e:
@@ -568,7 +577,7 @@ def check_student(request):
 def available_classes_today(request, gym_id=None):
     """Fetch only today's available classes for check-in."""
     today = localdate()  # Get today's date
-    
+
     try:
         # Try to get cached data first, with gym_id in the cache key
         cache_key = f"available_classes_{today}_{gym_id}" if gym_id else f"available_classes_{today}"
@@ -581,11 +590,11 @@ def available_classes_today(request, gym_id=None):
             date=today,
             is_canceled=0,  # Only get non-canceled classes
             template__isnull=False,  # Only classes with a template
-        )        
+        )
         # Add gym filter if gym_id is provided
         if gym_id:
             query = query.filter(template__gym_id=gym_id)
-        
+
         # Get the classes with related data
         classes = query.select_related('template', 'template__level').order_by("start_time")
 
@@ -595,10 +604,10 @@ def available_classes_today(request, gym_id=None):
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
-                
+
                 # Set attendance count to 0 instead of trying to query the missing table
                 attendance_count = 0  # Skip the classattendance_set query that's causing errors
-                                
+
                 data.append({
                     "id": cls.id,
                     "name": template.name,
@@ -618,9 +627,9 @@ def available_classes_today(request, gym_id=None):
 
         # Store in cache for 30 seconds
         cache.set(cache_key, data, timeout=30)
-                
+
         return JsonResponse({"success": True, "classes": data}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -633,17 +642,17 @@ def class_details(request, classID):
     """Returns details of a specific class."""
     try:
         class_instance = get_object_or_404(Class, id=classID)
-        
+
         # Check if required fields exist
         if not hasattr(class_instance, 'template') or not class_instance.template:
             return JsonResponse({"success": False, "message": "Class has incomplete data"}, status=400)
-        
+
         template = class_instance.template
         level = template.level if hasattr(template, 'level') else None
-        
+
         # Skip attendance count query that would cause errors
         attendance_count = 0  # Avoid querying the missing classattendance_set
-            
+
         data = {
             "success": True,
             "id": class_instance.id,
@@ -658,24 +667,24 @@ def class_details(request, classID):
             "currentAttendance": attendance_count,
             "gymId": template.gym_id if hasattr(template, 'gym') else None,
         }
-        
+
         # Add gym details if available
         if hasattr(template, 'gym') and template.gym:
             data["gymName"] = template.gym.name
-        
+
         # Add level info if available
         if level:
             data["level"] = level.name
-            
+
         return JsonResponse(data)
-        
+
     except Class.DoesNotExist:
         return JsonResponse({"success": False, "message": "Class not found"}, status=404)
     except Exception as e:
         logger = logging.getLogger('django.request')
         logger.error(f"Error retrieving class details: {str(e)}")
         return JsonResponse({"error": "An error occurred retrieving class details"}, status=400)
-    
+
 @csrf_exempt
 def checkin(request):
     """Handles student and guest check-ins for a class."""
@@ -686,10 +695,10 @@ def checkin(request):
             class_id = data.get("classID")  # We still accept classID from frontend
             gym_id = data.get("gym_id")  # Get gym_id from request
             is_guest = data.get("isGuest", False)  # Flag to indicate if this is a guest check-in
-            
+
             if not email or not class_id:
                 return JsonResponse({
-                    "success": False, 
+                    "success": False,
                     "message": "Email and class ID are required"
                 }, status=400)
 
@@ -697,25 +706,25 @@ def checkin(request):
             class_instance = Class.objects.filter(id=class_id).first()
             if not class_instance:
                 return JsonResponse({
-                    "success": False, 
+                    "success": False,
                     "message": "Class not found"
                 }, status=404)
-                
+
             # Check if class is canceled
             if class_instance.is_canceled:
                 return JsonResponse({
-                    "success": False, 
+                    "success": False,
                     "message": "This class has been canceled"
                 }, status=400)
-                
+
             # Get class template info
             template = class_instance.template
             if not template:
                 return JsonResponse({
-                    "success": False, 
+                    "success": False,
                     "message": "Class template not found"
                 }, status=404)
-                
+
             # Validate that the class belongs to the specified gym if gym_id is provided
             if gym_id and str(template.gym_id) != str(gym_id):
                 return JsonResponse({
@@ -726,38 +735,38 @@ def checkin(request):
             # Handle either registered member or guest check-in
             current_time = timezone.now()
             gym = Gym.objects.get(id=gym_id) if gym_id else None
-            
+
             if is_guest:
                 # This is a guest check-in
                 try:
                     # Try to find the guest record and create a check-in
                     from .models import GuestVisit, GuestCheckin
                     guest = GuestVisit.objects.filter(email=email, gym=gym).first()
-                    
+
                     if not guest:
                         return JsonResponse({
                             "success": False,
                             "message": "Guest not found. Please check in as a guest first."
                         }, status=404)
-                    
+
                     # Check if guest is already checked in to this class
                     existing_checkin = GuestCheckin.objects.filter(
                         guest=guest,
                         class_instance=class_instance
                     ).exists()
-                    
+
                     if existing_checkin:
                         return JsonResponse({
                             "success": False,
                             "message": "You're already checked in to this class"
                         }, status=400)
-                    
+
                     # Create a new guest check-in record
                     guest_checkin = GuestCheckin.objects.create(
                         guest=guest,
                         class_instance=class_instance
                     )
-                    
+
                     # Format the response data
                     response_data = {
                         "success": True,
@@ -770,12 +779,12 @@ def checkin(request):
                             "isGuest": True
                         }
                     }
-                    
+
                     return JsonResponse(response_data, status=200)
                 except Exception as e:
                     # If there's an issue with the guest tables, log the error
                     print(f"Error creating guest check-in: {str(e)}")
-                    
+
                     # Return a success response anyway for temporary functionality
                     # until the database is correctly set up
                     return JsonResponse({
@@ -794,10 +803,10 @@ def checkin(request):
                 student = Users.objects.filter(email=email).first()
                 if not student:
                     return JsonResponse({
-                        "success": False, 
+                        "success": False,
                         "message": "Student not found"
                     }, status=404)
-                
+
                 # Create a check-in record in the checkin table
                 try:
                     # Create a new check-in record
@@ -811,7 +820,7 @@ def checkin(request):
                 except Exception as create_error:
                     print(f"Error creating check-in record: {str(create_error)}")
                     # Continue with the response even if record creation fails
-                
+
                 # Format the response data
                 response_data = {
                     "success": True,
@@ -824,7 +833,7 @@ def checkin(request):
                         "isGuest": False
                     }
                 }
-                
+
                 return JsonResponse(response_data, status=200)
 
         except Exception as e:
@@ -832,7 +841,7 @@ def checkin(request):
             print(f"Error in checkin: {str(e)}")
             print(traceback.format_exc())
             return JsonResponse({
-                "success": False, 
+                "success": False,
                 "message": f"An error occurred: {str(e)}"
             }, status=500)
     else:
@@ -893,25 +902,25 @@ def student_attendance_history(request, email=None):
             if not request.user.is_authenticated:
                 return JsonResponse({"success": False, "message": "Authentication required"}, status=401)
             student = request.user
-        
+
         # Get attendance records
         attendance_records = ClassAttendance.objects.filter(
             user=student
         ).select_related('scheduled_class', 'scheduled_class__template').order_by('-check_in_time')
-        
+
         # Format the data
         attendance_data = []
         for record in attendance_records:
             scheduled_class = record.scheduled_class
             template = getattr(scheduled_class, 'template', None)
-            
+
             class_data = {
                 "id": scheduled_class.id,
                 "date": str(scheduled_class.date),
                 "checkInTime": record.check_in_time.strftime("%Y-%m-%d %H:%M:%S"),
                 "className": template.name if template else "Class",
             }
-            
+
             # Add additional class details if available
             if template:
                 class_data.update({
@@ -919,9 +928,9 @@ def student_attendance_history(request, email=None):
                     "startTime": scheduled_class.start_time.strftime("%H:%M") if hasattr(scheduled_class, 'start_time') else None,
                     "endTime": scheduled_class.end_time.strftime("%H:%M") if hasattr(scheduled_class, 'end_time') else None,
                 })
-            
+
             attendance_data.append(class_data)
-        
+
         return JsonResponse({
             "success": True,
             "student": {
@@ -932,7 +941,7 @@ def student_attendance_history(request, email=None):
             "attendanceCount": len(attendance_data),
             "attendanceRecords": attendance_data
         })
-            
+
     except Exception as e:
         import traceback
         print(f"Error in student_attendance_history: {str(e)}")
@@ -951,12 +960,12 @@ def get_templates(request):
         try:
             # Get all templates
             templates = ClassTemplates.objects.all().select_related('level', 'gym')
-            
+
             # Serialize the data
             data = []
             for template in templates:
                 level_name = template.level.name if template.level else "All Levels"
-                
+
                 data.append({
                     "id": template.id,
                     "name": template.name,
@@ -967,25 +976,25 @@ def get_templates(request):
                     "gym_id": template.gym.id if template.gym else None,
                     "gym_name": template.gym.name if template.gym else None
                 })
-            
+
             return JsonResponse(data, safe=False)
         except Exception as e:
             import traceback
             print(f"Error getting templates: {e}")
             print(traceback.format_exc())
             return JsonResponse({"error": str(e)}, status=500)
-    
+
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
-            
+
             # Get required fields
             name = data.get('name')
             level_id = data.get('level_id')
-            
+
             if not name:
                 return JsonResponse({"error": "Template name is required"}, status=400)
-            
+
             # Get or create level
             level = None
             try:
@@ -1007,7 +1016,7 @@ def get_templates(request):
                                 phone_number="555-555-5555"
                             )
                             print(f"Created default gym: {gym.name}")
-                        
+
                         # Now create the level
                         level = ClassLevel.objects.create(
                             name=level_id,
@@ -1018,7 +1027,7 @@ def get_templates(request):
             except Exception as e:
                 print(f"Error handling level: {e}")
                 # Use a default level or continue without one
-            
+
             # Make sure we have a gym
             gym = None
             try:
@@ -1030,7 +1039,7 @@ def get_templates(request):
                     phone_number="555-555-5555"
                 )
                 print(f"Created default gym: {gym.name}")
-            
+
             # Create new template
             new_template = ClassTemplates.objects.create(
                 name=name,
@@ -1040,9 +1049,9 @@ def get_templates(request):
                 level=level or ClassLevel.objects.first(),  # Default to first level if not specified
                 gym=gym
             )
-            
+
             print(f"Created new template: {new_template.name}")
-            
+
             # Return the new template
             return JsonResponse({
                 "id": new_template.id,
@@ -1085,7 +1094,7 @@ def update_template(request, template_id):
     try:
         template = get_object_or_404(ClassTemplates, id=template_id)
         data = json.loads(request.body)
-        
+
         # Update fields
         if 'name' in data:
             template.name = data['name']
@@ -1106,10 +1115,10 @@ def update_template(request, template_id):
                     gym=template.gym or Gym.objects.first()  # Use the same gym or default
                 )
             template.level = level
-            
+
         # Save the updated template
         template.save()
-        
+
         # Return the updated template
         return JsonResponse({
             "id": template.id,
@@ -1161,31 +1170,31 @@ def get_gym_hours(request, gym_id=None):
                         "success": False,
                         "message": "No gyms in the system"
                     }, status=404)
-        
+
         # Get hours for this gym
         gym_hours = GymHours.objects.filter(gym=gym).order_by('day_of_week')
-        
+
         # Format the response
         hours_data = []
         for hour in gym_hours:
             # Format the times as HH:MM strings
             open_time = hour.open_time.strftime('%H:%M') if hour.open_time else None
             close_time = hour.close_time.strftime('%H:%M') if hour.close_time else None
-            
+
             hours_data.append({
                 "day": hour.day_of_week,
                 "open": open_time,
                 "close": close_time,
                 "is_closed": hour.is_closed if hasattr(hour, 'is_closed') else (open_time is None or close_time is None)
             })
-        
+
         return Response({
             "success": True,
             "gym_id": gym.id,
             "gym_name": gym.name,
             "hours": hours_data
         })
-        
+
     except Exception as e:
         import traceback
         print(f"Error getting gym hours: {e}")
@@ -1194,7 +1203,7 @@ def get_gym_hours(request, gym_id=None):
             "success": False,
             "message": str(e)
         }, status=500)
-    
+
 
 User = get_user_model()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -1311,14 +1320,14 @@ def add_gym(request):
             city = data.get("city")
             state = data.get("state")
             schedule = data.get("schedule")
-            
+
             # Get user ID from request.user (if authenticated) or from data
             user_id = None
             if request.user.is_authenticated:
                 user_id = request.user.id
             elif data.get("userId"):
                 user_id = data.get("userId")
-            
+
             if not all([name, email, phone_number, address, city, state]):
                 return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
 
@@ -1353,7 +1362,7 @@ def add_gym(request):
                         is_closed=is_closed,
                         gym=new_gym
                     )
-            
+
             # Associate user with the gym if user is authenticated
             if user_id:
                 try:
@@ -1361,7 +1370,7 @@ def add_gym(request):
                     user = Users.objects.get(id=user_id)
                     user.is_gym_owner = True
                     user.save()
-                    
+
                     # Create the gym owner association
                     GymsOwners.objects.create(
                         user=user,
@@ -1470,7 +1479,7 @@ def get_all_classes_analysis_for_yesterday(request):
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
 
                 total_count = total_count + attendance
-                
+
             except Exception as e:
                 # Log error but continue processing other classes
                 print(f"Error processing class {cls.id}: {str(e)}")
@@ -1480,7 +1489,7 @@ def get_all_classes_analysis_for_yesterday(request):
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
         return JsonResponse({"success": True, "yesterdays_count" : total_count}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1515,7 +1524,7 @@ def get_all_classes_analysis_for_week(request):
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
                 #count = attendance.all()
-                
+
                 count = count + attendance
             except Exception as e:
                 # Log error but continue processing other classes
@@ -1526,7 +1535,7 @@ def get_all_classes_analysis_for_week(request):
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
         return JsonResponse({"success": True, "weekly_count": count}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1564,7 +1573,7 @@ def get_all_classes_analysis_for_last_week(request):
                 #count = attendance.all()
 
                 count = count + attendance
-                
+
             except Exception as e:
                 # Log error but continue processing other classes
                 print(f"Error processing class {cls.id}: {str(e)}")
@@ -1574,7 +1583,7 @@ def get_all_classes_analysis_for_last_week(request):
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
         return JsonResponse({"success": True, "weekly_count": count}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1607,7 +1616,7 @@ def get_all_classes_analysis_for_month(request):
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
-                
+
                 count = count + attendance
 
             except Exception as e:
@@ -1619,7 +1628,7 @@ def get_all_classes_analysis_for_month(request):
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
         return JsonResponse({"success": True, "monthly_count": count}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1654,7 +1663,7 @@ def get_all_classes_analysis_for_last_month(request):
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
-                
+
                 count = count + attendance
 
             except Exception as e:
@@ -1666,7 +1675,7 @@ def get_all_classes_analysis_for_last_month(request):
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
         return JsonResponse({"success": True, "monthly_count": count}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1700,7 +1709,7 @@ def get_every_class_for_today_with_attendance(request):
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
                 #total_attendance = total_attendance + attendance
-                
+
                 data.append({
                     "id": cls.id,
                     "name": template.name,
@@ -1718,7 +1727,7 @@ def get_every_class_for_today_with_attendance(request):
         #data.append("attendance" : total_attendance)
 
         return JsonResponse({"success": True, "classes": data, "total_attendance_for_today": total_attendance}, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1754,7 +1763,7 @@ def get_all_category_classes_analysis_for_today(request):
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
-                
+
                 if(template.level.name == "Fundamental"):
                     fundamental_count = fundamental_count + attendance
                 if(template.level.name == "Beginner"):
@@ -1771,16 +1780,16 @@ def get_all_category_classes_analysis_for_today(request):
         # Store in cache for 30 seconds
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
-        return JsonResponse({"success": True, 
+        return JsonResponse({"success": True,
         "data": {
         "name" : "today",
-        "Fundamental" : fundamental_count, 
-        "Beginner" : beginner_count, 
-        "Intermediate" : intermediate_count, 
-        "Advanced" : advanced_count 
+        "Fundamental" : fundamental_count,
+        "Beginner" : beginner_count,
+        "Intermediate" : intermediate_count,
+        "Advanced" : advanced_count
         },
         }, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1817,7 +1826,7 @@ def get_all_category_classes_analysis_for_weekly(request):
                 # Get template and level information
                 template = cls.template
                 level_name = template.level.name if hasattr(template, 'level') and template.level else "All Levels"
-                
+
                 if(template.level.name == "Fundamental"):
                     fundamental_count = fundamental_count + attendance
                 if(template.level.name == "Beginner"):
@@ -1834,16 +1843,16 @@ def get_all_category_classes_analysis_for_weekly(request):
         # Store in cache for 30 seconds
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
-        return JsonResponse({"success": True, 
+        return JsonResponse({"success": True,
         "data": {
         "name" : "today",
-        "Fundamental" : fundamental_count, 
-        "Beginner" : beginner_count, 
-        "Intermediate" : intermediate_count, 
-        "Advanced" : advanced_count 
+        "Fundamental" : fundamental_count,
+        "Beginner" : beginner_count,
+        "Intermediate" : intermediate_count,
+        "Advanced" : advanced_count
         },
         }, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
@@ -1889,7 +1898,7 @@ def get_all_category_classes_analysis_for_monthly(request):
                     intermediate_count = intermediate_count + attendance
                 if(template.level.name == "Advanced"):
                     advanced_count = advanced_count + attendance
-                
+
             except Exception as e:
                 # Log error but continue processing other classes
                 print(f"Error processing class {cls.id}: {str(e)}")
@@ -1898,23 +1907,23 @@ def get_all_category_classes_analysis_for_monthly(request):
         # Store in cache for 30 seconds
         #cache.set(f"available_classes_{today}", data, timeout=30)
 
-        return JsonResponse({"success": True, 
+        return JsonResponse({"success": True,
         "data": {
         "name" : "today",
-        "Fundamental" : fundamental_count, 
-        "Beginner" : beginner_count, 
-        "Intermediate" : intermediate_count, 
-        "Advanced" : advanced_count 
+        "Fundamental" : fundamental_count,
+        "Beginner" : beginner_count,
+        "Intermediate" : intermediate_count,
+        "Advanced" : advanced_count
         },
         }, status=200)
-    
+
     except Exception as e:
         # Log the detailed error
         import traceback
         print(f"Error in available_classes_today: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({"success": False, "message": "An error occurred while fetching classes", "error": str(e)}, status=500)
-    
+
 class AddressSearchProxyView(View):
     def get(self, request):
         query = request.GET.get("q", "")
@@ -1935,7 +1944,7 @@ class AddressSearchProxyView(View):
             return JsonResponse(response.json(), safe=False)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
-        
+
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def profile_view(request):
@@ -1970,7 +1979,7 @@ def profile_view(request):
                 "email": gym.email if gym else ""
             }
         })
-    
+
     elif request.method == 'PUT':
         data = request.data
         user.first_name = data.get("first_name", user.first_name)
@@ -2002,3 +2011,508 @@ def update_gym(request, gym_id):
         return Response({"success": False, "message": "Gym not found"}, status=404)
     except Exception as e:
         return Response({"success": False, "message": str(e)}, status=500)
+
+
+@api_view(['POST'])
+def add_class_to_calendar(request):
+    try:
+        data = request.data
+
+        name = data.get("name")
+        date = data.get("date")
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+        is_canceled = data.get("is_canceled")
+        is_recurring = data.get("is_recurring")
+        recurrs_Monday = data.get("recurrs_Monday")
+        recurrs_Tuesday = data.get("recurrs_Tuesday")
+        recurrs_Wednesday = data.get("recurrs_Wednesday")
+        recurrs_Thursday = data.get("recurrs_Thursday")
+        recurrs_Friday = data.get("recurrs_Friday")
+        recurrs_Saturday = data.get("recurrs_Saturday")
+        recurrs_Sunday = data.get("recurrs_Sunday")
+        duration = data.get("duration")
+        capacity = data.get("capacity")
+        level = data.get("level")
+        notes = data.get("notes")
+        template = data.get("template_id")
+        gym_id = data.get("gym_id")
+
+        n_gym = Gym.objects.get(id=gym_id)
+        class_level = ClassLevel.objects.get(name=level)
+
+        if is_recurring:
+            datetime_object = datetime.strptime(date, '%Y-%m-%d')
+            current_year = datetime_object.year
+            current_month = datetime_object.month
+            current_day = datetime_object.day
+
+            #next_month = datetime_object.month + 1
+
+            number_of_days_in_current_month = calendar.monthrange(current_year, current_month)[1]
+            print(current_year)
+
+
+            recurring_class = RecurringClass.objects.create(
+                name = name,
+                date = date,
+                start_time = start_time,
+                end_time = end_time,
+                is_canceled = is_canceled,
+                is_recurring = is_recurring,
+                recurrs_Monday = recurrs_Monday,
+                recurrs_Tuesday = recurrs_Tuesday,
+                recurrs_Wednesday = recurrs_Wednesday,
+                recurrs_Thursday = recurrs_Thursday,
+                recurrs_Friday = recurrs_Friday,
+                recurrs_Saturday = recurrs_Saturday,
+                recurrs_Sunday = recurrs_Sunday,
+                is_active = True,
+                last_month_updated = current_month,
+                duration_minutes = duration,
+                max_capacity = capacity,
+                level = class_level,
+                notes = notes,
+                template_id = template,
+                gym = n_gym,
+            )
+
+
+            # 0 is Monday
+            to_return = []
+            for day in range(current_day, number_of_days_in_current_month+1):
+                if datetime(current_year, current_month, day).weekday() == 0 and recurrs_Monday:
+                    to_return.append(datetime(current_year, current_month, day).date())
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+                if datetime(current_year, current_month, day).weekday() == 1 and recurrs_Tuesday:
+                    to_return.append(datetime(current_year, current_month, day))
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+                if datetime(current_year, current_month, day).weekday() == 2 and recurrs_Wednesday:
+                    to_return.append(datetime(current_year, current_month, day))
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+                if datetime(current_year, current_month, day).weekday() == 3 and recurrs_Thursday:
+                    to_return.append(datetime(current_year, current_month, day))
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+                if datetime(current_year, current_month, day).weekday() == 4 and recurrs_Friday:
+                    to_return.append(datetime(current_year, current_month, day))
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+                if datetime(current_year, current_month, day).weekday() == 5 and recurrs_Saturday:
+                    to_return.append(datetime(current_year, current_month, day))
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+                if datetime(current_year, current_month, day).weekday() == 6 and recurrs_Sunday:
+                    to_return.append(datetime(current_year, current_month, day))
+                    test_class = TestClass.objects.create(
+                        name = name,
+                        date = datetime(current_year,current_month,day).date(),
+                        start_time = start_time,
+                        end_time = end_time,
+                        is_canceled = is_canceled,
+                        is_recurring = is_recurring,
+                        parent_recurr_class_id = recurring_class,
+                        duration_minutes = duration,
+                        max_capacity = capacity,
+                        level = class_level,
+                        notes = notes,
+                        template_id = template,
+                        gym = n_gym,
+                    )
+
+            return JsonResponse({
+                "recurring" : to_return
+                })
+        else:
+            test_class = TestClass.objects.create(
+                name = name,
+                date = date,
+                start_time = start_time,
+                end_time = end_time,
+                is_canceled = is_canceled,
+                is_recurring = is_recurring,
+                duration_minutes = duration,
+                max_capacity = capacity,
+                level = class_level,
+                notes = notes,
+                template_id = template,
+                gym = n_gym,
+            )
+            return JsonResponse({
+                "recurring" : "not recurring"
+            })
+
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
+
+@csrf_exempt
+def populate_next_month(gym_id):
+    try:
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+        next_year = datetime.now().year
+
+        next_month = (datetime.now() + relativedelta(months=1)).month
+
+        #next_month = datetime_object.month + 1
+
+
+        next_month = (datetime.now() + relativedelta(months=1)).month
+
+        next_year = current_year
+        if next_month == 1:
+            next_year = next_year + 1
+
+        number_of_days_in_next_month = calendar.monthrange(next_year, next_month)[1]
+
+        gym = Gym.objects.get(id=gym_id)
+
+        recurring_class = RecurringClass.objects.exclude(last_month_updated=next_month, gym = gym)
+
+
+        #print(next_month)
+        #to_return = []
+        for cls in recurring_class:
+            for day in range(1, number_of_days_in_next_month+1):
+                #level = ClassLevel.objects.filter(id=cls.level.id)
+                #template = ClassTemplates.objects.filter(id=cls.template.id)
+                # 0 is Monday
+                if datetime(next_year, next_month, day).weekday() == 0 and cls.recurrs_Monday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+                if datetime(next_year, next_month, day).weekday() == 1 and cls.recurrs_Tuesday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+                if datetime(next_year, next_month, day).weekday() == 2 and cls.recurrs_Wednesday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+                if datetime(next_year, next_month, day).weekday() == 3 and cls.recurrs_Thursday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+                if datetime(next_year, next_month, day).weekday() == 4 and cls.recurrs_Friday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+                if datetime(next_year, next_month, day).weekday() == 5 and cls.recurrs_Saturday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+                if datetime(next_year, next_month, day).weekday() == 6 and cls.recurrs_Sunday:
+                    test_class = TestClass.objects.create(
+                        name = cls.name,
+                        date = datetime(next_year,next_month,day).date(),
+                        start_time = cls.start_time,
+                        end_time = cls.end_time,
+                        is_canceled = cls.is_canceled,
+                        is_recurring = cls.is_recurring,
+                        parent_recurr_class_id = cls,
+                        duration_minutes = cls.duration_minutes,
+                        max_capacity = cls.max_capacity,
+                        level = cls.level,
+                        notes = cls.notes,
+                        template = cls.template,
+                        gym = cls.gym
+                    )
+
+            cls.last_month_updated = next_month
+            cls.save()
+        return JsonResponse({
+            "recurring" : "added"
+            })
+    except Exception as e:
+        print(e)
+        return Response({"success": False, "message": str(e)}, status=500)
+
+@csrf_exempt
+@api_view(['POST'])
+def get_class_for_calendar(request):
+    try:
+        data = request.data
+
+        gym_id = data.get("gym_id")
+
+        gym = Gym.objects.get(id=gym_id)
+
+        populate_next_month(gym_id)
+
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+        next_year = datetime.now().year
+
+        next_month = (datetime.now() + relativedelta(months=1)).month
+
+
+        if next_month == 1:
+            next_year = next_year + 1
+
+        #print(current_month)
+
+        classes = TestClass.objects.filter(
+            date__month__gte = current_month,
+            date__year__gte = current_year,
+            date__month__lte = next_month,
+            date__year__lte = next_year,
+            gym = gym
+        ).order_by('date', 'start_time')
+
+        to_return = []
+
+        for cls in classes:
+            to_return.append({
+                "id" : cls.id,
+                "name" : cls.name,
+                "date" : cls.date,
+                "start_time" : cls.start_time,
+                "end_time" : cls.end_time,
+                "is_canceled" : cls.is_canceled,
+                "is_recurring" : cls.is_recurring,
+                "parent_reccur_id" : cls.parent_recurr_class_id_id,
+                "color" : cls.level.color,
+                "level" : cls.level.name,
+                "duration" : cls.duration_minutes,
+                "capacity" : cls.max_capacity,
+                "notes" : cls.notes,
+                "template" : cls.template_id
+            })
+
+        return JsonResponse({
+            "classes" : to_return
+        })
+
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
+
+@csrf_exempt
+@api_view(['DELETE'])
+def delete_single_class(request):
+    try:
+        data = json.loads(request.body)
+        class_id = data.get("class_id")
+
+        TestClass.objects.filter(id=class_id).delete()
+
+        return JsonResponse({
+            "deleted" : "Deleted"
+        }, status = 200)
+
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
+
+@csrf_exempt
+@api_view(['DELETE'])
+def delete_recurring_classes(request):
+    try:
+        data = json.loads(request.body)
+        parent_reccur_id = data.get("parent_reccur_id")
+
+        TestClass.objects.filter(date__gte=datetime.now(), parent_recurr_class_id_id=parent_reccur_id).all().delete()
+
+        recurr = RecurringClass.objects.filter(id = parent_reccur_id).delete()
+
+        return JsonResponse({
+            "deleted" : "Deleted"
+        }, status = 200)
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
+
+
+@csrf_exempt
+@api_view(['PUT'])
+def edit_class(request):
+    try:
+        data = json.loads(request.body)
+
+        class_id = data.get("class_id")
+        name = data.get("name")
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+        is_canceled = data.get("is_canceled")
+        duration = data.get("duration")
+        capacity = data.get("capacity")
+        level = data.get("level")
+        notes = data.get("notes")
+        template = data.get("template_id")
+
+        class_level = ClassLevel.objects.get(name=level)
+
+        TestClass.objects.filter(id=class_id).update(
+            name=name, 
+            start_time = start_time, 
+            end_time = end_time, 
+            is_canceled = is_canceled,
+            duration_minutes = duration,
+            max_capacity = capacity,
+            level = class_level,
+            notes = notes,
+            template_id = template
+        )
+
+        return JsonResponse({
+            "updated" : "Deleted"
+        }, status = 200)
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
+
+

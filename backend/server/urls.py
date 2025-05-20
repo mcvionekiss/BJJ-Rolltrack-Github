@@ -22,7 +22,10 @@ from server.views import (
 # Class and attendance related views
 from server.views import (
     available_classes_today, class_details, add_class,
-    student_attendance_history, get_gym_hours
+    student_attendance_history, get_gym_hours, 
+    add_class_to_calendar, get_class_for_calendar, 
+    delete_single_class, delete_recurring_classes,
+    edit_class
 )
 
 # Gym related views
@@ -51,6 +54,11 @@ api_patterns = [
     path("class_details/<int:classID>/", class_details, name="class_details"),
     path("checkin/", checkin, name="checkin"),
     path("add_class/", add_class, name="add_class"),
+    path("add-class-to-calendar/", add_class_to_calendar, name="add_class_to_calendar"),
+    path("get-class-for-calendar/", get_class_for_calendar, name="get_class_for_calendar"),
+    path("delete-single-class/", delete_single_class, name="delete_single_class"),
+    path("delete-recurring-classes/", delete_recurring_classes, name="delete_recurring_classes"),
+    path("edit-class/", edit_class, name="edit_class"),
 ]
 
 # Auth URLs grouped together
@@ -121,6 +129,11 @@ urlpatterns = [
     path("api/total-category-attendance-month/",get_all_category_classes_analysis_for_monthly, name="get_all_category_classes_analysis_for_monthly"),
     path("api/get-every-class-for-today-with-attendance/",get_every_class_for_today_with_attendance, name="get_every_class_for_today_with_attendance"),
     path("api/search-address/", AddressSearchProxyView.as_view(), name="search_address"),
+    path("api/add-class-to-calendar/", add_class_to_calendar, name="add_class_to_calendar"),
+    path("api/get-class-for-calendar/", get_class_for_calendar, name="get_class_for_calendar"),
+    path("api/delete-single-class/", delete_single_class, name="delete_single_class"),
+    path("api/delete-recurring-classes/", delete_recurring_classes, name="delete_recurring_classes"),
+    path("api/edit-class/", edit_class, name="edit_class"),
 
     # Add template API endpoints
     path("api/templates/", get_templates, name="get_templates"),

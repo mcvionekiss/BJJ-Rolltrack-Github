@@ -118,6 +118,9 @@ const ProfilePage = () => {
     localStorage.removeItem("token");
     localStorage.removeItem('profileData');
     localStorage.removeItem('qrUrl');
+    localStorage.removeItem('events');
+    localStorage.removeItem('calendarEvents');
+    window.localStorage.clear();
     navigate("/login");
   };
 

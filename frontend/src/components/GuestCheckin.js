@@ -158,14 +158,15 @@ function GuestCheckin() {
         <Container 
             maxWidth="sm" 
             sx={{ 
-                px: 4,
-                py: 8,
+                px: 5,
+                py: 10,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
                 textAlign: 'center',
-                minHeight: '100vh'
+                height: '100vh',
+                overflow: 'auto'
             }}
         >
             {loading ? (
@@ -397,7 +398,7 @@ function GuestCheckin() {
                         
                         <Button
                             variant="text"
-                            onClick={() => navigate("/checkin-selection")}
+                            onClick={() => navigate(`/checkin-selection${gymId ? `?gym_id=${gymId}` : ''}`)}
                             sx={{ 
                                 mt: 1,
                                 color: "text.secondary",

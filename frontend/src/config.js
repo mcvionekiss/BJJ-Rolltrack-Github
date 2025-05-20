@@ -39,7 +39,7 @@ const config = {
     },
     api: {
       classDetails: (classID) => `${BASE_URL}/api/class_details/${classID}/`,
-      generateQR: (gymID) => `${BASE_URL}/api/generate-qr/${gymID}/`,
+      generateQR: (gymID) => `${BASE_URL}/api/generate-qr/${gymID}/?frontend_url=${encodeURIComponent(BASE_URL)}`,
       availableClasses: (gymID) => `${BASE_URL}/api/available_classes_today/${gymID}/`,
       gymHours: (gymID) => `${BASE_URL}/api/gym-hours/${gymID}/`,
       checkStudent: `${BASE_URL}/api/check_student/`,
@@ -60,14 +60,18 @@ const config = {
       deleteAClass: `${BASE_URL}/api/delete-single-class/`,
       deleteRecurringClass: `${BASE_URL}/api/delete-recurring-classes/`,
       editClass: `${BASE_URL}/api/edit-class/`,
-    }
-  },
+      getClients: `${BASE_URL}/api/get-clients/`,
+      updateClient: `${BASE_URL}/api/update-client`,
+      addClient: `${BASE_URL}/api/add-client`,
+      deleteClient: `${BASE_URL}/api/delete-client`,
 
-  // Testing-specific settings
-  testing: {
-    bypassAuth: false,  // Set to true to bypass authentication in frontend for testing
-    mockData: false,    // Set to true to use mock data instead of API calls
-    debugMode: true     // Enable detailed console logging
+    // Testing-specific settings
+    testing: {
+      bypassAuth: false,  // Set to true to bypass authentication in frontend for testing
+      mockData: false,    // Set to true to use mock data instead of API calls
+      debugMode: true     // Enable detailed console logging
+    }
+  }
   }
 };
 

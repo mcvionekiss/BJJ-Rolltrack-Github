@@ -180,7 +180,19 @@ function AvailableClasses() {
     const today = formatDate(new Date());
 
     return (
-        <Container maxWidth="sm" sx={{ mt: 4, pb: 4 }}>
+        <Container 
+            maxWidth="sm" 
+            sx={{ 
+                px: 5,
+                py: 10,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                textAlign: 'center',
+                height: '100vh',
+                overflow: 'auto' 
+            }}
+        >
             <Box display="flex" alignItems="center" mb={2}>
                 <ArrowBackIosIcon
                     onClick={handleBack}

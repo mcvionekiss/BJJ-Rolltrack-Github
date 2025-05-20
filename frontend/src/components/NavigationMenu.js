@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
     Box,
     List,
@@ -10,6 +11,7 @@ import {
     ListItemIcon,
     Typography,
     Tooltip,
+    Divider,
 } from "@mui/material";
 
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -17,7 +19,9 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import PeopleIcon from "@mui/icons-material/People";
 import MenuIcon from "@mui/icons-material/Menu";
 import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
 import logo from '../assets/logo.jpeg';
+import config from "../config";
 
 const NavigationMenu = ({ onWidthChange }) => {
     const navigate = useNavigate();
@@ -55,6 +59,37 @@ const NavigationMenu = ({ onWidthChange }) => {
         { text: "Profile", path: "/profile", icon: <PersonIcon /> }
     ];
 
+    function getCookie(name) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        if (match) return match[2];
+        return null;
+    }
+  
+    const handleLogout = async () => {
+        try {
+            const csrfToken = getCookie("csrftoken");
+            await axios.post(
+                `${config.apiUrl}/auth/logout/`,
+                {},
+                {
+                    headers: {
+                        "X-CSRFToken": csrfToken,
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true,
+                }
+            );
+            // Clear local storage
+            localStorage.removeItem("profileData");
+            localStorage.removeItem("qrUrl");
+            // Redirect to login page
+            navigate("/login");
+        } catch (error) {
+            console.error("Logout failed:", error);
+            alert("Logout failed. Please try again.");
+        }
+    };
+
     return (
         <Box
             sx={{
@@ -66,7 +101,10 @@ const NavigationMenu = ({ onWidthChange }) => {
                 position: "fixed",
                 zIndex: 1200,
                 overflowX: "hidden",
-                transition: "width 0.3s ease-in-out"
+                overflowY: "auto",
+                transition: "width 0.3s ease-in-out",
+                display: "flex",
+                flexDirection: "column"
             }}
         >
             <Box
@@ -101,7 +139,9 @@ const NavigationMenu = ({ onWidthChange }) => {
                     }}
                 />
             </Box>
-            <List>
+            
+            {/* Main navigation items */}
+            <List sx={{ flex: 1 }}>
                 {menuItems.map((item, index) => (
                     <Tooltip title={item.text} placement="right" key={index}>
                         <ListItem
@@ -127,6 +167,33 @@ const NavigationMenu = ({ onWidthChange }) => {
                     </Tooltip>
                 ))}
             </List>
+            
+            {/* Logout button at bottom with extra spacing */}
+            <Box sx={{ mt: 'auto', pb: 4 }}>
+                <Divider sx={{ my: 2 }} />
+                <Tooltip title="Logout" placement="right">
+                    <ListItem
+                        component="div"
+                        onClick={handleLogout}
+                        sx={{
+                            borderRadius: "8px",
+                            "&:hover": {
+                                backgroundColor: "rgba(211, 47, 47, 0.1)",
+                                color: "#d32f2f"
+                            },
+                            cursor: "pointer",
+                            color: "#d32f2f"
+                        }}
+                    >
+                        <ListItemIcon sx={{ color: "inherit", minWidth: "40px" }}>
+                            <LogoutIcon />
+                        </ListItemIcon>
+                        {sidebarWidth > MIN_WIDTH && (
+                            <ListItemText primary="Logout" />
+                        )}
+                    </ListItem>
+                </Tooltip>
+            </Box>
         </Box>
     );
 };

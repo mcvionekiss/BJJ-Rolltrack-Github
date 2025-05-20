@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import "./App.css";
+import PDFErrorHandler from "./components/PDFErrorHandler";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Schedule/Dashboard";
@@ -12,6 +14,7 @@ import CheckinSuccess from './components/CheckinSuccess';
 import AddClass from "./components/Schedule/AddClass";
 import CheckinSelection from "./components/CheckinSelection";
 import MemberSignup from "./components/MemberSignup";
+import MemberWaiverSignature from "./components/MemberWaiverSignature";
 import GuestCheckin from "./components/GuestCheckin";
 import ProfilePage from "./components/ProfilePage";
 import { EventProvider } from "./components/Schedule/EventContext";
@@ -22,8 +25,9 @@ import ResetPassword from "./components/ResetPassword";
 
 function App() {
     return (
-        <Router>
-            <EventProvider>
+        <PDFErrorHandler>
+            <Router>
+                <EventProvider>
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" />} />  {/* 👈 Redirect / to /login */}
 
@@ -48,13 +52,15 @@ function App() {
                     <Route path="/checkin" element={<Checkin />} />
                     <Route path="/checkin-selection" element={<CheckinSelection />} />
                     <Route path="/member-signup" element={<MemberSignup />} />
+                    <Route path="/member-waiver" element={<MemberWaiverSignature />} />
                     <Route path="/guest-checkin" element={<GuestCheckin />} />
                     <Route path="/available-classes" element={<AvailableClasses />} />
                     <Route path="/class-details/:id" element={<ClassDetails />} />
                     <Route path="/checkin-success" element={<CheckinSuccess />} />
-                </Routes>
-            </EventProvider>
-        </Router>
+                    </Routes>
+                </EventProvider>
+            </Router>
+        </PDFErrorHandler>
     );
 }
 

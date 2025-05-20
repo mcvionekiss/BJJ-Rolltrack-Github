@@ -8,18 +8,19 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useEvents } from './EventContext';
 import { Box, Modal, Typography, Button, IconButton, Chip, Tooltip } from '@mui/material';
 import AddClassInformation from './AddClassInformation';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import GradeIcon from '@mui/icons-material/Grade';
-import GroupsIcon from '@mui/icons-material/Groups';
-import EditIcon from '@mui/icons-material/Edit';
-import CloseIcon from '@mui/icons-material/Close';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import DeleteIcon from '@mui/icons-material/Delete';
-import './Dashboard.css';
-import Edit from '@mui/icons-material/Edit';
+import { 
+  CalendarMonth as CalendarMonthIcon,
+  PersonOutline as PersonOutlineIcon,
+  PeopleAlt as PeopleAltIcon,
+  Grade as GradeIcon,
+  Groups as GroupsIcon,
+  Edit as EditIcon,
+  Close as CloseIcon,
+  FitnessCenter as FitnessCenterIcon,
+  AccessTime as AccessTimeIcon,
+  Delete as DeleteIcon
+} from '@mui/icons-material';
+import "./Dashboard.css";
 import { v4 as uuidv4 } from 'uuid';
 
 import axios from "axios";
@@ -145,7 +146,7 @@ const deleteRecurringClass = async (parent_id) => {
     }
   }
 
-export default function Calendar() {
+export default function Calendar({ sidebarWidth }) {
   const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 768);
   const [csrfToken, setCsrfToken] = useState("");
@@ -298,6 +299,17 @@ export default function Calendar() {
 
   // State to control the modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Effect to handle sidebar width changes
+  useEffect(() => {
+    if (calendarRef.current) {
+      // Force the calendar to update its dimensions when sidebar width changes
+      setTimeout(() => {
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.updateSize();
+      }, 200); // Small delay to allow transition to complete
+    }
+  }, [sidebarWidth]);
 
   // Effect to handle window resize events
   useEffect(() => {
@@ -1231,14 +1243,6 @@ export default function Calendar() {
     }
   };
 
-  // Add a function to reset to default events
-  const handleResetToDefaults = () => {
-    if (window.confirm('Are you sure you want to reset to default events? This will remove all custom events.')) {
-      resetEvents();
-      alert('Calendar reset to default events.');
-    }
-  };
-
   // Add a function to handle deleting an event
   const handleDeleteEvent = async (eventId) => {
     // Ask for confirmation before deleting
@@ -1295,10 +1299,10 @@ export default function Calendar() {
 
   return (
     <div className="calendar-container" style={{ 
-      width: '100%', 
+      width: 'auto', 
       maxWidth: '100%', 
       overflow: 'hidden',
-      height: 'calc(100vh - 120px)',
+      height: 'calc(100vh - 100px)',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -1336,9 +1340,6 @@ export default function Calendar() {
             center: typeof window !== 'undefined' && windowWidth < 768 ? 'title' : 'prev title next',
             end: 'addClassButton',
           }}
-          slotMinTime="06:00:00"
-          slotMaxTime="22:00:00"
-          scrollTime="08:00:00"
           allDaySlot={false}
           events={events}
           eventContent={renderEventContent}
@@ -1362,8 +1363,8 @@ export default function Calendar() {
             },
           }}
           titleFormat={{ year: 'numeric', month: 'long' }}
-          height="100%"
-          expandRows={true}
+          contentHeight="auto"
+          // expandRows={true}
           stickyHeaderDates={true}
           slotLabelFormat={{
             hour: '2-digit',

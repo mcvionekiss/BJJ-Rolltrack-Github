@@ -14,7 +14,6 @@ import {
   LocationOn as LocationIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  Logout as LogoutIcon
 } from "@mui/icons-material";
 import NavigationMenu from "./NavigationMenu";
 import PersonalInfoForm from "./PersonalInfoForm";
@@ -113,16 +112,6 @@ const ProfilePage = () => {
       });
     }
   }, [editMode]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem('profileData');
-    localStorage.removeItem('qrUrl');
-    localStorage.removeItem('events');
-    localStorage.removeItem('calendarEvents');
-    window.localStorage.clear();
-    navigate("/login");
-  };
 
   const handleDownloadQR = async () => {
     if (!qrUrl) return;
@@ -257,7 +246,8 @@ const ProfilePage = () => {
           marginLeft: `${sidebarWidth}px`,
           transition: "margin-left 0.3s ease-in-out",
           height: "100vh",
-          overflowY: "auto"
+          overflowY: "auto",
+          maxHeight: "calc(100vh - 64px)"
         }}
       >
         <Paper
@@ -377,7 +367,9 @@ const ProfilePage = () => {
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <PhoneIcon sx={{ mr: 1, color: "text.secondary" }} />
-                      <Typography>{profileData.phone}</Typography>
+                      <Typography>
+                        {profileData.phone || "No phone number provided"}
+                      </Typography>
                     </Box>
                   </Box>
                 </>
@@ -394,7 +386,7 @@ const ProfilePage = () => {
                 boxShadow: "0 4px 16px 0 rgba(31, 38, 135, 0.08)"
               }}
             >
-              <Typography variant="h6" fontWeight="bold" mb={3}>
+              <Typography variant="h6" fontWeight="bold" mb={3} align="center">
                 Gym Information
               </Typography>
               {!profileData.name && !profileData.gym?.id ?  (
@@ -410,18 +402,18 @@ const ProfilePage = () => {
                 <GymDetailsForm value={formData} onChange={setFormData} errors={formErrors}/>
               ) : (
                 <>
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography variant="h5" fontWeight="bold" mb={1}>
                     {profileData.gym.name}
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <LocationIcon sx={{ mr: 1, color: "text.secondary" }} />
                     <Typography>{profileData.gym.address}</Typography>
                   </Box>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <PhoneIcon sx={{ mr: 1, color: "text.secondary" }} />
                     <Typography>{profileData.gym.phone}</Typography>
                   </Box>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <EmailIcon sx={{ mr: 1, color: "text.secondary" }} />
                     <Typography>{profileData.gym.email}</Typography>
                   </Box>
@@ -486,33 +478,6 @@ const ProfilePage = () => {
                 </>
               )}
             </Paper>
-          </Box>
-          <Box
-            display="flex"
-            justifyContent="flex-end"
-            sx={{
-                mt: 4,
-                pr: 5, // adds right padding
-            }}
-            >
-            <Button
-                variant="contained"
-                startIcon={<LogoutIcon />}
-                onClick={handleLogout}
-                sx={{
-                backgroundColor: "black",
-                color: "white",
-                borderRadius: 2,
-                fontWeight: 600,
-                px: 3,
-                py: 1.2,
-                fontSize: 16,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                "&:hover": { backgroundColor: "#333" }
-                }}
-            >
-                Logout
-            </Button>
           </Box>
         </Paper>
       </Box>

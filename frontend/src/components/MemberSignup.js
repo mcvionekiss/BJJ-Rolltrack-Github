@@ -110,48 +110,49 @@ function MemberSignup() {
             return;
         }
 
-        try {
-            // Prepare the data to match backend field names
-            const backendFormData = {
-                firstName: formData.name.split(' ')[0],
-                lastName: formData.name.split(' ').slice(1).join(' '),
-                email: formData.email,
-                phone: formData.phone,
-                dob: formData.dob,
-                password: formData.password,
-                belt: 1, // Default to White Belt (ID 1)
-                role: 1,  // Default to Student Role (ID 1)
-                gymId: parseInt(gymId) // Include the gym ID
-            };
-            
-            // Call the API with CSRF token
-            const response = await axios.post(config.endpoints.auth.memberSignup, backendFormData, {
-                headers: {
-                    "X-CSRFToken": csrfToken
-                }
-            });
-            
-            setSuccess("Account created successfully! You can now log in.");
-            setTimeout(() => {
-                navigate(`/checkin?gym_id=${gymId}`);
-            }, 2000);
-        } catch (error) {
-            setError(error.response?.data?.message || "Error creating account. Please try again.");
+        // Validate form data
+        if (formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match");
+            return;
         }
+
+        // Proceed to waiver signing page with form data
+        // Instead of creating account directly, we show the waiver first
+        const memberData = {
+            firstName: formData.name.split(' ')[0],
+            lastName: formData.name.split(' ').slice(1).join(' '),
+            email: formData.email,
+            phone: formData.phone,
+            dob: formData.dob,
+            password: formData.password,
+            belt: 1, // Default to White Belt (ID 1)
+            role: 1,  // Default to Student Role (ID 1)
+            gymId: parseInt(gymId)
+        };
+        
+        // Navigate to waiver page with form data and gym ID
+        navigate(`/member-waiver?gym_id=${gymId}`, {
+            state: {
+                memberData,
+                gymId,
+                csrfToken
+            }
+        });
     };
 
     return (
         <Container 
             maxWidth="sm" 
             sx={{ 
-                px: 4,
-                py: 8,
+                px: 5,
+                py: 10,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
                 textAlign: 'center',
-                minHeight: '100vh'
+                height: '100vh',
+                overflow: 'auto'
             }}
         >
             {loading ? (
@@ -379,7 +380,7 @@ function MemberSignup() {
                         
                         <Button
                             variant="text"
-                            onClick={() => navigate("/checkin-selection")}
+                            onClick={() => navigate(`/checkin-selection${gymId ? `?gym_id=${gymId}` : ''}`)}
                             sx={{ 
                                 mt: 1,
                                 color: "text.secondary",

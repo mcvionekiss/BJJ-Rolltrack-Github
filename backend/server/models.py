@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager, Permission
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 import uuid
+import os
+from django.core.files.storage import FileSystemStorage
+from django.dispatch import receiver
 
 # """
 # class GymOwner(AbstractUser, PermissionsMixin):
@@ -71,8 +74,7 @@ class Gym(models.Model):
     phone_number = models.CharField(max_length=20)
     website = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    #include arrribute for pdf wavier
-    # Not including the belts field as it doesn't appear in the database schema
+    has_waiver= models.BooleanField(default=False)
 
     class Meta:
         db_table = "gyms"
@@ -301,6 +303,136 @@ class ClassAttendance(models.Model):
     def __str__(self):
         return f"{self.user.email} checked into {self.scheduled_class.template.name if hasattr(self.scheduled_class, 'template') else 'Class'} on {self.scheduled_class.date}"
 
+def waiver_upload_path(instance, filename):
+    """Determine file path for waiver uploads"""
+    # Format: waivers/gym_id/waiver_id_timestamp.pdf
+    return f'waivers/{instance.gym.id}/{instance.id}_{timezone.now().strftime("%Y%m%d%H%M%S")}.pdf'
+
+class GymWaiver(models.Model):
+    """
+    Model for storing gym waiver templates (PDF files)
+    """
+    WAIVER_TYPE_CHOICES = [
+        ('default', 'Default Template'),
+        ('custom', 'Custom Upload'),
+    ]
+    
+    id = models.BigAutoField(primary_key=True)
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='waivers')
+    waiver_type = models.CharField(max_length=10, choices=WAIVER_TYPE_CHOICES, default='default')
+    waiver_file = models.FileField(upload_to=waiver_upload_path, null=True, blank=True)
+    custom_name = models.CharField(max_length=100, blank=True)
+    gym_name_in_waiver = models.CharField(max_length=100, blank=True)
+    address_in_waiver = models.CharField(max_length=255, blank=True)
+    state_in_waiver = models.CharField(max_length=100, blank=True)
+    waiver_text = models.TextField(blank=True)  # Store template text for default waivers
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        db_table = 'gym_waivers'
+        indexes = [
+            models.Index(fields=['gym', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"Waiver for {self.gym.name} ({self.get_waiver_type_display()})"
+    
+    def save(self, *args, **kwargs):
+        # Set the gym has_waiver flag to True when a waiver is created
+        if not self.pk:  # New waiver being created
+            self.gym.has_waiver = True
+            self.gym.save()
+        super().save(*args, **kwargs)
+
+class MemberWaiverSignature(models.Model):
+    """
+    Model for tracking member signatures on gym waivers
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('signed', 'Signed'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired'),
+    ]
+    
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='waiver_signatures')
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='member_signatures')
+    waiver = models.ForeignKey(GymWaiver, on_delete=models.PROTECT, related_name='signatures')
+    signature_data = models.TextField()  # Store signature as base64 image data
+    signed_waiver_file = models.FileField(upload_to='signed_waivers/%Y/%m/', null=True, blank=True)  # Store the signed waiver PDF
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    signed_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    email_sent = models.BooleanField(default=False)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'member_waiver_signatures'
+        unique_together = (('user', 'gym', 'waiver'),)
+        indexes = [
+            models.Index(fields=['user', 'gym']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.gym.name} Waiver ({self.status})"
+    
+    def mark_as_signed(self, signature_data, ip_address=None, user_agent=None):
+        """Mark the waiver as signed with signature data and metadata"""
+        self.signature_data = signature_data
+        self.ip_address = ip_address
+        self.user_agent = user_agent
+        self.signed_at = timezone.now()
+        self.status = 'signed'
+        self.save()
+    
+    def send_confirmation_email(self):
+        """Send confirmation email to gym owner and update status"""
+        # This will be implemented with Zoho email API
+        if self.status == 'signed' and not self.email_sent:
+            # Logic to send email via Zoho API
+            self.email_sent = True
+            self.email_sent_at = timezone.now()
+            self.save()
+            return True
+        return False
+
+# Signal to handle deleting waiver files when a waiver record is deleted
+@receiver(models.signals.post_delete, sender=GymWaiver)
+def auto_delete_waiver_file_on_delete(sender, instance, **kwargs):
+    """
+    Delete the waiver file when the GymWaiver instance is deleted
+    """
+    if instance.waiver_file:
+        if os.path.isfile(instance.waiver_file.path):
+            os.remove(instance.waiver_file.path)
+
+# Signal to handle deleting old waiver files when a waiver is updated
+@receiver(models.signals.pre_save, sender=GymWaiver)
+def auto_delete_waiver_file_on_change(sender, instance, **kwargs):
+    """
+    Delete the old waiver file when the waiver file is updated
+    """
+    if not instance.pk:
+        return False
+    
+    try:
+        old_waiver = GymWaiver.objects.get(pk=instance.pk)
+    except GymWaiver.DoesNotExist:
+        return False
+    
+    old_file = old_waiver.waiver_file
+    new_file = instance.waiver_file
+    
+    if old_file and old_file != new_file:
+        if os.path.isfile(old_file.path):
+            os.remove(old_file.path)
+ 
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)

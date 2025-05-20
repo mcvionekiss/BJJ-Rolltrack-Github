@@ -31,12 +31,15 @@ function CheckinSuccess() {
             <Container 
                 maxWidth="sm" 
                 sx={{ 
-                    minHeight: '90vh',
+                    px: 5,
+                    py: 10,
                     display: 'flex',
                     flexDirection: 'column',
+                    alignItems: 'center',
                     justifyContent: 'center',
-                    paddingY: 5,
-                    textAlign: "center"
+                    textAlign: 'center',
+                    height: '100vh',
+                    overflow: 'auto'
                 }}
             >
                 {/* Success Icon */}

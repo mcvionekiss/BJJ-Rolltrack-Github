@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -8,21 +8,111 @@ import {
   TextField,
   Button,
   Paper,
-  Alert
+  Alert,
+  Container,
+  CircularProgress
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
-import ArticleIcon from "@mui/icons-material/Article";
+import { Document, Page, pdfjs } from 'react-pdf';
+import { pdf, BlobProvider } from '@react-pdf/renderer';
+import PDFWaiverTemplate from './PDFWaiverTemplate';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Initialize PDF.js worker with a reliable source URL
+// Use a fixed CDN URL to avoid "Headers: Invalid name" error and "Invalid `workerSrc` type" error
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
 
 const WaiverSetup = ({ formData, setFormData }) => {
   const [waiverType, setWaiverType] = useState(formData.waiverType || "default");
   const [waiverFileName, setWaiverFileName] = useState(formData.waiverFileName || "");
   const [previewError, setPreviewError] = useState("");
+  const [pdfFile, setPdfFile] = useState(null);
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const fileInputRef = useRef();
+  
+  // Prepare address from form data
+  const gymAddressForWaiver = useMemo(() => {
+    return formData.address && formData.city && formData.state ? 
+      `${formData.address}, ${formData.city}, ${formData.state}` : 
+      "Your Gym Address";
+  }, [formData.address, formData.city, formData.state]);
+  
+  // Format gym name for waiver display
+  const gymNameForWaiver = formData.waiverGymName || formData.gymName || "[GYM NAME]";
+  
+  // Function to generate PDF from template
+  const generatePdf = useCallback(async () => {
+    try {
+      const gymName = formData.waiverGymName || formData.gymName || "Your Gym Name";
+      const pdfDoc = <PDFWaiverTemplate 
+        gymName={gymName} 
+        gymAddress={gymAddressForWaiver} 
+      />;
+      
+      // Generate PDF blob
+      const blob = await pdf(pdfDoc).toBlob();
+      setGeneratedPdfBlob(blob);
+      return blob;
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setPreviewError("Error generating PDF template");
+      return null;
+    }
+  }, [formData.waiverGymName, formData.gymName, gymAddressForWaiver]);
+  
+  // Options for PDF.js with defensive configuration
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.4.120/cmaps/',
+    cMapPacked: true,
+    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.4.120/standard_fonts/',
+    withCredentials: false,
+    httpHeaders: {} // Empty headers to avoid potential conflicts
+  }), []);
+  
+  // Convert file to blob URL for safer handling
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  
+  // Load PDF file from formData and create safe blob URL
+  useEffect(() => {
+    if (formData.waiverFile && waiverType === "custom") {
+      setPdfFile(formData.waiverFile);
+      
+      // Create a blob URL for the file to avoid network issues
+      if (formData.waiverFile instanceof File) {
+        const fileUrl = URL.createObjectURL(formData.waiverFile);
+        setPdfBlobUrl(fileUrl);
+      }
+    }
+    
+    // Clean up blob URL on unmount or when file changes
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [formData.waiverFile, waiverType]);
+  
+  // Generate PDF once on initial render and when necessary values change
+  useEffect(() => {
+    if (waiverType === "default") {
+      generatePdf();
+    }
+    // Only run this effect when waiver type changes to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waiverType]);
 
   // Handle waiver type selection
   const handleWaiverTypeChange = (event) => {
     setWaiverType(event.target.value);
+    
+    // Reset pageNumber and clear errors
+    setPageNumber(1);
+    setPreviewError("");
     
     // If switching to default template, initialize waiverGymName if not set
     if (event.target.value === "default" && !formData.waiverGymName) {
@@ -42,6 +132,8 @@ const WaiverSetup = ({ formData, setFormData }) => {
   // Handle reverting from custom to default template
   const handleRevertToTemplate = () => {
     setWaiverType("default");
+    setPageNumber(1);
+    setPdfFile(null);
     setFormData({
       ...formData,
       waiverType: "default",
@@ -51,10 +143,17 @@ const WaiverSetup = ({ formData, setFormData }) => {
 
   // Handle gym name changes for default template
   const handleGymNameChange = (event) => {
+    // Update the form data
     setFormData({
       ...formData,
       waiverGymName: event.target.value,
     });
+    
+    // Clear any previous error
+    setPreviewError("");
+    
+    // Manually trigger PDF regeneration after a short delay
+    setTimeout(() => generatePdf(), 100);
   };
 
   // Handle file upload
@@ -63,6 +162,8 @@ const WaiverSetup = ({ formData, setFormData }) => {
     if (file && file.type === "application/pdf") {
       setWaiverFileName(file.name);
       setPreviewError("");
+      setPdfFile(file);
+      setPageNumber(1);
       
       // Store filename in form data
       setFormData({
@@ -83,15 +184,66 @@ const WaiverSetup = ({ formData, setFormData }) => {
     fileInputRef.current.click();
   };
 
-  // Mock function to download the waiver
-  const handleDownload = () => {
-    // In a real implementation, this would generate and download the PDF
-    console.log("Downloading waiver...");
-    alert("In a production environment, this would download the waiver as a PDF.");
+  // Handle document load success
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
   };
 
-  // Format gym name for waiver display (without markers)
-  const gymNameForWaiver = formData.waiverGymName || formData.gymName || "[GYM NAME]";
+  // Navigate through PDF pages
+  const changePage = (offset) => {
+    const newPageNumber = pageNumber + offset;
+    if (newPageNumber > 0 && newPageNumber <= numPages) {
+      setPageNumber(newPageNumber);
+    }
+  };
+
+  // Regenerate PDF before download
+  const handleRegeneratePdf = useCallback(() => {
+    if (waiverType === "default") {
+      return generatePdf();
+    }
+    return Promise.resolve(null);
+  }, [waiverType, generatePdf]);
+
+  // Download the waiver
+  const handleDownload = async () => {
+    if (waiverType === "custom" && pdfFile) {
+      // For custom PDF, create a download link
+      const url = URL.createObjectURL(pdfFile);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = waiverFileName || "waiver.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else if (waiverType === "default") {
+      // Generate PDF from the template and download it
+      setIsGeneratingPdf(true);
+      try {
+        // Always generate a fresh PDF for download to ensure latest data
+        const blob = await generatePdf();
+        
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${formData.waiverGymName || formData.gymName || 'Gym'}_Waiver.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } else {
+          throw new Error("Failed to generate PDF");
+        }
+      } catch (error) {
+        console.error("Error downloading PDF:", error);
+        setPreviewError("Error generating PDF for download");
+      } finally {
+        setIsGeneratingPdf(false);
+      }
+    }
+  };
 
   // Mock content for the default waiver template (without markers for bold text)
   const defaultWaiverContent = `
@@ -115,12 +267,69 @@ const WaiverSetup = ({ formData, setFormData }) => {
     Date: __________
   `;
 
-  return (
-    <Box sx={{ mb: 2, maxWidth: '90%', mx: 'auto' }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
-        Waiver Setup
-      </Typography>
+  // Render the PDF viewer for custom uploaded PDFs
+  const renderCustomPdfViewer = () => {
+    if (!pdfFile) return null;
+    
+    return (
+      <Paper
+        elevation={2}
+        sx={{
+          p: 2,
+          height: "420px",
+          overflow: "auto",
+          backgroundColor: "#f8f8f8"
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Document
+            file={pdfBlobUrl || pdfFile}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={(error) => {
+              console.error("Error loading PDF:", error);
+              setPreviewError("Error loading PDF: " + error.message);
+            }}
+            loading={<CircularProgress />}
+            noData={<Typography>PDF file not available for preview.</Typography>}
+            error={<Typography color="error">Failed to load PDF preview.</Typography>}
+            options={pdfOptions}
+          >
+            <Page
+              pageNumber={pageNumber}
+              width={450}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+            />
+          </Document>
+          
+          {numPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2 }}>
+              <Button 
+                onClick={() => changePage(-1)} 
+                disabled={pageNumber <= 1}
+                size="small"
+              >
+                Previous
+              </Button>
+              <Typography variant="body2" sx={{ mx: 2 }}>
+                Page {pageNumber} of {numPages}
+              </Typography>
+              <Button 
+                onClick={() => changePage(1)} 
+                disabled={pageNumber >= numPages}
+                size="small"
+              >
+                Next
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+    );
+  };
 
+  return (
+    <Container sx={{ maxWidth: '100%'}}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         {/* Left Column - Settings */}
         <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '40%' } }}>
@@ -163,6 +372,9 @@ const WaiverSetup = ({ formData, setFormData }) => {
                 size="small"
                 helperText="This name will appear in bold in the waiver document"
               />
+              <Typography variant="body2" sx={{ mb: 0.5, mt: 1, color: "text.secondary", fontSize: '0.75rem' }}>
+                The gym address from your details will be automatically included
+              </Typography>
             </Box>
           )}
 
@@ -210,9 +422,13 @@ const WaiverSetup = ({ formData, setFormData }) => {
           <Button
             variant="contained"
             color="primary"
-            startIcon={<DownloadIcon />}
-            onClick={handleDownload}
+            startIcon={isGeneratingPdf ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+            onClick={async () => {
+              await handleRegeneratePdf();
+              handleDownload();
+            }}
             size="small"
+            disabled={isGeneratingPdf || (waiverType === "custom" && !pdfFile)}
             sx={{
               backgroundColor: "black",
               color: "white",
@@ -220,7 +436,7 @@ const WaiverSetup = ({ formData, setFormData }) => {
               mt: 1
             }}
           >
-            Download Waiver
+            {isGeneratingPdf ? "Generating..." : "Download Waiver"}
           </Button>
         </Box>
 
@@ -230,102 +446,147 @@ const WaiverSetup = ({ formData, setFormData }) => {
             Waiver Preview
           </Typography>
 
-          <Paper
-            elevation={2}
-            sx={{
-              p: 2,
-              height: "300px",
-              overflow: "auto",
-              backgroundColor: "#f8f8f8",
-              fontFamily: "monospace",
-              whiteSpace: "pre-wrap",
-              fontSize: "0.75rem"
-            }}
-          >
-        {waiverType === "default" ? (
-          // Enhanced preview with direct formatting for better Docker compatibility
-          <Box sx={{ 
-            fontFamily: "monospace", 
-            whiteSpace: "pre-wrap", 
-            fontSize: "0.875rem",
-            lineHeight: 1.5
-          }}>
-            {defaultWaiverContent
-              .split(gymNameForWaiver)
-              .reduce((prev, current, i) => {
-                if (i === 0) return [current];
-                return [...prev, 
-                  <span key={`gym-${i}`} style={{ fontWeight: 800, display: 'inline' }}>
-                    {gymNameForWaiver}
-                  </span>, 
-                  current
-                ];
-              }, [])
-            }
-          </Box>
-        ) : waiverFileName ? (
-          // Enhanced mock preview of uploaded PDF with page simulation
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 3 }}>
-            <Box 
-              sx={{ 
-                width: '100%', 
-                height: '300px', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                mb: 2
+          {waiverType === "default" ? (
+            // For default template, show either a PDF preview or text preview
+            <BlobProvider document={<PDFWaiverTemplate 
+              gymName={gymNameForWaiver} 
+              gymAddress={gymAddressForWaiver}
+            />}>
+              {({ blob, url, loading, error }) => {
+                if (loading) {
+                  return (
+                    <Paper
+                      elevation={2}
+                      sx={{
+                        p: 2,
+                        height: "420px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center"
+                      }}
+                    >
+                      <CircularProgress size={40} />
+                    </Paper>
+                  );
+                }
+                
+                if (error || !url) {
+                  // Fall back to text preview if PDF rendering fails
+                  return (
+                    <Paper
+                      elevation={2}
+                      sx={{
+                        p: 2,
+                        height: "420px",
+                        overflow: "auto",
+                        backgroundColor: "#f8f8f8",
+                        fontFamily: "monospace",
+                        whiteSpace: "pre-wrap",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      <Box sx={{ 
+                        fontFamily: "monospace", 
+                        whiteSpace: "pre-wrap", 
+                        fontSize: "0.875rem",
+                        lineHeight: 1.5
+                      }}>
+                        {defaultWaiverContent
+                          .split(gymNameForWaiver)
+                          .reduce((prev, current, i) => {
+                            if (i === 0) return [current];
+                            return [...prev, 
+                              <span key={`gym-${i}`} style={{ fontWeight: 800, display: 'inline' }}>
+                                {gymNameForWaiver}
+                              </span>, 
+                              current
+                            ];
+                          }, [])
+                        }
+                        {error && (
+                          <Alert severity="warning" sx={{ mt: 2 }}>
+                            PDF preview not available. Using text preview instead.
+                          </Alert>
+                        )}
+                      </Box>
+                    </Paper>
+                  );
+                }
+                
+                // Show PDF preview
+                return (
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      p: 2,
+                      height: "420px",
+                      overflow: "auto",
+                      backgroundColor: "#f8f8f8"
+                    }}
+                  >
+                    <Document
+                      file={url}
+                      onLoadSuccess={onDocumentLoadSuccess}
+                      onLoadError={(error) => setPreviewError("Error loading PDF preview: " + error.message)}
+                      options={pdfOptions}
+                    >
+                      <Page
+                        pageNumber={pageNumber}
+                        width={450}
+                        renderTextLayer={true}
+                        renderAnnotationLayer={true}
+                      />
+                    </Document>
+                    
+                    {numPages > 1 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2 }}>
+                        <Button 
+                          onClick={() => changePage(-1)} 
+                          disabled={pageNumber <= 1}
+                          size="small"
+                        >
+                          Previous
+                        </Button>
+                        <Typography variant="body2" sx={{ mx: 2 }}>
+                          Page {pageNumber} of {numPages}
+                        </Typography>
+                        <Button 
+                          onClick={() => changePage(1)} 
+                          disabled={pageNumber >= numPages}
+                          size="small"
+                        >
+                          Next
+                        </Button>
+                      </Box>
+                    )}
+                  </Paper>
+                );
+              }}
+            </BlobProvider>
+          ) : pdfFile ? (
+            // PDF viewer for uploaded PDF files
+            renderCustomPdfViewer()
+          ) : (
+            // No waiver selected yet (custom type with no file)
+            <Paper
+              elevation={2}
+              sx={{
+                p: 2,
+                height: "420px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#f8f8f8"
               }}
             >
-              <Box sx={{ 
-                bgcolor: '#f1f1f1', 
-                borderBottom: '1px solid #ccc',
-                p: 1,
-                display: 'flex',
-                justifyContent: 'center'
-              }}>
-                <Typography variant="caption">{waiverFileName}</Typography>
-              </Box>
-              <Box sx={{ 
-                flex: 1, 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                p: 2,
-                bgcolor: 'white' 
-              }}>
-                <ArticleIcon sx={{ fontSize: 80, color: "primary.main", opacity: 0.7 }} />
-              </Box>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center',
-                p: 1,
-                borderTop: '1px solid #ccc',
-                bgcolor: '#f1f1f1',
-              }}>
-                <Typography variant="caption">Page 1 of 1</Typography>
-              </Box>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              PDF preview simulation - actual PDF viewer would be integrated in production
-            </Typography>
-          </Box>
-        ) : (
-          // No waiver selected yet
-          <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              {waiverType === "custom"
-                ? "Please upload a PDF waiver"
-                : "Please enter your gym name to customize the waiver"}
-            </Typography>
-          </Box>
-        )}
-      </Paper>
-
+              <Typography variant="body2" color="text.secondary">
+                Please upload a PDF waiver
+              </Typography>
+            </Paper>
+          )}
         </Box>
       </Box>
-    </Box>
+    </Container>
   );
 };
 

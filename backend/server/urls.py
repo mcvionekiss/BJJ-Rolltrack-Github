@@ -44,7 +44,18 @@ from server.views import (
     get_all_classes_analysis_for_week, get_all_classes_analysis_for_last_week,
     get_all_classes_analysis_for_month, get_all_classes_analysis_for_last_month,
     get_all_category_classes_analysis_for_today, get_all_category_classes_analysis_for_weekly, 
-    get_all_category_classes_analysis_for_monthly
+    get_all_category_classes_analysis_for_monthly, get_all_clients, edit_client
+)
+
+# Waiver management views
+from server.views import (
+    waiver_management, download_waiver, member_waiver_signature,
+    get_signature_status, preview_waiver
+)
+
+# Adding client API endpoints
+from server.views import (
+    update_client, add_client, delete_client
 )
 
 # API URLs grouped together for better organization
@@ -59,6 +70,8 @@ api_patterns = [
     path("delete-single-class/", delete_single_class, name="delete_single_class"),
     path("delete-recurring-classes/", delete_recurring_classes, name="delete_recurring_classes"),
     path("edit-class/", edit_class, name="edit_class"),
+    path("get_clients/", get_all_clients, name="get_clients"),
+    path('edit-client/<int:client_id>/', edit_client, name='edit_client')
 ]
 
 # Auth URLs grouped together
@@ -134,7 +147,7 @@ urlpatterns = [
     path("api/delete-single-class/", delete_single_class, name="delete_single_class"),
     path("api/delete-recurring-classes/", delete_recurring_classes, name="delete_recurring_classes"),
     path("api/edit-class/", edit_class, name="edit_class"),
-
+    path("api/get-clients/", get_all_clients, name="get_clients"),
     # Add template API endpoints
     path("api/templates/", get_templates, name="get_templates"),
     path("api/templates/<int:template_id>/", delete_template, name="delete_template"),
@@ -142,6 +155,19 @@ urlpatterns = [
     path("auth/google/", google_auth),
     path('auth/request-password-reset/', request_password_reset),
     path('auth/reset-password/<uuid:token>/', reset_password),
+    
+    # Waiver management endpoints
+    path("api/waivers/", waiver_management, name="waiver_management"),
+    path("api/waivers/<int:gym_id>/", waiver_management, name="gym_waiver_management"),
+    path("api/waivers/download/<int:waiver_id>/", download_waiver, name="download_waiver"),
+    path("api/waivers/signature/", member_waiver_signature, name="member_waiver_signature"),
+    path("api/waivers/signature/<int:signature_id>/", get_signature_status, name="get_signature_status"),
+    path("api/waivers/preview/<int:gym_id>/", preview_waiver, name="preview_waiver"),
+    
+    # Client management endpoints
+    path("api/update-client/<int:client_id>/", update_client, name="update_client"),
+    path("api/add-client/", add_client, name="add_client"),
+    path("api/delete-client/<int:client_id>/", delete_client, name="delete_client"),
     
     # Redirect root to login
     path('', RedirectView.as_view(url='/auth/login/')),

@@ -76,7 +76,11 @@ from .models import (
     Roles,
     Users,
     RecurringClass,
-    TestClass
+    TestClass,
+    GymWaiver,
+    MemberWaiverSignature,
+    GuestVisit,
+    GuestCheckin
 )
 
 # CSRF token endpoint (non-exempt - safe for XHR requests)
@@ -203,6 +207,7 @@ class LoginView(View):
 @method_decorator(login_required, name="dispatch")
 class LogoutView(View):
     def post(self, request):
+        logout(request)  # Call Django's logout function to properly end the session
         response = JsonResponse({"success": True, "message": "Logged out successfully"})
         response["Access-Control-Allow-Credentials"] = "true"  # Ensure session cookies are sent
         return response
@@ -571,6 +576,83 @@ def check_student(request):
     else:
         logger.warning(f"[{request_id}] Method not allowed: {request.method}")
         return JsonResponse({"error": "Method not allowed"}, status=405)
+    
+def get_all_clients(request):
+    # Filter users with role_id 4
+    clients = Users.objects.filter(role_id__id=4)
+    
+    # Serialize the client data before returning
+    client_list = []
+    for client in clients:
+        client_list.append({
+            "id": client.id,
+            "username": client.username,
+            "email": client.email,
+            "first_name": client.first_name,
+            "last_name": client.last_name,
+            "date_enrolled": client.date_enrolled.isoformat() if client.date_enrolled else None,
+            "date_of_birth": client.date_of_birth.isoformat() if client.date_of_birth else None,
+        })
+    
+    return JsonResponse({"success": True, "clients": client_list}, status=200)
+
+@api_view(['POST'])
+@csrf_protect
+def edit_client(request, client_id=None):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            first_name = data.get("first_name")
+            last_name = data.get("last_name")
+            email = data.get("email")
+            phone_number = data.get("phone_number")
+            date_of_birth = data.get("date_of_birth")
+            date_enrolled = data.get("date_enrolled")
+            
+            client = Users.objects.get(id=3)
+            
+            # Update client fields if provided
+            if first_name is not None:
+                client.first_name = first_name
+            if last_name is not None:
+                client.last_name = last_name
+            if email is not None:
+                client.email = email
+                # If username is same as email, update username too to keep them in sync
+                if client.username == client.email:
+                    client.username = email
+            if phone_number is not None:
+                client.phone_number = phone_number
+            if date_of_birth is not None:
+                client.date_of_birth = date_of_birth
+            if date_enrolled is not None:
+                client.date_enrolled = date_enrolled
+                
+            client.save()
+            
+            # Return updated client data
+            return JsonResponse({
+                "success": True, 
+                "message": "Client updated successfully",
+                "client": {
+                    "id": client.id,
+                    "username": client.username,
+                    "email": client.email,
+                    "first_name": client.first_name,
+                    "last_name": client.last_name,
+                    "phone_number": client.phone_number,
+                    "date_enrolled": client.date_enrolled.isoformat() if client.date_enrolled else None,
+                    "date_of_birth": client.date_of_birth.isoformat() if client.date_of_birth else None,
+                }
+            }, status=200)
+        except Users.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Client not found"}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "message": "Invalid JSON data"}, status=400)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    else:
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])  # Allow any user to access this endpoint for testing
@@ -1401,9 +1483,11 @@ def add_gym(request):
 @csrf_exempt
 def generate_qr(request, gym_id):
     try:
+        # Get the frontend URL from query parameter, with fallback
+        frontend_url = request.GET.get('frontend_url')
+        print(f"Using frontend URL: {frontend_url}")
+        
         # Generate QR code data
-        # Use the frontend URL from settings instead of hardcoding
-        frontend_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:3000"
         qr_data = f"{frontend_url}/checkin-selection?gym_id={gym_id}"
         qr = qrcode.QRCode(
             version=6,
@@ -2516,3 +2600,416 @@ def edit_class(request):
         return Response({"success": False, "message": str(e)}, status=500)
 
 
+
+
+# Waiver Management Views
+
+@api_view(['GET', 'POST'])
+def waiver_management(request, gym_id=None):
+    """
+    GET: Retrieve waiver for a gym
+    POST: Create or update waiver for a gym
+    """
+    if request.method == 'GET':
+        try:
+            gym = Gym.objects.get(id=gym_id) if gym_id else None
+            if not gym:
+                return JsonResponse({"success": False, "message": "Gym not found"}, status=404)
+                
+            waiver = GymWaiver.objects.filter(gym=gym, is_active=True).first()
+            
+            if not waiver:
+                return JsonResponse({
+                    "success": False,
+                    "message": "No waiver found for this gym"
+                }, status=404)
+                
+            response_data = {
+                "success": True,
+                "waiver_id": waiver.id,
+                "gym_id": gym.id,
+                "waiver_type": waiver.waiver_type,
+                "created_at": waiver.created_at.isoformat()
+            }
+            
+            if waiver.waiver_type == 'default':
+                response_data["waiver_text"] = waiver.waiver_text
+            else:
+                response_data["file_url"] = waiver.waiver_file.url if waiver.waiver_file else None
+                
+            return JsonResponse(response_data)
+            
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+            
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            gym_id = data.get('gym_id') or gym_id
+            waiver_type = data.get('waiver_type', 'default')
+            waiver_text = data.get('waiver_text')
+            
+            if not gym_id:
+                return JsonResponse({"success": False, "message": "Gym ID is required"}, status=400)
+                
+            gym = Gym.objects.get(id=gym_id)
+            
+            # Get or create waiver
+            waiver, created = GymWaiver.objects.get_or_create(
+                gym=gym,
+                is_active=True,
+                defaults={
+                    "waiver_type": waiver_type,
+                    "waiver_text": waiver_text if waiver_type == 'default' else None
+                }
+            )
+            
+            if not created:
+                # Update existing waiver
+                waiver.waiver_type = waiver_type
+                if waiver_type == 'default':
+                    waiver.waiver_text = waiver_text
+                    waiver.waiver_file = None
+                waiver.save()
+                
+            # Handle PDF upload if present and waiver type is custom
+            if waiver_type == 'custom' and 'pdf_file' in request.FILES:
+                waiver.waiver_file = request.FILES['pdf_file']
+                waiver.save()
+                
+            return JsonResponse({
+                "success": True,
+                "message": "Waiver updated successfully",
+                "waiver_id": waiver.id
+            })
+            
+        except Gym.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Gym not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['GET'])
+def download_waiver(request, waiver_id):
+    """Download waiver PDF"""
+    try:
+        waiver = GymWaiver.objects.get(id=waiver_id)
+        
+        if waiver.waiver_type == 'custom' and waiver.waiver_file:
+            # Return the PDF file
+            response = HttpResponse(waiver.waiver_file.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="waiver_{waiver_id}.pdf"'
+            return response
+        else:
+            # Generate PDF from default waiver text
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+            from io import BytesIO
+            
+            buffer = BytesIO()
+            p = canvas.Canvas(buffer, pagesize=letter)
+            
+            # Add gym name to the PDF
+            p.setFont("Helvetica-Bold", 16)
+            p.drawString(30, 750, f"{waiver.gym.name} Waiver Agreement")
+            
+            # Add waiver text
+            p.setFont("Helvetica", 12)
+            text = waiver.waiver_text or "Standard liability waiver text. Please contact the gym for details."
+            
+            # Simple text wrapping
+            y = 700
+            lines = text.split('\n')
+            for line in lines:
+                if y < 50:  # New page if we're at the bottom
+                    p.showPage()
+                    p.setFont("Helvetica", 12)
+                    y = 750
+                
+                p.drawString(30, y, line)
+                y -= 15
+            
+            p.showPage()
+            p.save()
+            
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="waiver_{waiver_id}.pdf"'
+            
+            return response
+            
+    except GymWaiver.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Waiver not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['POST'])
+def member_waiver_signature(request):
+    """Save a user's signature for a waiver"""
+    try:
+        data = json.loads(request.body)
+        gym_id = data.get('gym_id')
+        user_id = data.get('user_id')
+        signature_image = data.get('signature_image')
+        
+        if not all([gym_id, user_id, signature_image]):
+            return JsonResponse({
+                "success": False,
+                "message": "Missing required fields"
+            }, status=400)
+            
+        # Get the gym, user, and waiver
+        gym = Gym.objects.get(id=gym_id)
+        user = Users.objects.get(id=user_id)
+        waiver = GymWaiver.objects.filter(gym=gym, is_active=True).first()
+        
+        if not waiver:
+            return JsonResponse({
+                "success": False,
+                "message": "No active waiver found for this gym"
+            }, status=404)
+        
+        # Create or update signature record
+        signature, created = MemberWaiverSignature.objects.get_or_create(
+            user=user,
+            gym=gym,
+            waiver=waiver,
+            defaults={
+                "signature_data": signature_image,
+                "status": "signed",
+                "signed_at": timezone.now(),
+                "ip_address": request.META.get('REMOTE_ADDR'),
+                "user_agent": request.META.get('HTTP_USER_AGENT', '')
+            }
+        )
+        
+        if not created:
+            # Update existing signature
+            signature.signature_data = signature_image
+            signature.status = "signed"
+            signature.signed_at = timezone.now()
+            signature.ip_address = request.META.get('REMOTE_ADDR')
+            signature.user_agent = request.META.get('HTTP_USER_AGENT', '')
+            signature.save()
+        
+        return JsonResponse({
+            "success": True,
+            "message": "Signature saved successfully",
+            "signature_id": signature.id
+        })
+        
+    except Gym.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Gym not found"}, status=404)
+    except Users.DoesNotExist:
+        return JsonResponse({"success": False, "message": "User not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_signature_status(request, signature_id):
+    """Get the status of a waiver signature"""
+    try:
+        signature = MemberWaiverSignature.objects.get(id=signature_id)
+        
+        return JsonResponse({
+            "success": True,
+            "signature_id": signature.id,
+            "status": signature.status,
+            "signed_at": signature.signed_at.isoformat() if signature.signed_at else None,
+            "user_id": signature.user.id,
+            "gym_id": signature.gym.id,
+            "waiver_id": signature.waiver.id
+        })
+        
+    except MemberWaiverSignature.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Signature not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['GET'])
+def preview_waiver(request, gym_id):
+    """Preview a gym's waiver for member review before signing"""
+    try:
+        gym = Gym.objects.get(id=gym_id)
+        waiver = GymWaiver.objects.filter(gym=gym, is_active=True).first()
+        
+        if not waiver:
+            return JsonResponse({
+                "success": False,
+                "message": "No waiver found for this gym"
+            }, status=404)
+            
+        response_data = {
+            "success": True,
+            "waiver_type": waiver.waiver_type,
+            "gym_id": gym_id
+        }
+        
+        if waiver.waiver_type == 'default':
+            response_data["waiver_text"] = waiver.waiver_text
+        else:
+            # For custom waivers, provide the URL to the PDF file
+            response_data["file_url"] = waiver.waiver_file.url if waiver.waiver_file else None
+            
+        return JsonResponse(response_data)
+        
+    except Gym.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Gym not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['PUT'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def update_client(request, client_id):
+    """Update a client by ID"""
+    try:
+        client = get_object_or_404(Users, id=client_id)
+        data = json.loads(request.body)
+        
+        # Update client fields if provided
+        if 'first_name' in data:
+            client.first_name = data['first_name']
+        if 'last_name' in data:
+            client.last_name = data['last_name']
+        if 'email' in data:
+            client.email = data['email']
+            # If username is same as email, update username too to keep them in sync
+            if client.username == client.email:
+                client.username = data['email']
+        if 'username' in data:
+            client.username = data['username']
+        if 'phone_number' in data:
+            client.phone_number = data['phone_number']
+        if 'date_of_birth' in data and data['date_of_birth']:
+            client.date_of_birth = data['date_of_birth']
+        if 'date_enrolled' in data and data['date_enrolled']:
+            client.date_enrolled = data['date_enrolled']
+            
+        # Save the client
+        client.save()
+        
+        # Return updated client data
+        return JsonResponse({
+            "success": True,
+            "message": "Client updated successfully",
+            "client": {
+                "id": client.id,
+                "username": client.username,
+                "email": client.email,
+                "first_name": client.first_name,
+                "last_name": client.last_name,
+                "phone_number": client.phone_number,
+                "date_enrolled": client.date_enrolled.isoformat() if client.date_enrolled else None,
+                "date_of_birth": client.date_of_birth.isoformat() if client.date_of_birth else None,
+            }
+        })
+    except Users.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Client not found"}, status=404)
+    except Exception as e:
+        import traceback
+        print(f"Error updating client {client_id}: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def add_client(request):
+    """Add a new client"""
+    try:
+        data = json.loads(request.body)
+        
+        # Validate required fields
+        required_fields = ['first_name', 'last_name', 'email', 'password']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return JsonResponse({
+                    "success": False, 
+                    "message": f"Missing required field: {field}"
+                }, status=400)
+                
+        # Check if email already exists
+        if Users.objects.filter(email=data['email']).exists():
+            return JsonResponse({
+                "success": False,
+                "message": "A user with this email already exists"
+            }, status=400)
+            
+        # Get role and belt for client (role_id=4 for clients)
+        try:
+            role = Roles.objects.get(id=4)  # Role ID 4 for clients
+            belt = Belts.objects.get(id=data.get('belt_id', 1))  # Default belt
+        except (Roles.DoesNotExist, Belts.DoesNotExist):
+            return JsonResponse({
+                "success": False,
+                "message": "Role or belt not found"
+            }, status=400)
+            
+        # Create the new client
+        username = data.get('username') or data['email']
+        
+        new_client = Users.objects.create_user(
+            username=username,
+            email=data['email'],
+            password=data['password'],
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            phone_number=data.get('phone_number', ''),
+            date_of_birth=data.get('date_of_birth') or timezone.now().date(),
+            date_enrolled=data.get('date_enrolled') or timezone.now().date(),
+            role_id=role,
+            belt_id=belt,
+            is_gym_owner=False,
+            is_instructor=False
+        )
+        
+        # Return the new client data
+        return JsonResponse({
+            "success": True,
+            "message": "Client added successfully",
+            "client": {
+                "id": new_client.id,
+                "username": new_client.username,
+                "email": new_client.email,
+                "first_name": new_client.first_name,
+                "last_name": new_client.last_name,
+                "phone_number": new_client.phone_number,
+                "date_enrolled": new_client.date_enrolled.isoformat() if new_client.date_enrolled else None,
+                "date_of_birth": new_client.date_of_birth.isoformat() if new_client.date_of_birth else None,
+            }
+        }, status=201)
+    except Exception as e:
+        import traceback
+        print(f"Error adding client: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['DELETE'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def delete_client(request, client_id):
+    """Delete a client by ID"""
+    try:
+        client = get_object_or_404(Users, id=client_id)
+        
+        # Check if user has role_id=4 (client)
+        if client.role_id.id != 4:
+            return JsonResponse({
+                "success": False,
+                "message": "Cannot delete non-client users"
+            }, status=403)
+            
+        # Delete the user
+        client.delete()
+        
+        return JsonResponse({
+            "success": True,
+            "message": "Client deleted successfully"
+        })
+    except Users.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Client not found"}, status=404)
+    except Exception as e:
+        import traceback
+        print(f"Error deleting client {client_id}: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "message": str(e)}, status=500)

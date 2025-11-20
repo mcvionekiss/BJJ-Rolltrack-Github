@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
@@ -68,6 +70,7 @@ export default function Calendar() {
           addClassButton: {
             text: "Add Class",
             click: () => router.push("/add-class"),
+            className: "fc-addClassButton-button",
           },
         }}
         titleFormat={{ year: "numeric", month: "long" }}

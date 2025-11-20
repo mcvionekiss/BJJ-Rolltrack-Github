@@ -234,7 +234,7 @@ function Analytics() {
       >
         {/* Attendance Stats Cards */}
         <Grid container spacing={4} sx={{ mb: 6, width: "100%" }}>
-          <Grid xs={12} md={4} flexGrow={1}>
+          <Grid size={{ xs: 12, md: 4 }} flexGrow={1}>
             <AttendanceStatsCard
               title="Daily Attendance"
               value="80"
@@ -243,7 +243,7 @@ function Analytics() {
               data={sparklineData.daily}
             />
           </Grid>
-          <Grid xs={12} md={4} flexGrow={1}>
+          <Grid size={{ xs: 12, md: 4 }} flexGrow={1}>
             <AttendanceStatsCard
               title="Weekly Attendance"
               value="400"
@@ -252,7 +252,7 @@ function Analytics() {
               data={sparklineData.weekly}
             />
           </Grid>
-          <Grid xs={12} md={4} flexGrow={1}>
+          <Grid size={{ xs: 12, md: 4 }} flexGrow={1}>
             <AttendanceStatsCard
               title="Monthly Attendance"
               value="1,600"
@@ -272,9 +272,7 @@ function Analytics() {
         >
           {/* Today's Classes */}
           <Grid
-            xs={12}
-            sm={4}
-            md={4}
+            size={{ xs: 12, md: 4, sm: 4 }}
             flexShrink={0}
             display="flex"
             flexDirection="column"
@@ -314,7 +312,11 @@ function Analytics() {
           </Grid>
 
           {/* Trends */}
-          <Grid xs={12} sm={8} md={8} display="flex" flexDirection="column">
+          <Grid
+            size={{ xs: 12, sm: 8, md: 8 }}
+            display="flex"
+            flexDirection="column"
+          >
             <Paper
               sx={{
                 p: 5,

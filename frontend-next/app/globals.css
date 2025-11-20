@@ -1,8 +1,14 @@
 @import "tailwindcss";
-
+@layer theme, base, mui, components, utilities;
 :root {
   --background: #ffffff;
   /* --foreground: #171717; */
+  --fc-button-bg-color: #ffffff;
+  --fc-button-text-color: #171717;
+  --fc-button-active-bg-color: #ffffff;
+
+  --fc-button-hover-bg-color: #262728;
+  --fc-button-text-hover-color: #ffffff;
 }
 
 @theme inline {
@@ -11,19 +17,6 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
-
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-} */
-
-/* body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-} */
 
 body {
   margin: 0;
@@ -37,4 +30,26 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.5em;
+  margin: 0;
+}
+
+.fc .fc-toolbar-chunk {
+  display: flex;
+  justify-content: space-between;
+}
+
+.fc .fc-button-primary:hover {
+  color: var(--fc-button-text-hover-color);
+  background-color: var(--fc-button-hover-bg-color);
+  border-color: var(--fc-button-hover-border-color);
+}
+
+.fc-toolbar-chunk .fc-addClassButton-button {
+  background-color: #262728;
+  color: #ffffff;
+  padding: 0.5em 4em;
 }

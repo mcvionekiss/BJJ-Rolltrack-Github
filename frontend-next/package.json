@@ -1,0 +1,47 @@
+{
+  "name": "frontend-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fullcalendar/common": "^5.11.5",
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/rrule": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
+    "@mui/material-nextjs": "^7.3.5",
+    "@mui/x-date-pickers": "^8.18.0",
+    "axios": "^1.13.2",
+    "dayjs": "^1.11.19",
+    "mui-tel-input": "^9.0.1",
+    "next": "16.0.3",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-password-checklist": "^1.8.1",
+    "react-router": "^7.9.6",
+    "recharts": "^3.4.1",
+    "rrule": "^2.8.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
